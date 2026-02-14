@@ -1,0 +1,104 @@
+<div
+    class="min-h-screen flex items-center justify-center bg-slate-50 px-4 sm:px-6 selection:bg-indigo-500/20 overflow-hidden relative">
+    <!-- Subtle Noise Texture -->
+    <div class="absolute inset-0 opacity-[0.05] pointer-events-none noise-bg"></div>
+
+    <!-- Animated Glow Background -->
+    <div
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none">
+    </div>
+
+    <div
+        class="login-card w-full max-w-sm sm:max-w-md rounded-[2.5rem] border border-slate-200/60 bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] p-8 sm:p-12 flex flex-col gap-8 transition-all duration-500 hover:border-indigo-200/60 animate-fade-in-up relative overflow-hidden">
+
+        <!-- Border Light Animation Layer -->
+        <div class="absolute inset-0 border-light-glow pointer-events-none"></div>
+
+        <div class="flex flex-col items-center gap-4 text-center relative z-10">
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner group/logo">
+                <img src="logo.png" alt="Logo"
+                    class="h-8 w-8 transition-transform duration-500 group-hover/logo:scale-110">
+            </div>
+            <div class="space-y-1">
+                <h1 class="text-3xl font-bold tracking-tight text-slate-900">Welcome Back</h1>
+                <p class="text-slate-500 text-sm font-medium">Sign in to your account to continue</p>
+            </div>
+        </div>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6 relative z-10 font-medium">
+
+            <div class="relative group">
+                <span
+                    class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300">
+                    <i class="pi pi-user"></i>
+                </span>
+                <input type="text" formControlName="username" placeholder="Username"
+                    [class.border-red-500]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched"
+                    class="w-full rounded-2xl bg-slate-50 border border-slate-200 px-12 py-4 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all duration-300" />
+                @if(loginForm.get('username')?.invalid && loginForm.get('username')?.touched) {
+                <span
+                    class="absolute -bottom-5 left-2 text-[10px] text-red-500 uppercase tracking-widest font-bold">Required</span>
+                }
+            </div>
+
+            <div class="relative group">
+                <span
+                    class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300">
+                    <i class="pi pi-lock"></i>
+                </span>
+
+                <input [type]="showPassword() ? 'text' : 'password'" formControlName="password" placeholder="Password"
+                    [class.border-red-500]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+                    class="w-full rounded-2xl bg-slate-50 border border-slate-200 px-12 py-4 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all duration-300" />
+
+                <button type="button" (click)="togglePassword()"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors focus:outline-none">
+                    <i [className]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                </button>
+
+                @if(loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+                <span class="absolute -bottom-5 left-2 text-[10px] text-red-500 uppercase tracking-widest font-bold">Min
+                    6 characters</span>
+                }
+            </div>
+
+            <div class="flex items-center px-1 text-xs sm:text-sm">
+                <label
+                    class="flex items-center gap-2 cursor-pointer group/check text-slate-500 hover:text-slate-900 transition-colors">
+                    <div
+                        class="relative flex items-center justify-center w-4 h-4 rounded border border-slate-200 bg-slate-50 group-hover/check:border-indigo-400 transition-all">
+                        <input type="checkbox" class="sr-only peer">
+                        <i
+                            class="pi pi-check text-[10px] text-indigo-600 opacity-0 peer-checked:opacity-100 transition-opacity"></i>
+                    </div>
+                    <span>Remember me</span>
+                </label>
+            </div>
+
+            <button type="submit" [disabled]="loginForm.invalid || loading()"
+                class="cursor-pointer group relative w-full overflow-hidden rounded-2xl bg-indigo-600 py-4 text-white font-bold tracking-wide transition-all duration-300 hover:bg-indigo-700 hover:scale-[1.01] hover:shadow-[0_10px_25px_-5px_rgba(79,70,229,0.4)] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-2 min-h-14">
+
+                <div class="flex items-center justify-center gap-2 relative z-10 font-bold">
+                    @if(loading()) {
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    <span>Signing In...</span>
+                    } @else {
+                    <span>Sign In</span>
+                    }
+                </div>
+
+                <div
+                    class="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]">
+                </div>
+            </button>
+
+        </form>
+    </div>
+</div>
