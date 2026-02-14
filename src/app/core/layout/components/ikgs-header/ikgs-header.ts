@@ -5,10 +5,10 @@ import { IkgsSearch } from '../ikgs-search/ikgs-search';
 import { IkgsNotifications } from '../ikgs-notifications/ikgs-notifications';
 
 @Component({
-    selector: 'app-ikgs-header',
-    standalone: true,
-    imports: [CommonModule, RouterLink, IkgsSearch, IkgsNotifications],
-    template: `
+  selector: 'app-ikgs-header',
+  standalone: true,
+  imports: [CommonModule, RouterLink, IkgsSearch, IkgsNotifications],
+  template: `
     <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 shrink-0 relative z-20">
       <div class="flex items-center gap-4">
         <!-- Mobile Hamburger Toggle -->
@@ -38,7 +38,7 @@ import { IkgsNotifications } from '../ikgs-notifications/ikgs-notifications';
         <div class="hidden sm:block h-6 w-[1px] bg-slate-200"></div>
 
         <div class="flex items-center gap-2 sm:gap-4">
-          <app-ikgs-notifications />
+          <app-ikgs-notifications [count]="3" (onClick)="notificationClick.emit()" />
           
           <button routerLink="/login" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900 text-white hover:bg-slate-800 flex items-center justify-center shadow-lg shadow-slate-200 transition-all active:scale-95">
             <i class="pi pi-sign-out text-base sm:text-lg"></i>
@@ -49,6 +49,7 @@ import { IkgsNotifications } from '../ikgs-notifications/ikgs-notifications';
   `
 })
 export class IkgsHeader {
-    @Output() sidebarToggle = new EventEmitter<void>();
-    @Output() mobileMenuToggle = new EventEmitter<void>();
+  @Output() sidebarToggle = new EventEmitter<void>();
+  @Output() mobileMenuToggle = new EventEmitter<void>();
+  @Output() notificationClick = new EventEmitter<void>();
 }

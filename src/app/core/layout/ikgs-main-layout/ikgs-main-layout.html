@@ -16,7 +16,8 @@
         [class.lg:pl-72]="isSidebarVisible()">
 
         <!-- Modular Header -->
-        <app-ikgs-header (sidebarToggle)="toggleSidebar()" (mobileMenuToggle)="toggleMobileMenu()" />
+        <app-ikgs-header (sidebarToggle)="toggleSidebar()" (mobileMenuToggle)="toggleMobileMenu()"
+            (notificationClick)="isNotificationDrawerOpen.set(true)" />
 
         <!-- View Outlet -->
         <div class="flex-1 overflow-y-auto p-4 sm:p-8 relative scroll-smooth bg-slate-50/50">
@@ -26,4 +27,7 @@
         <!-- Modular Footer -->
         <app-ikgs-footer />
     </main>
+
+    <!-- Notification Drawer -->
+    <app-ikgs-notification-drawer [isOpen]="isNotificationDrawerOpen()" (close)="isNotificationDrawerOpen.set(false)" />
 </div>

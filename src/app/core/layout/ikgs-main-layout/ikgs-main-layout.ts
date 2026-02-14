@@ -4,16 +4,18 @@ import { CommonModule } from '@angular/common';
 import { IkgsHeader } from '../components/ikgs-header/ikgs-header';
 import { IkgsSidebar } from '../components/ikgs-sidebar/ikgs-sidebar';
 import { IkgsFooter } from '../components/ikgs-footer/ikgs-footer';
+import { IkgsNotificationDrawer } from '../components/ikgs-notification-drawer/ikgs-notification-drawer';
 
 @Component({
   selector: 'app-ikgs-main-layout',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, IkgsHeader, IkgsSidebar, IkgsFooter],
+  imports: [RouterOutlet, CommonModule, IkgsHeader, IkgsSidebar, IkgsFooter, IkgsNotificationDrawer],
   templateUrl: './ikgs-main-layout.html',
 })
 export class IkgsMainLayout {
   isSidebarVisible = signal(true);
   isMobileMenuOpen = signal(false);
+  isNotificationDrawerOpen = signal(false);
 
   @HostListener('window:resize')
   onResize() {
