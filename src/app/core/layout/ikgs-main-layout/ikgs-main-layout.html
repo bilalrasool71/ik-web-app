@@ -11,7 +11,7 @@
     <aside
         class="fixed inset-y-0 left-0 flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out shadow-xl lg:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-50 h-full w-72"
         [class.-translate-x-full]="isMobileOnly() ? !isMobileMenuOpen() : !isSidebarVisible()"
-        [class.translate-x-0]="isMobileOnly() ? isMobileMenuOpen() : isSidebarVisible()" [class.lg:z-30]="true">
+        [class.translate-x-0]="isMobileOnly() ? isMobileMenuOpen() : isSidebarVisible()">
 
         <!-- Sidebar Header (Logo) -->
         <div class="h-20 flex items-center px-6 border-b border-slate-100 shrink-0">
@@ -175,5 +175,14 @@
         <div class="flex-1 overflow-y-auto p-4 sm:p-8 relative scroll-smooth bg-slate-50/50">
             <router-outlet />
         </div>
+
+        <!-- Mini Footer -->
+        <footer
+            class="h-10 bg-white border-t border-slate-200 flex items-center justify-center px-8 shrink-0 relative z-20">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                IKGS <span class="mx-2 text-slate-300">|</span> <span class="text-slate-500">Innoknits Global
+                    Sourcing</span>
+            </p>
+        </footer>
     </main>
 </div>
