@@ -1,6 +1,7 @@
 import { Component, inject, signal, WritableSignal } from '@angular/core';
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-ikgs-login',
@@ -10,6 +11,7 @@ import { Router } from '@angular/router';
 })
 export class IkgsLogin {
   router = inject(Router);
+  messageService = inject(MessageService);
 
 
   loginForm: FormGroup = this.initForm();
@@ -30,8 +32,11 @@ export class IkgsLogin {
 
   onSubmit() {
     this.loading.set(true);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Credentials verified successfully'
+    });
+    this.router.navigate(['ikgs/dashboard'])
   }
-
-  
-
 }
