@@ -1,16 +1,19 @@
 import { Component, signal, HostListener } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { IkgsHeader } from '../components/ikgs-header/ikgs-header';
+import { IkgsSidebar } from '../components/ikgs-sidebar/ikgs-sidebar';
+import { IkgsFooter } from '../components/ikgs-footer/ikgs-footer';
 
 @Component({
   selector: 'app-ikgs-main-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  standalone: true,
+  imports: [RouterOutlet, CommonModule, IkgsHeader, IkgsSidebar, IkgsFooter],
   templateUrl: './ikgs-main-layout.html',
 })
 export class IkgsMainLayout {
   isSidebarVisible = signal(true);
   isMobileMenuOpen = signal(false);
-  expandedMenus = signal<Record<string, boolean>>({});
 
   @HostListener('window:resize')
   onResize() {
@@ -33,17 +36,5 @@ export class IkgsMainLayout {
 
   closeMobileMenu() {
     this.isMobileMenuOpen.set(false);
-  }
-
-  toggleSubmenu(menuId: string) {
-    const current = this.expandedMenus();
-    this.expandedMenus.set({
-      ...current,
-      [menuId]: !current[menuId]
-    });
-  }
-
-  isMenuExpanded(menuId: string): boolean {
-    return !!this.expandedMenus()[menuId];
   }
 }
