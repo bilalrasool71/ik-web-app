@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
-    selector: 'app-ikgs-sidebar',
-    standalone: true,
-    imports: [CommonModule, RouterLink, RouterLinkActive],
-    template: `
+  selector: 'app-ikgs-sidebar',
+  standalone: true,
+  imports: [CommonModule, RouterLink, RouterLinkActive],
+  template: `
     <aside
       class="fixed inset-y-0 left-0 flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out shadow-xl lg:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-50 h-full w-72"
       [class.-translate-x-full]="isMobileOnly ? !isMobileOpen : !isVisible"
@@ -39,6 +39,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-transparent transition-all group">
           <i class="pi pi-home text-lg group-hover:scale-110 transition-transform shrink-0"></i>
           <span class="font-semibold text-sm whitespace-nowrap">Dashboard</span>
+        </a>
+
+        <a routerLink="/ikgs/style-configuration" (click)="closeMobileMenu.emit()" routerLinkActive="bg-indigo-50 text-indigo-600 !border-indigo-600 shadow-sm shadow-indigo-100/50"
+          class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-transparent transition-all group">
+          <i class="pi pi-palette text-lg group-hover:scale-110 transition-transform shrink-0"></i>
+          <span class="font-semibold text-sm whitespace-nowrap">Style Configuration</span>
         </a>
 
         <!-- Nested Item: Users -->
@@ -103,18 +109,18 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   `
 })
 export class IkgsSidebar {
-    @Input() isVisible = true;
-    @Input() isMobileOpen = false;
-    @Input() isMobileOnly = false;
-    @Output() closeMobileMenu = new EventEmitter<void>();
+  @Input() isVisible = true;
+  @Input() isMobileOpen = false;
+  @Input() isMobileOnly = false;
+  @Output() closeMobileMenu = new EventEmitter<void>();
 
-    expandedMenus: Record<string, boolean> = {};
+  expandedMenus: Record<string, boolean> = {};
 
-    toggleSubmenu(menuId: string) {
-        this.expandedMenus[menuId] = !this.expandedMenus[menuId];
-    }
+  toggleSubmenu(menuId: string) {
+    this.expandedMenus[menuId] = !this.expandedMenus[menuId];
+  }
 
-    isMenuExpanded(menuId: string): boolean {
-        return !!this.expandedMenus[menuId];
-    }
+  isMenuExpanded(menuId: string): boolean {
+    return !!this.expandedMenus[menuId];
+  }
 }

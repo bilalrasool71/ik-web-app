@@ -1,0 +1,643 @@
+<div class="space-y-6 animate-fade-in">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <button (click)="cancel()"
+                class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all">
+                <i class="pi pi-arrow-left text-sm"></i>
+            </button>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Style Configuration</h1>
+                <p class="text-sm text-slate-500 mt-0.5">Create a new style configuration</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stepper Card -->
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+
+        <!-- Custom Step Indicators -->
+        <div class="flex items-center border-b border-slate-100 px-6 py-4 overflow-x-auto scrollbar-hide gap-1">
+            @for(step of ['Configuration', 'Color Details', 'Fabric Panels', 'Fibers', 'Size Consumption']; track step;
+            let i = $index) {
+            <button (click)="goToStep(i)"
+                class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shrink-0"
+                [class]="activeStep() === i
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+                    : activeStep() > i
+                        ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'">
+                <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                    [class]="activeStep() === i
+                        ? 'bg-white/20 text-white'
+                        : activeStep() > i
+                            ? 'bg-emerald-200 text-emerald-700'
+                            : 'bg-slate-200 text-slate-500'">
+                    @if(activeStep() > i) {
+                    <i class="pi pi-check text-[10px]"></i>
+                    } @else {
+                    {{ i + 1 }}
+                    }
+                </span>
+                <span class="hidden sm:inline">{{ step }}</span>
+            </button>
+            @if(i < 4) { <div class="w-6 h-[2px] shrink-0"
+                [class]="activeStep() > i ? 'bg-emerald-300' : 'bg-slate-200'">
+        </div>
+        }
+        }
+    </div>
+
+    <!-- Step Content -->
+    <div class="p-6 sm:p-8">
+
+        <!-- ==================== STEP 1: Configuration ==================== -->
+        @if(activeStep() === 0) {
+        <div class="space-y-6">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-lg font-bold text-slate-900">Configuration</h2>
+            </div>
+
+            <form [formGroup]="configForm" class="space-y-6">
+                <!-- Row 1 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Customer</label>
+                        <p-select formControlName="customer" [options]="customerOptions" placeholder="Select Customer"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Style Type</label>
+                        <div class="flex items-center gap-4 h-[42px]">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <p-radiobutton formControlName="styleType" value="Garment" />
+                                <span class="text-sm font-medium text-slate-700">Garment</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <p-radiobutton formControlName="styleType" value="Fabric" />
+                                <span class="text-sm font-medium text-slate-700">Fabric</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Picture</label>
+                        <div
+                            class="flex items-center gap-2 h-[42px] px-4 border border-dashed border-slate-300 rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all">
+                            <i class="pi pi-paperclip text-slate-400 text-sm"></i>
+                            <span class="text-sm text-slate-500">Click to Attach Picture</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Season</label>
+                        <p-select formControlName="season" [options]="seasonOptions" placeholder="Select Season"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Gender</label>
+                        <p-select formControlName="gender" [options]="genderOptions" placeholder="Select Gender"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Lead Days</label>
+                        <input pInputText type="number" formControlName="leadDays" placeholder="Enter lead days"
+                            class="w-full" />
+                    </div>
+                </div>
+
+                <!-- Row 3 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Product Type</label>
+                        <p-select formControlName="productType" [options]="productTypeOptions" placeholder="Select"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Product Sub
+                            Type</label>
+                        <p-select formControlName="productSubType" [options]="productSubTypeOptions"
+                            placeholder="Select" class="w-full" styleClass="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric GSM</label>
+                        <input pInputText type="number" formControlName="fabricGSM" placeholder="GSM" class="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment GSM</label>
+                        <input pInputText type="number" formControlName="garmentGSM" placeholder="GSM" class="w-full" />
+                    </div>
+                </div>
+
+                <!-- Row 4 -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Style Description</label>
+                    <textarea pTextarea formControlName="styleDescription" [autoResize]="true" [rows]="3"
+                        placeholder="Enter style description..." class="w-full"></textarea>
+                </div>
+            </form>
+        </div>
+        }
+
+        <!-- ==================== STEP 2: Color Details ==================== -->
+        @if(activeStep() === 1) {
+        <div class="space-y-6">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-lg font-bold text-slate-900">Color Details</h2>
+            </div>
+
+            <form [formGroup]="colorDetailsForm" class="space-y-5">
+                <div formArrayName="colors">
+                    @for(colorCtrl of colorsArray.controls; track colorCtrl; let ci = $index) {
+                    <div class="rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-5 bg-slate-50/30"
+                        [formGroupName]="ci">
+
+                        <!-- Color Header -->
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1 space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
+                                <p-select formControlName="color" [options]="colorOptions" placeholder="Select Color"
+                                    class="w-full" styleClass="w-full" />
+                            </div>
+                            <button (click)="removeColor(ci)" type="button"
+                                class="px-4 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl hover:bg-red-100 transition-all mt-5"
+                                [disabled]="colorsArray.length === 1">
+                                Remove Color
+                            </button>
+                        </div>
+
+                        <h3 class="text-sm font-bold text-slate-800">Adds on:</h3>
+
+                        <!-- Garment Print -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment
+                                    Print</label>
+                                <div class="flex items-center gap-4 h-[42px]">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="garmentPrint" value="Yes" />
+                                        <span class="text-sm font-medium text-slate-700">Yes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="garmentPrint" value="No" />
+                                        <span class="text-sm font-medium text-slate-700">No</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label
+                                    class="text-xs font-bold text-slate-600 uppercase tracking-wider">Placement</label>
+                                <p-select formControlName="printPlacement" [options]="placementOptions"
+                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Print
+                                    Type</label>
+                                <p-select formControlName="printType" [options]="printTypeOptions" placeholder="Select"
+                                    class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Design</label>
+                                <p-select formControlName="printDesign" [options]="designOptions" placeholder="Select"
+                                    class="w-full" styleClass="w-full" />
+                            </div>
+                        </div>
+
+                        <!-- Garment Embroidery -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment
+                                    Embroidery</label>
+                                <div class="flex items-center gap-4 h-[42px]">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="garmentEmbroidery" value="Yes" />
+                                        <span class="text-sm font-medium text-slate-700">Yes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="garmentEmbroidery" value="No" />
+                                        <span class="text-sm font-medium text-slate-700">No</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label
+                                    class="text-xs font-bold text-slate-600 uppercase tracking-wider">Placement</label>
+                                <p-select formControlName="embPlacement" [options]="placementOptions"
+                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Emb
+                                    Type</label>
+                                <p-select formControlName="embType" [options]="embTypeOptions" placeholder="Select"
+                                    class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Design</label>
+                                <p-select formControlName="embDesign" [options]="designOptions" placeholder="Select"
+                                    class="w-full" styleClass="w-full" />
+                            </div>
+                        </div>
+
+                        <!-- Garment Wash -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment Wash
+                                    (Laundry)</label>
+                                <div class="flex items-center gap-4 h-[42px]">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="garmentWash" value="Yes" />
+                                        <span class="text-sm font-medium text-slate-700">Yes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="garmentWash" value="No" />
+                                        <span class="text-sm font-medium text-slate-700">No</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment Wash
+                                    Type</label>
+                                <p-select formControlName="washType" [options]="washTypeOptions" placeholder="Select"
+                                    class="w-full" styleClass="w-full" />
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </div>
+
+                <button (click)="addColor()" type="button"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-50 text-indigo-600 text-sm font-bold rounded-xl hover:bg-indigo-100 transition-all">
+                    <i class="pi pi-plus text-xs"></i>
+                    Add Color
+                </button>
+            </form>
+        </div>
+        }
+
+        <!-- ==================== STEP 3: Fabric Panels ==================== -->
+        @if(activeStep() === 2) {
+        <div class="space-y-6">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-lg font-bold text-slate-900">Fabric Panels</h2>
+            </div>
+
+            <form [formGroup]="fabricPanelsForm" class="space-y-5">
+                <div formArrayName="panels">
+                    @for(panelCtrl of panelsArray.controls; track panelCtrl; let pi = $index) {
+                    <div class="rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-5 bg-slate-50/30"
+                        [formGroupName]="pi">
+
+                        <!-- Panel Header -->
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="space-y-1.5">
+                                    <label
+                                        class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
+                                    <p-select formControlName="color" [options]="colorOptions"
+                                        placeholder="Select Color" class="w-full" styleClass="w-full" />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label
+                                        class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
+                                    <p-select formControlName="panel" [options]="panelOptions"
+                                        placeholder="Select Panel" class="w-full" styleClass="w-full" />
+                                </div>
+                            </div>
+                            <button (click)="removePanel(pi)" type="button"
+                                class="px-4 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl hover:bg-red-100 transition-all mt-5"
+                                [disabled]="panelsArray.length === 1">
+                                Remove Panel
+                            </button>
+                        </div>
+
+                        <!-- Row 1 -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel
+                                    Size</label>
+                                <p-select formControlName="panelSize" [options]="panelSizeOptions" placeholder="Select"
+                                    class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
+                                <p-select formControlName="fabric" [options]="fabricOptions" placeholder="Select"
+                                    class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel
+                                    Type</label>
+                                <div class="flex items-center gap-4 h-[42px]">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="panelType" value="Main Body" />
+                                        <span class="text-xs font-medium text-slate-700">Main Body</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="panelType" value="Trim" />
+                                        <span class="text-xs font-medium text-slate-700">Trim</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">R&D #</label>
+                                <input pInputText formControlName="rndNumber" placeholder="R&D #" class="w-full" />
+                            </div>
+                        </div>
+
+                        <!-- Row 2 -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div class="space-y-1.5">
+                                <label
+                                    class="text-xs font-bold text-slate-600 uppercase tracking-wider">Composition</label>
+                                <p-select formControlName="composition" [options]="compositionOptions"
+                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Width
+                                    Type</label>
+                                <div class="flex items-center gap-3 h-[42px]">
+                                    <label class="flex items-center gap-1.5 cursor-pointer">
+                                        <p-radiobutton formControlName="widthType" value="Open" />
+                                        <span class="text-xs font-medium text-slate-700">Open</span>
+                                    </label>
+                                    <label class="flex items-center gap-1.5 cursor-pointer">
+                                        <p-radiobutton formControlName="widthType" value="Tubular" />
+                                        <span class="text-xs font-medium text-slate-700">Tubular</span>
+                                    </label>
+                                    <label class="flex items-center gap-1.5 cursor-pointer">
+                                        <p-radiobutton formControlName="widthType" value="Flat" />
+                                        <span class="text-xs font-medium text-slate-700">Flat</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Width</label>
+                                <input pInputText type="number" formControlName="width" placeholder="Width"
+                                    class="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">GSM</label>
+                                <input pInputText type="number" formControlName="gsm" placeholder="GSM"
+                                    class="w-full" />
+                            </div>
+                        </div>
+
+                        <!-- Row 3 -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric
+                                    Color</label>
+                                <p-select formControlName="fabricColor" [options]="fabricColorOptions"
+                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5 sm:col-span-2">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Dye Process
+                                    Route</label>
+                                <p-select formControlName="dyeProcessRoute" [options]="dyeProcessOptions"
+                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Special
+                                    Process</label>
+                                <p-select formControlName="specialProcess" [options]="specialProcessOptions"
+                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                            </div>
+                        </div>
+
+                        <!-- Row 4 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Rotary
+                                    Print</label>
+                                <div class="flex items-center gap-4 h-[42px]">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="rotaryPrint" value="Yes" />
+                                        <span class="text-xs font-medium text-slate-700">Yes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <p-radiobutton formControlName="rotaryPrint" value="No" />
+                                        <span class="text-xs font-medium text-slate-700">No</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Print
+                                    Design</label>
+                                <p-select formControlName="printDesign" [options]="printDesignOptions"
+                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Print
+                                    Color</label>
+                                <p-select formControlName="printColor" [options]="printColorOptions"
+                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </div>
+
+                <button (click)="addPanel()" type="button"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-50 text-indigo-600 text-sm font-bold rounded-xl hover:bg-indigo-100 transition-all">
+                    <i class="pi pi-plus text-xs"></i>
+                    Add More
+                </button>
+            </form>
+        </div>
+        }
+
+        <!-- ==================== STEP 4: Fibers ==================== -->
+        @if(activeStep() === 3) {
+        <div class="space-y-6">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-lg font-bold text-slate-900">Fibers</h2>
+            </div>
+
+            <form [formGroup]="fibersForm" class="space-y-5">
+                <!-- Selectors -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
+                        <p-select formControlName="color" [options]="colorOptions" placeholder="Select Color"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
+                        <p-select formControlName="fabric" [options]="fabricOptions" placeholder="Select Fabric"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
+                        <p-select formControlName="panel" [options]="panelOptions" placeholder="Select Panel"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                </div>
+
+                <!-- Add/Remove buttons -->
+                <div class="flex items-center justify-end gap-2">
+                    <button (click)="removeFiber(fibersArray.length - 1)" type="button"
+                        class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-all"
+                        [disabled]="fibersArray.length <= 1">
+                        <i class="pi pi-minus text-xs"></i>
+                    </button>
+                    <button (click)="addFiber()" type="button"
+                        class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-all">
+                        <i class="pi pi-plus text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Fiber Rows -->
+                <div class="space-y-4" formArrayName="fibers">
+                    @for(fiberCtrl of fibersArray.controls; track fiberCtrl; let fi = $index) {
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" [formGroupName]="fi">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fiber</label>
+                            <p-select formControlName="fiber" [options]="fiberOptions" placeholder="Select"
+                                class="w-full" styleClass="w-full" />
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Consumption</label>
+                            <p-select formControlName="consumption" [options]="consumptionOptions" placeholder="Select"
+                                class="w-full" styleClass="w-full" />
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Ratio</label>
+                            <input pInputText type="number" formControlName="ratio" placeholder="Ratio"
+                                class="w-full" />
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Knit Type</label>
+                            <div class="flex items-center gap-2 h-[42px] flex-wrap">
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <p-radiobutton formControlName="knitType" value="Knit" />
+                                    <span class="text-xs font-medium text-slate-700">Knit</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <p-radiobutton formControlName="knitType" value="Tuck" />
+                                    <span class="text-xs font-medium text-slate-700">Tuck</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <p-radiobutton formControlName="knitType" value="Loop" />
+                                    <span class="text-xs font-medium text-slate-700">Loop</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Yarn Dye</label>
+                            <div class="flex items-center gap-3 h-[42px]">
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <p-radiobutton formControlName="yarnDye" value="Yes" />
+                                    <span class="text-xs font-medium text-slate-700">Yes</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <p-radiobutton formControlName="yarnDye" value="No" />
+                                    <span class="text-xs font-medium text-slate-700">No</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fiber Color</label>
+                            <p-select formControlName="fiberColor" [options]="fiberColorOptions" placeholder="Select"
+                                class="w-full" styleClass="w-full" />
+                        </div>
+                    </div>
+                    }
+                </div>
+            </form>
+        </div>
+        }
+
+        <!-- ==================== STEP 5: Size Wise Consumption ==================== -->
+        @if(activeStep() === 4) {
+        <div class="space-y-6">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-lg font-bold text-slate-900">Size Wise Consumption</h2>
+            </div>
+
+            <form [formGroup]="sizeConsumptionForm" class="space-y-5">
+                <!-- Selectors -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
+                        <p-select formControlName="color" [options]="colorOptions" placeholder="Select Color"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
+                        <p-select formControlName="fabric" [options]="fabricOptions" placeholder="Select Fabric"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
+                        <p-select formControlName="panel" [options]="panelOptions" placeholder="Select Panel"
+                            class="w-full" styleClass="w-full" />
+                    </div>
+                </div>
+
+                <!-- Size Table -->
+                <div class="rounded-2xl border border-slate-200 overflow-hidden">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-indigo-500 text-white">
+                                <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider">Size</th>
+                                <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider">Consumption
+                                    (Mtrs)</th>
+                                <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider">Consumption
+                                    (Kgs)</th>
+                            </tr>
+                        </thead>
+                        <tbody formArrayName="sizes">
+                            @for(sizeCtrl of sizesArray.controls; track sizeCtrl; let si = $index) {
+                            <tr class="border-t border-slate-100 hover:bg-slate-50/50 transition-colors"
+                                [formGroupName]="si">
+                                <td class="px-5 py-3">
+                                    <span class="text-sm font-semibold text-slate-700">{{ sizeCtrl.get('size')?.value
+                                        }}</span>
+                                </td>
+                                <td class="px-5 py-2">
+                                    <input pInputText type="number" formControlName="consumptionMtrs" placeholder="0.00"
+                                        class="w-full" />
+                                </td>
+                                <td class="px-5 py-2">
+                                    <input pInputText type="number" formControlName="consumptionKgs" placeholder="0.00"
+                                        class="w-full" />
+                                </td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+        }
+
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="px-6 sm:px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <button (click)="cancel()"
+            class="px-5 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all">
+            Cancel
+        </button>
+        <div class="flex items-center gap-3">
+            @if(activeStep() > 0) {
+            <button (click)="prevStep()"
+                class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-xl transition-all">
+                <i class="pi pi-arrow-left text-xs mr-2"></i>Back
+            </button>
+            }
+            @if(activeStep() < 4) { <button (click)="nextStep()"
+                class="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all active:scale-95">
+                Save & Forward<i class="pi pi-arrow-right text-xs ml-2"></i>
+                </button>
+                } @else {
+                <button (click)="save()"
+                    class="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all active:scale-95">
+                    <i class="pi pi-check text-xs mr-2"></i>Save
+                </button>
+                }
+        </div>
+    </div>
+</div>
+</div>

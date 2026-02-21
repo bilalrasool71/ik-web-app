@@ -1,8 +1,10 @@
-import { Component, Output, EventEmitter, input } from '@angular/core';
+import { Component, Output, EventEmitter, input, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { IkgsSearch } from '../ikgs-search/ikgs-search';
 import { IkgsNotifications } from '../ikgs-notifications/ikgs-notifications';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map, filter } from 'rxjs';
 
 @Component({
   selector: 'app-ikgs-header',
@@ -22,12 +24,12 @@ import { IkgsNotifications } from '../ikgs-notifications/ikgs-notifications';
         </button>
 
         <div class="flex items-center gap-3">
-          <h2 class="text-sm sm:text-lg font-bold text-slate-900 capitalize truncate">Dashboard</h2>
+          <h2 class="text-sm sm:text-lg font-bold text-slate-900 capitalize truncate">{{ pageTitle() }}</h2>
           <div class="hidden sm:block h-4 w-[1px] bg-slate-200"></div>
           <div class="hidden md:flex items-center gap-2 text-xs font-medium text-slate-500 whitespace-nowrap">
-            <span>Projects</span>
+            <span>IKGS</span>
             <i class="pi pi-chevron-right text-[8px]"></i>
-            <span class="text-slate-900">IKGS Enterprise</span>
+            <span class="text-slate-900">{{ pageTitle() }}</span>
           </div>
         </div>
       </div>
@@ -52,4 +54,30 @@ export class IkgsHeader {
   @Output() sidebarToggle = new EventEmitter<void>();
   @Output() mobileMenuToggle = new EventEmitter<void>();
   @Output() notificationClick = new EventEmitter<void>();
+  private router = inject(Router);
+
+  private routeTitle = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(e => this.getTitleFromUrl(e.urlAfterRedirects || e.url))
+    ),
+    { initialValue: this.getTitleFromUrl(this.router.url) }
+  );
+
+  pageTitle = computed(() => this.routeTitle());
+
+  private getTitleFromUrl(url: string): string {
+    const routeTitleMap: Record<string, string> = {
+      'dashboard': 'Dashboard',
+      'style-configuration/new': 'Style Configuration',
+      'style-configuration': 'Style Configuration',
+      'staff': 'Staff',
+      'contractors': 'Contractors',
+    };
+    for (const [route, title] of Object.entries(routeTitleMap)) {
+      if (url.includes(route)) return title;
+    }
+    return 'Dashboard';
+  }
 }
+

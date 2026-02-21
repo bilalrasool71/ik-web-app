@@ -17,6 +17,14 @@ export const routes: Routes = [
             {
                 path: 'dashboard',
                 loadComponent: () => import('./features/ikgs-dashboard/ikgs-dashboard').then(x => x.IkgsDashboard)
+            },
+            {
+                path: 'style-configuration',
+                loadComponent: () => import('./features/ikgs-style-configuration/ikgs-style-configuration').then(x => x.IkgsStyleConfiguration)
+            },
+            {
+                path: 'style-configuration/new',
+                loadComponent: () => import('./features/ikgs-style-configuration/ikgs-style-configuration-form').then(x => x.IkgsStyleConfigurationForm)
             }
         ]
     }
