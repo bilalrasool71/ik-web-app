@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,53 +10,42 @@ import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { TableModule } from 'primeng/table';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectionValueModel } from '../../models/common/selection-value.model';
+import { MessageService } from 'primeng/api';
+import { IkgsRest } from '../../core/services/ikgs-rest';
+import { RequestType, Repository, EndPoints } from '../../core/enums/api.enum';
+import { ApiOptionsModel, ApiResponseModel } from '../../core/models/api.model';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { LocalStorageEnum } from '../../core/enums/storage.enum';
+import { StyleConfigMainDto } from '../../models/domain/style-configuration.model';
+import { UserLoginRequestDto, UserLoginResponseDto } from '../../models/domain/user.model';
 
 @Component({
     selector: 'app-ikgs-style-configuration-form',
-    standalone: true,
     imports: [
         CommonModule, ReactiveFormsModule,
         StepperModule, SelectModule, InputTextModule,
         RadioButtonModule, ButtonModule, TextareaModule,
-        TableModule, InputNumberModule
+        TableModule, InputNumberModule, SelectButtonModule
     ],
     templateUrl: './ikgs-style-configuration-form.html',
     styleUrl: './ikgs-style-configuration-form.scss',
 })
 export class IkgsStyleConfigurationForm {
+    messageService = inject(MessageService);
+    restService = inject(IkgsRest);
+    loading = signal(false);
+
+
+
     activeStep = signal(0);
 
-    // Dropdown options
-    customerOptions = [
-        { label: 'Nike', value: 'Nike' },
-        { label: 'Adidas', value: 'Adidas' },
-        { label: 'Puma', value: 'Puma' },
-        { label: 'H&M', value: 'H&M' },
-    ];
-    seasonOptions = [
-        { label: 'Spring 2026', value: 'Spring 2026' },
-        { label: 'Summer 2026', value: 'Summer 2026' },
-        { label: 'Fall 2026', value: 'Fall 2026' },
-        { label: 'Winter 2026', value: 'Winter 2026' },
-    ];
-    genderOptions = [
-        { label: 'Men', value: 'Men' },
-        { label: 'Women', value: 'Women' },
-        { label: 'Kids', value: 'Kids' },
-        { label: 'Unisex', value: 'Unisex' },
-    ];
-    productTypeOptions = [
-        { label: 'T-Shirt', value: 'T-Shirt' },
-        { label: 'Polo Shirt', value: 'Polo Shirt' },
-        { label: 'Shorts', value: 'Shorts' },
-        { label: 'Hoodie', value: 'Hoodie' },
-        { label: 'Joggers', value: 'Joggers' },
-    ];
-    productSubTypeOptions = [
-        { label: 'Crew Neck', value: 'Crew Neck' },
-        { label: 'V-Neck', value: 'V-Neck' },
-        { label: 'Round Neck', value: 'Round Neck' },
-    ];
+
+    styleTypes = signal([
+        { value: 'G', viewValue: 'Garment' },
+        { value: 'F', viewValue: 'Fabric' },
+    ]);
+
     colorOptions = [
         { label: 'Black', value: 'Black' },
         { label: 'White', value: 'White' },
@@ -65,6 +54,7 @@ export class IkgsStyleConfigurationForm {
         { label: 'Grey', value: 'Grey' },
         { label: 'Green', value: 'Green' },
     ];
+
     placementOptions = [
         { label: 'Front', value: 'Front' },
         { label: 'Back', value: 'Back' },
@@ -176,16 +166,17 @@ export class IkgsStyleConfigurationForm {
     constructor(private fb: FormBuilder, private router: Router) {
         // Step 1
         this.configForm = this.fb.group({
-            customer: [null, Validators.required],
-            styleType: ['Garment'],
-            season: [null, Validators.required],
-            gender: [null, Validators.required],
-            productType: [null],
-            productSubType: [null],
-            leadDays: [null],
-            fabricGSM: [null],
-            garmentGSM: [null],
-            styleDescription: [''],
+            style_Id: [0],
+            customer_Id: [0, Validators.required],
+            config_Type: ['G'],
+            season_Id: [0, Validators.required],
+            gender_Id: [0, Validators.required],
+            product_Type_Id: [0],
+            product_Sub_Type_Id: [0],
+            lead_Days: [null],
+            fabric_Gsm: [null],
+            garment_Gsm: [null],
+            style_Description: [''],
         });
 
         // Step 2
@@ -323,6 +314,22 @@ export class IkgsStyleConfigurationForm {
     }
 
     nextStep(): void {
+        if (this.activeStep() === 0) {
+
+            // Validate Step 1 form
+            if (this.configForm.invalid) {
+                this.configForm.markAllAsTouched();
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Validation',
+                    detail: 'Please fill all required fields.'
+                });
+                return;
+            }
+
+            this.addUpdateStyleConfigMain();
+            return;
+        }
         if (this.activeStep() < 4) {
             this.activeStep.set(this.activeStep() + 1);
         }
@@ -345,5 +352,137 @@ export class IkgsStyleConfigurationForm {
 
     cancel(): void {
         this.router.navigate(['/ikgs/style-configuration']);
+    }
+
+    allCustomers: WritableSignal<SelectionValueModel[]> = signal([]);
+    allGenders: WritableSignal<SelectionValueModel[]> = signal([]);
+    allProductTypes: WritableSignal<SelectionValueModel[]> = signal([]);
+    allProductSubTypes: WritableSignal<SelectionValueModel[]> = signal([]);
+    allSeasons: WritableSignal<SelectionValueModel[]> = signal([]);
+
+
+
+    ngOnInit() {
+        this.callCatalogApis();
+    }
+
+
+    callCatalogApis() {
+        this.getAllCustomers();
+        this.getAllGenders();
+        this.getAllProductTypes();
+        this.getAllProductSubTypes();
+        this.getAllSeasons();
+    }
+
+    getAllCustomers() {
+        this.allCustomers.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.AllCustomers;
+        this.restService
+            .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allCustomers.set(result.Data);
+                }
+            });
+    }
+
+
+    getAllGenders() {
+        this.allGenders.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.AllGenders;
+        this.restService
+            .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allGenders.set(result.Data);
+                }
+            });
+    }
+
+    getAllProductTypes() {
+        this.allProductTypes.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.AllProductTypes;
+        this.restService
+            .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allProductTypes.set(result.Data);
+                }
+            });
+    }
+
+
+    getAllProductSubTypes() {
+        this.allProductSubTypes.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.AllProductSubTypes;
+        this.restService
+            .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allProductSubTypes.set(result.Data);
+                }
+            });
+    }
+
+    getAllSeasons() {
+        this.allSeasons.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.AllSeasons;
+        this.restService
+            .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allSeasons.set(result.Data);
+                }
+            });
+    }
+
+
+    addUpdateStyleConfigMain() {
+        this.loading.set(true);
+        let authApiOpts: ApiOptionsModel<StyleConfigMainDto> = new ApiOptionsModel<StyleConfigMainDto>();
+        authApiOpts.RequestType = RequestType.POST;
+        authApiOpts.ParamObj = this.configForm.value;
+        authApiOpts.Repository = Repository.StyleConfiguration;
+        authApiOpts.EndPoint = EndPoints.AddUpdateStyleConfigMain;
+        this.restService.CallApi<StyleConfigMainDto, StyleConfigMainDto>(authApiOpts).subscribe(
+            (result: ApiResponseModel<StyleConfigMainDto>) => {
+                if (result) {
+                    if (result.Code === 200) {
+                        if (result.Data) {
+                            console.log(result.Data);
+                            this.configForm.patchValue({ style_Id: result.Data.style_Id });
+                            this.loading.set(false);
+                            this.activeStep.set(1);
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Success',
+                                detail: 'Basic configuration saved successfully.'
+                            });
+                        }
+                    }
+                } else {
+                    this.loading.set(false)
+                }
+            },
+            (error: any) => {
+                this.loading.set(false);
+            }
+        );
     }
 }

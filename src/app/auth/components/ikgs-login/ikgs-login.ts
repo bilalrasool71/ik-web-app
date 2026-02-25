@@ -2,6 +2,12 @@ import { Component, inject, signal, WritableSignal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { UserLoginRequestDto, UserLoginResponseDto } from '../../../models/domain/user.model';
+import { RequestType, Repository, EndPoints } from '../../../core/enums/api.enum';
+import { LocalStorageEnum, CookiesEnum } from '../../../core/enums/storage.enum';
+import { ApiOptionsModel, ApiResponseModel } from '../../../core/models/api.model';
+import { IkgsRest } from '../../../core/services/ikgs-rest';
+import { IkgsShared } from '../../../core/services/ikgs-shared';
 
 @Component({
   selector: 'app-ikgs-login',
@@ -12,6 +18,8 @@ import { MessageService } from 'primeng/api';
 export class IkgsLogin {
   router = inject(Router);
   messageService = inject(MessageService);
+  restService = inject(IkgsRest);
+  sharedService = inject(IkgsShared);
 
 
   loginForm: FormGroup = this.initForm();
@@ -30,13 +38,36 @@ export class IkgsLogin {
     this.showPassword.set(!this.showPassword());
   };
 
-  onSubmit() {
+  Authorize() {
     this.loading.set(true);
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Credentials verified successfully'
-    });
-    this.router.navigate(['ikgs/dashboard'])
+    let userObj: UserLoginRequestDto = new UserLoginRequestDto();
+    userObj.username = this.loginForm.value.username;
+    userObj.password = this.loginForm.value.password;
+    let authApiOpts: ApiOptionsModel<UserLoginRequestDto> = new ApiOptionsModel<UserLoginRequestDto>();
+    authApiOpts.RequestType = RequestType.POST;
+    authApiOpts.ParamObj = userObj;
+    authApiOpts.Repository = Repository.Auth;
+    authApiOpts.EndPoint = EndPoints.Auth;
+    this.restService.CallApi<UserLoginRequestDto, UserLoginRequestDto>(authApiOpts).subscribe(
+      (result: ApiResponseModel<UserLoginResponseDto>) => {
+        if (result) {
+          if (result.Code === 200) {
+            if (result.Data) {
+              this.loading.set(false);
+              if (result.Data.token) {
+                localStorage.setItem(LocalStorageEnum.TokenInfo, JSON.stringify(result.Data.token));
+                this.messageService.add({ severity: 'success', summary: 'Success!', detail: `Welcome ${result.Data.username} !` });
+                this.router.navigate(['ikgs/dashboard'])
+              }
+            }
+          }
+        } else {
+          this.loading.set(false)
+        }
+      },
+      (error: any) => {
+        this.loading.set(false);
+      }
+    );
   }
 }
