@@ -16,9 +16,7 @@ import { IkgsRest } from '../../core/services/ikgs-rest';
 import { RequestType, Repository, EndPoints } from '../../core/enums/api.enum';
 import { ApiOptionsModel, ApiResponseModel } from '../../core/models/api.model';
 import { SelectButtonModule } from 'primeng/selectbutton';
-import { LocalStorageEnum } from '../../core/enums/storage.enum';
 import { StyleConfigMainDto } from '../../models/domain/style-configuration.model';
-import { UserLoginRequestDto, UserLoginResponseDto } from '../../models/domain/user.model';
 
 @Component({
     selector: 'app-ikgs-style-configuration-form',
@@ -428,6 +426,18 @@ export class IkgsStyleConfigurationForm {
         authApiOpts.RequestType = RequestType.GET;
         authApiOpts.Repository = Repository.Catalog;
         authApiOpts.EndPoint = EndPoints.AllProductSubTypes;
+        authApiOpts.ReqQueryParams = [
+            {
+                Key: 'productTypeId',
+                Value: this.configForm.value.product_Type_Id,
+                IsDate: false
+            },
+            {
+                Key: 'genderId',
+                Value: this.configForm.value.gender_Id,
+                IsDate: false
+            }
+        ]
         this.restService
             .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
             .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
@@ -455,17 +465,16 @@ export class IkgsStyleConfigurationForm {
 
     addUpdateStyleConfigMain() {
         this.loading.set(true);
-        let authApiOpts: ApiOptionsModel<StyleConfigMainDto> = new ApiOptionsModel<StyleConfigMainDto>();
-        authApiOpts.RequestType = RequestType.POST;
-        authApiOpts.ParamObj = this.configForm.value;
-        authApiOpts.Repository = Repository.StyleConfiguration;
-        authApiOpts.EndPoint = EndPoints.AddUpdateStyleConfigMain;
-        this.restService.CallApi<StyleConfigMainDto, StyleConfigMainDto>(authApiOpts).subscribe(
+        let apiOpts: ApiOptionsModel<StyleConfigMainDto> = new ApiOptionsModel<StyleConfigMainDto>();
+        apiOpts.RequestType = RequestType.POST;
+        apiOpts.ParamObj = this.configForm.value;
+        apiOpts.Repository = Repository.StyleConfiguration;
+        apiOpts.EndPoint = EndPoints.AddUpdateStyleConfigMain;
+        this.restService.CallApi<StyleConfigMainDto, StyleConfigMainDto>(apiOpts).subscribe(
             (result: ApiResponseModel<StyleConfigMainDto>) => {
                 if (result) {
                     if (result.Code === 200) {
                         if (result.Data) {
-                            console.log(result.Data);
                             this.configForm.patchValue({ style_Id: result.Data.style_Id });
                             this.loading.set(false);
                             this.activeStep.set(1);
