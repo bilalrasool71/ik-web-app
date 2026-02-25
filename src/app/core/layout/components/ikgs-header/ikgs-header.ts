@@ -71,6 +71,8 @@ export class IkgsHeader {
       'dashboard': 'Dashboard',
       'style-configuration/new': 'Style Configuration',
       'style-configuration': 'Style Configuration',
+      'work-order/new': 'Work Order',
+      'work-order': 'Work Order',
       'staff': 'Staff',
       'contractors': 'Contractors',
     };

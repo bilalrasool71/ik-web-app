@@ -25,6 +25,14 @@ export const routes: Routes = [
             {
                 path: 'style-configuration/new',
                 loadComponent: () => import('./features/ikgs-style-configuration/ikgs-style-configuration-form').then(x => x.IkgsStyleConfigurationForm)
+            },
+            {
+                path: 'work-order',
+                loadComponent: () => import('./features/ikgs-work-order/ikgs-work-order').then(x => x.IkgsWorkOrder)
+            },
+            {
+                path: 'work-order/new',
+                loadComponent: () => import('./features/ikgs-work-order/ikgs-work-order-form').then(x => x.IkgsWorkOrderForm)
             }
         ]
     }

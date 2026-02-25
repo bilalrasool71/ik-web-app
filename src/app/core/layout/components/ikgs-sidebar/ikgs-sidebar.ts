@@ -47,6 +47,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <span class="font-semibold text-sm whitespace-nowrap">Style Configuration</span>
         </a>
 
+        <a routerLink="/ikgs/work-order" (click)="closeMobileMenu.emit()" routerLinkActive="bg-indigo-50 text-indigo-600 !border-indigo-600 shadow-sm shadow-indigo-100/50"
+          class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-transparent transition-all group">
+          <i class="pi pi-palette text-lg group-hover:scale-110 transition-transform shrink-0"></i>
+          <span class="font-semibold text-sm whitespace-nowrap">Work Order</span>
+        </a>
+
         <!-- Nested Item: Users -->
         <div class="space-y-1">
           <button (click)="toggleSubmenu('users')"

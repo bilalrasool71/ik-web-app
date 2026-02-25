@@ -1,0 +1,136 @@
+<div class="space-y-6 animate-fade-in">
+
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+
+            <button (click)="cancel()"
+                class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all">
+                <i class="pi pi-arrow-left text-sm"></i>
+            </button>
+
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Work Order</h1>
+                <p class="text-sm text-slate-500 mt-0.5">Create a new work order</p>
+            </div>
+        </div>
+
+        <button type="button" (click)="toggleLock()"
+            class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-all border border-gray-300">
+            <i class="pi" [ngClass]="isLocked ? 'pi-lock' : 'pi-lock-open'"></i>
+        </button>
+    </div>
+
+
+    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="p-6 sm:p-8">
+            <form [formGroup]="workOrderForm" class="space-y-6">
+
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Style</label>
+                        <p-select appendTo="body" formControlName="style" [options]="styleOptions"
+                            placeholder="Select Style" class="w-full" styleClass="w-full"></p-select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Customer</label>
+                        <p-select appendTo="body" formControlName="customer" [options]="customerOptions"
+                            placeholder="Select Customer" class="w-full"></p-select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Date <br></label>
+                        <p-datepicker appendTo="body" formControlName="date" [showIcon]="true" dateFormat="dd/mm/yy" class="w-full"
+                            placeholder="Choose a Date"></p-datepicker>
+                    </div>
+                </div>
+
+
+                <div formArrayName="purchaseOrder" class="space-y-4">
+                    <div *ngFor="let purchaseOrderCtrl of purchaseOrderArray.controls; let pOi = index"
+                        [formGroupName]="pOi" class="space-y-4 pb-4">
+
+                        <hr  class="border-t border-slate-200 my-4">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                            
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Purchase
+                                    Order</label>
+                                <input pInputText type="number" formControlName="purchaseOrder"
+                                    placeholder="Enter Purchase Order Number" class="w-full" />
+                            </div>
+
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
+                                <p-select appendTo="body" formControlName="color" [options]="colorOptions"
+                                    placeholder="Select Color" class="w-full"></p-select>
+                            </div>
+
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Shipment Date
+                                    <br></label>
+                                <p-datepicker appendTo="body" formControlName="shipmentDate" [showIcon]="true" class="w-full"
+                                    dateFormat="dd/mm/yy" placeholder="Choose a Shipment Date"></p-datepicker>
+                            </div>
+
+
+                            <div class="flex items-end gap-2 pb-1">
+
+                                <button type="button" (click)="removePurchaseOrder(pOi)"
+                                    [disabled]="purchaseOrderArray.length <= 1 || isLocked"
+                                    class="w-9 h-9 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-all">
+                                    <i class="pi pi-minus text-xs"></i>
+                                </button>
+
+                                <button *ngIf="pOi === purchaseOrderArray.length - 1" type="button"
+                                    (click)="addPurchaseOrder()" [disabled]="isLocked"
+                                    class="w-9 h-9 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-all">
+                                    <i class="pi pi-plus text-xs"></i>
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <div *ngIf="purchaseOrderCtrl.get('color')?.value"
+                            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-2">
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Size</label>
+                                <input pInputText type="number" formControlName="colorSize"
+                                    placeholder="Enter Size Number" class="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Detail</label>
+                                <input pInputText type="number" formControlName="colorDetail"
+                                    placeholder="Enter Detail Pieces Number" class="w-full" />
+                            </div>
+
+                            <div></div>
+                        </div>
+                    </div>     
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer Action -->
+        <div class="px-6 sm:px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <button (click)="cancel()"
+                class="px-5 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all">
+                Cancel
+            </button>
+
+            <button (click)="save()"
+                    [disabled]="isLocked"
+                    class="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all active:scale-95">
+                    <i class="pi pi-check text-xs mr-2"></i>Save
+            </button>
+        </div>
+
+    </div>
+</div>
