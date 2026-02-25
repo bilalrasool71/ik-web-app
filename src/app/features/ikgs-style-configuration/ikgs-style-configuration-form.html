@@ -63,18 +63,19 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Customer</label>
-                        <p-select formControlName="customer" [options]="customerOptions" placeholder="Select Customer"
-                            class="w-full" styleClass="w-full" />
+                        <p-select optionValue="value" [emptyFilterMessage]="'No Customer Found'" optionLabel="viewValue"
+                            filter="true" formControlName="customer_Id" [options]="allCustomers()"
+                            placeholder="Select Customer" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Style Type</label>
                         <div class="flex items-center gap-4 h-[42px]">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <p-radiobutton formControlName="styleType" value="Garment" />
+                                <p-radiobutton formControlName="config_Type" value="G" />
                                 <span class="text-sm font-medium text-slate-700">Garment</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <p-radiobutton formControlName="styleType" value="Fabric" />
+                                <p-radiobutton formControlName="config_Type" value="F" />
                                 <span class="text-sm font-medium text-slate-700">Fabric</span>
                             </label>
                         </div>
@@ -93,17 +94,19 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Season</label>
-                        <p-select formControlName="season" [options]="seasonOptions" placeholder="Select Season"
-                            class="w-full" styleClass="w-full" />
+                        <p-select formControlName="season_Id" [options]="allSeasons()" optionValue="value"
+                            optionLabel="viewValue" filter="true" [emptyFilterMessage]="'No Season Found'"
+                            placeholder="Select Season" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Gender</label>
-                        <p-select formControlName="gender" [options]="genderOptions" placeholder="Select Gender"
-                            class="w-full" styleClass="w-full" />
+                        <p-select formControlName="gender_Id" (onChange)="getAllProductSubTypes()"
+                            [options]="allGenders()" optionValue="value" optionLabel="viewValue"
+                            placeholder="Select Gender" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Lead Days</label>
-                        <input pInputText type="number" formControlName="leadDays" placeholder="Enter lead days"
+                        <input pInputText type="number" formControlName="lead_Days" placeholder="Enter lead days"
                             class="w-full" />
                     </div>
                 </div>
@@ -112,29 +115,32 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Product Type</label>
-                        <p-select formControlName="productType" [options]="productTypeOptions" placeholder="Select"
-                            class="w-full" styleClass="w-full" />
+                        <p-select formControlName="product_Type_Id" [options]="allProductTypes()" optionValue="value"
+                            optionLabel="viewValue" filter="true" placeholder="Select" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Product Sub
                             Type</label>
-                        <p-select formControlName="productSubType" [options]="productSubTypeOptions"
-                            placeholder="Select" class="w-full" styleClass="w-full" />
+                        <p-select
+                            [disabled]="configForm.get('product_Type_Id')?.value === 0 || configForm.get('gender_Id')?.value === 0"
+                            formControlName="product_Sub_Type_Id" [options]="allProductSubTypes()" optionValue="value"
+                            optionLabel="viewValue" filter="true" placeholder="Select" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric GSM</label>
-                        <input pInputText type="number" formControlName="fabricGSM" placeholder="GSM" class="w-full" />
+                        <input pInputText type="number" formControlName="fabric_Gsm" placeholder="GSM" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment GSM</label>
-                        <input pInputText type="number" formControlName="garmentGSM" placeholder="GSM" class="w-full" />
+                        <input pInputText type="number" formControlName="garment_Gsm" placeholder="GSM"
+                            class="w-full" />
                     </div>
                 </div>
 
                 <!-- Row 4 -->
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Style Description</label>
-                    <textarea pTextarea formControlName="styleDescription" [autoResize]="true" [rows]="3"
+                    <textarea pTextarea formControlName="style_Description" [autoResize]="true" [rows]="3"
                         placeholder="Enter style description..." class="w-full"></textarea>
                 </div>
             </form>
@@ -159,7 +165,7 @@
                             <div class="flex-1 space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
                                 <p-select formControlName="color" [options]="colorOptions" placeholder="Select Color"
-                                    class="w-full" styleClass="w-full" />
+                                    class="w-full" />
                             </div>
                             <button (click)="removeColor(ci)" type="button"
                                 class="px-4 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl hover:bg-red-100 transition-all mt-5"
@@ -190,18 +196,18 @@
                                 <label
                                     class="text-xs font-bold text-slate-600 uppercase tracking-wider">Placement</label>
                                 <p-select formControlName="printPlacement" [options]="placementOptions"
-                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                                    placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Print
                                     Type</label>
                                 <p-select formControlName="printType" [options]="printTypeOptions" placeholder="Select"
-                                    class="w-full" styleClass="w-full" />
+                                    class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Design</label>
                                 <p-select formControlName="printDesign" [options]="designOptions" placeholder="Select"
-                                    class="w-full" styleClass="w-full" />
+                                    class="w-full" />
                             </div>
                         </div>
 
@@ -225,18 +231,18 @@
                                 <label
                                     class="text-xs font-bold text-slate-600 uppercase tracking-wider">Placement</label>
                                 <p-select formControlName="embPlacement" [options]="placementOptions"
-                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                                    placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Emb
                                     Type</label>
                                 <p-select formControlName="embType" [options]="embTypeOptions" placeholder="Select"
-                                    class="w-full" styleClass="w-full" />
+                                    class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Design</label>
                                 <p-select formControlName="embDesign" [options]="designOptions" placeholder="Select"
-                                    class="w-full" styleClass="w-full" />
+                                    class="w-full" />
                             </div>
                         </div>
 
@@ -260,7 +266,7 @@
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment Wash
                                     Type</label>
                                 <p-select formControlName="washType" [options]="washTypeOptions" placeholder="Select"
-                                    class="w-full" styleClass="w-full" />
+                                    class="w-full" />
                             </div>
                         </div>
                     </div>
@@ -296,13 +302,13 @@
                                     <label
                                         class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
                                     <p-select formControlName="color" [options]="colorOptions"
-                                        placeholder="Select Color" class="w-full" styleClass="w-full" />
+                                        placeholder="Select Color" class="w-full" />
                                 </div>
                                 <div class="space-y-1.5">
                                     <label
                                         class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
                                     <p-select formControlName="panel" [options]="panelOptions"
-                                        placeholder="Select Panel" class="w-full" styleClass="w-full" />
+                                        placeholder="Select Panel" class="w-full" />
                                 </div>
                             </div>
                             <button (click)="removePanel(pi)" type="button"
@@ -318,12 +324,12 @@
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel
                                     Size</label>
                                 <p-select formControlName="panelSize" [options]="panelSizeOptions" placeholder="Select"
-                                    class="w-full" styleClass="w-full" />
+                                    class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
                                 <p-select formControlName="fabric" [options]="fabricOptions" placeholder="Select"
-                                    class="w-full" styleClass="w-full" />
+                                    class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel
@@ -351,7 +357,7 @@
                                 <label
                                     class="text-xs font-bold text-slate-600 uppercase tracking-wider">Composition</label>
                                 <p-select formControlName="composition" [options]="compositionOptions"
-                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                                    placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Width
@@ -389,19 +395,19 @@
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric
                                     Color</label>
                                 <p-select formControlName="fabricColor" [options]="fabricColorOptions"
-                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                                    placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5 sm:col-span-2">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Dye Process
                                     Route</label>
                                 <p-select formControlName="dyeProcessRoute" [options]="dyeProcessOptions"
-                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                                    placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Special
                                     Process</label>
                                 <p-select formControlName="specialProcess" [options]="specialProcessOptions"
-                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                                    placeholder="Select" class="w-full" />
                             </div>
                         </div>
 
@@ -425,13 +431,13 @@
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Print
                                     Design</label>
                                 <p-select formControlName="printDesign" [options]="printDesignOptions"
-                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                                    placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Print
                                     Color</label>
                                 <p-select formControlName="printColor" [options]="printColorOptions"
-                                    placeholder="Select" class="w-full" styleClass="w-full" />
+                                    placeholder="Select" class="w-full" />
                             </div>
                         </div>
                     </div>
@@ -460,17 +466,17 @@
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
                         <p-select formControlName="color" [options]="colorOptions" placeholder="Select Color"
-                            class="w-full" styleClass="w-full" />
+                            class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
                         <p-select formControlName="fabric" [options]="fabricOptions" placeholder="Select Fabric"
-                            class="w-full" styleClass="w-full" />
+                            class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
                         <p-select formControlName="panel" [options]="panelOptions" placeholder="Select Panel"
-                            class="w-full" styleClass="w-full" />
+                            class="w-full" />
                     </div>
                 </div>
 
@@ -494,12 +500,12 @@
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fiber</label>
                             <p-select formControlName="fiber" [options]="fiberOptions" placeholder="Select"
-                                class="w-full" styleClass="w-full" />
+                                class="w-full" />
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Consumption</label>
                             <p-select formControlName="consumption" [options]="consumptionOptions" placeholder="Select"
-                                class="w-full" styleClass="w-full" />
+                                class="w-full" />
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Ratio</label>
@@ -539,7 +545,7 @@
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fiber Color</label>
                             <p-select formControlName="fiberColor" [options]="fiberColorOptions" placeholder="Select"
-                                class="w-full" styleClass="w-full" />
+                                class="w-full" />
                         </div>
                     </div>
                     }
@@ -561,17 +567,17 @@
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
                         <p-select formControlName="color" [options]="colorOptions" placeholder="Select Color"
-                            class="w-full" styleClass="w-full" />
+                            class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
                         <p-select formControlName="fabric" [options]="fabricOptions" placeholder="Select Fabric"
-                            class="w-full" styleClass="w-full" />
+                            class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
                         <p-select formControlName="panel" [options]="panelOptions" placeholder="Select Panel"
-                            class="w-full" styleClass="w-full" />
+                            class="w-full" />
                     </div>
                 </div>
 
@@ -622,17 +628,17 @@
         </button>
         <div class="flex items-center gap-3">
             @if(activeStep() > 0) {
-            <button (click)="prevStep()"
+            <button (click)="prevStep()" [disabled]="loading()"
                 class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-xl transition-all">
                 <i class="pi pi-arrow-left text-xs mr-2"></i>Back
             </button>
             }
-            @if(activeStep() < 4) { <button (click)="nextStep()"
+            @if(activeStep() < 4) { <button (click)="nextStep()" [disabled]="loading()"
                 class="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all active:scale-95">
                 Save & Forward<i class="pi pi-arrow-right text-xs ml-2"></i>
                 </button>
                 } @else {
-                <button (click)="save()"
+                <button (click)="save()" [disabled]="loading()"
                     class="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all active:scale-95">
                     <i class="pi pi-check text-xs mr-2"></i>Save
                 </button>

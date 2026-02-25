@@ -7,7 +7,6 @@ import { TagModule } from 'primeng/tag';
 
 @Component({
     selector: 'app-ikgs-style-configuration',
-    standalone: true,
     imports: [CommonModule, RouterLink, TableModule, ButtonModule, TagModule],
     templateUrl: './ikgs-style-configuration.html',
     styleUrl: './ikgs-style-configuration.scss',
