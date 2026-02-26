@@ -20,11 +20,35 @@ export enum EndPoints {
     //#endregion
 
     //#region Catalog
-    AllCustomers = "Customers",
-    AllGenders = "Genders",
-    AllProductTypes = "ProductTypes",
-    AllProductSubTypes = "ProductSubTypes",
-    AllSeasons = "Seasons",
+    AllCustomers = "GetAllCustomers",
+    AllGenders = "GetAllGenders",
+    AllProductTypes = "GetAllProductTypes",
+    AllProductSubTypes = "GetAllProductSubTypes",
+    AllSeasons = "GetAllSeasons",
+    GetAllColors = "GetAllColors",
+    GetAllPlacementsForPrint = "GetAllPlacementsForPrint",
+    GetAllPlacementsForEmbroidery = "GetAllPlacementsForEmbroidery",
+    GetAllPrintTypes = "GetAllPrintTypes",
+    GetAllEmbTypes = "GetAllEmbTypes",
+    GetAllDesignsForPrint = "GetAllDesignsForPrint",
+    GetAllDesignsForEmbroidery = "GetAllDesignsForEmbroidery",
+    GetAllGarmentWashTypes = "GetAllGarmentWashTypes",
+    GetAllPanels = "GetAllPanels",
+    GetAllFabricColors = "GetAllFabricColors",
+    GetAllPrintColors = "GetAllPrintColors",
+    GetAllPanelSizes = "GetAllPanelSizes",
+    GetAllFabricConsumptions = "GetAllFabricConsumptions",
+    GetAllDyeProcessRoute = "GetAllDyeProcessRoute",
+    GetAllSpecialProcesses = "GetAllSpecialProcesses",
+    GetAllFibers = "GetAllFibers",
+    GetAllFiberColors = "GetAllFiberColors",
+    GetAllFiberConsumptions = "GetAllFiberConsumptions",
+    //#endregion
+
+    //#region StyleConfiguration
+    GetAllAddsOnCatalog = "GetAllAddsOnCatalog",
     AddUpdateStyleConfigMain = "AddUpdateStyleConfigMain",
+    AddUpdateStyleConfigColor = "AddUpdateStyleConfigColor",
+    AddUpdateStyleConfigFabric = "AddUpdateStyleConfigFabric"
     //#endregion
 }
