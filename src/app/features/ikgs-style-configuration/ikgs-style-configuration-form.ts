@@ -357,6 +357,24 @@ export class IkgsStyleConfigurationForm {
     allProductTypes: WritableSignal<SelectionValueModel[]> = signal([]);
     allProductSubTypes: WritableSignal<SelectionValueModel[]> = signal([]);
     allSeasons: WritableSignal<SelectionValueModel[]> = signal([]);
+    allColors: WritableSignal<SelectionValueModel[]> = signal([]);
+    allPlacementsForPrint: WritableSignal<SelectionValueModel[]> = signal([]);
+    allPlacementsForEmbroidery: WritableSignal<SelectionValueModel[]> = signal([]);
+    allPrintTypes: WritableSignal<SelectionValueModel[]> = signal([]);
+    allEmbTypes: WritableSignal<SelectionValueModel[]> = signal([]);
+    allDesignsForPrint: WritableSignal<SelectionValueModel[]> = signal([]);
+    allDesignsForEmbriodery: WritableSignal<SelectionValueModel[]> = signal([]);
+    allGarmentWashTypes: WritableSignal<SelectionValueModel[]> = signal([]);
+    allPanels: WritableSignal<SelectionValueModel[]> = signal([]);
+    allFabricColors: WritableSignal<SelectionValueModel[]> = signal([]);
+    allPrintColors: WritableSignal<SelectionValueModel[]> = signal([]);
+    allPanelSizes: WritableSignal<SelectionValueModel[]> = signal([]);
+    allFabricConumptions: WritableSignal<SelectionValueModel[]> = signal([]);
+    allDyeProcessRoutes: WritableSignal<SelectionValueModel[]> = signal([]);
+    allSpecialProcess: WritableSignal<SelectionValueModel[]> = signal([]);
+    allFibers: WritableSignal<SelectionValueModel[]> = signal([]);
+    allFiberColors: WritableSignal<SelectionValueModel[]> = signal([]);
+    allFiberConsumptions: WritableSignal<SelectionValueModel[]> = signal([]);
 
 
 
@@ -462,6 +480,247 @@ export class IkgsStyleConfigurationForm {
             });
     }
 
+    getAllColors() {
+        this.allColors.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllColors;
+
+        this.restService
+            .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allColors.set(result.Data);
+                }
+            });
+    }
+
+
+    getAllPlacementsForPrint() {
+        this.allPlacementsForPrint.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllPlacementsForPrint;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allPlacementsForPrint.set(result.Data);
+                }
+            });
+    }
+
+    getAllPlacementsForEmbroidery() {
+        this.allPlacementsForEmbroidery.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllPlacementsForEmbroidery;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allPlacementsForEmbroidery.set(result.Data);
+                }
+            });
+    }
+
+    getAllPrintTypes() {
+        this.allPrintTypes.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllPrintTypes;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allPrintTypes.set(result.Data);
+                }
+            });
+    }
+
+    getAllEmbTypes() {
+        this.allEmbTypes.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllEmbTypes;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allEmbTypes.set(result.Data);
+                }
+            });
+    }
+    getAllDesignsForPrint() {
+        this.allDesignsForPrint.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllDesignsForPrint;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allDesignsForPrint.set(result.Data);
+                }
+            });
+    }
+
+    getAllDesignsForEmbroidery() {
+        this.allDesignsForEmbriodery.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllDesignsForEmbroidery;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allDesignsForEmbriodery.set(result.Data);
+                }
+            });
+    }
+
+
+    getAllGarmentWashTypes() {
+        this.allGarmentWashTypes.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllGarmentWashTypes;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allGarmentWashTypes.set(result.Data);
+                }
+            });
+    }
+
+    getAllPanels() {
+        this.allPanels.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllPanels;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allPanels.set(result.Data);
+                }
+            });
+    }
+
+    getAllFabricColors() {
+        this.allFabricColors.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllFabricColors;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allFabricColors.set(result.Data);
+                }
+            });
+    }
+
+    getAllPrintColors() {
+        this.allPrintColors.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllPrintColors;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allPrintColors.set(result.Data);
+                }
+            });
+    }
+
+    getAllDyeProcessRoutes() {
+        this.allDyeProcessRoutes.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllDyeProcessRoute;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allDyeProcessRoutes.set(result.Data);
+                }
+            });
+    }
+
+    getAllSpecialProcess() {
+        this.allSpecialProcess.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllSpecialProcesses;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allSpecialProcess.set(result.Data);
+                }
+            });
+    }
+
+    getAllFibers() {
+        this.allFibers.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllFibers;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allFibers.set(result.Data);
+                }
+            });
+    }
+
+    getAllFiberColors() {
+        this.allFiberColors.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllFiberColors;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allFiberColors.set(result.Data);
+                }
+            });
+    }
+
+    getAllFiberConsumptions() {
+        this.allFiberConsumptions.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllFiberConsumptions;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allFiberConsumptions.set(result.Data);
+                }
+            });
+    }
 
     addUpdateStyleConfigMain() {
         this.loading.set(true);
