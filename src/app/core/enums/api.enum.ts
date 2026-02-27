@@ -43,6 +43,7 @@ export enum EndPoints {
     GetAllFibers = "GetAllFibers",
     GetAllFiberColors = "GetAllFiberColors",
     GetAllFiberConsumptions = "GetAllFiberConsumptions",
+    GetAllStyle = "GetAllStyle",
     //#endregion
 
     //#region StyleConfiguration

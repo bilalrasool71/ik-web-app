@@ -12,7 +12,6 @@ import { SelectionValueModel } from '../../models/common/selection-value.model';
 import { ApiOptionsModel, ApiResponseModel } from '../../core/models/api.model';
 import { EndPoints, Repository, RequestType } from '../../core/enums/api.enum';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import { single } from 'rxjs';
 
 
 @Component({
@@ -252,7 +251,7 @@ export class IkgsWorkOrderForm implements OnInit {
   }
 
 
-
+  //allStyle: WritableSignal<SelectionValueModel[]>
   allCustomers: WritableSignal<SelectionValueModel[]> = signal([]);
   allColors: WritableSignal<SelectionValueModel[]> = signal([]);
   allSizes:WritableSignal<SelectionValueModel[]> = signal([]);
@@ -274,8 +273,13 @@ export class IkgsWorkOrderForm implements OnInit {
 
   callCatalogApis() {
     this.getAllCustomers();
-    //this.getAllColors();
+    this.getAllColors();
     this.getAllSizes();
+  }
+
+
+  getAllStyle() {
+
   }
 
   getAllCustomers() {

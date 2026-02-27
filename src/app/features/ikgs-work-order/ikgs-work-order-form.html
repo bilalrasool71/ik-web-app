@@ -141,7 +141,7 @@
 
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
-                                <p-select appendTo="body" formControlName="color" [options]="colorOptions" filter="true"
+                                <p-select appendTo="body" formControlName="color" [options]="allColors()" filter="true" optionLabel="viewValue" optionValue="value"
                                     [emptyFilterMessage]="'No Color Found'" placeholder="Select Color" class="w-full">
                                 </p-select>
                             </div>
