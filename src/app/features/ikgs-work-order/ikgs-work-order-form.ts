@@ -12,6 +12,7 @@ import { SelectionValueModel } from '../../models/common/selection-value.model';
 import { ApiOptionsModel, ApiResponseModel } from '../../core/models/api.model';
 import { EndPoints, Repository, RequestType } from '../../core/enums/api.enum';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { single } from 'rxjs';
 
 
 @Component({
@@ -54,8 +55,8 @@ export class IkgsWorkOrderForm implements OnInit {
 
 
   workOrderForm: FormGroup;
-
   isLocked: boolean = false;
+  minDate!: Date;
 
 
   constructor(private fb: FormBuilder, private router: Router) {
@@ -106,18 +107,47 @@ export class IkgsWorkOrderForm implements OnInit {
 
 
   addPurchaseOrder(): void {
-    
-    //this.purchaseOrderArray.push(this.createPurchaseOrderRow());
 
     const group = this.createPurchaseOrderRow();
+
+
+    if (this.purchaseOrderArray.length > 0) {
+      const firstRow = this.purchaseOrderArray.at(0) as FormGroup;
+      const firstPurchaseOrderValue = firstRow.get('purchaseOrder')?.value;
+
+      if (firstPurchaseOrderValue) {
+        group.get('purchaseOrder')?.setValue(firstPurchaseOrderValue);
+      }
+    }
+
+
+    const wasteFields: string[] = [
+      'knitting_Waste',
+      'Dyeing_Waste',
+      'Cutting_Waste',
+      'Printing_Waste',
+      'Embroidery_Waste',
+      'GWP_Laundry_Waste',
+      'Sewing_Waste'
+    ];
+
+    wasteFields.forEach(field => {
+      const mainValue = this.workOrderForm.get(field)?.value;
+      const colorField = 'color_' + field;
+
+      if (mainValue > 0 && group.get(colorField)) {
+        group.get(colorField)?.setValue(mainValue, { emitEvent: false });
+      }
+    });
+
+
     this.purchaseOrderArray.push(group);
     this.setupColorToMainSync(group);
   }
 
-
   setupMainToColorSync() {
 
-    const wasteFields = [
+    const wasteFields: string[] = [
       'knitting_Waste',
       'Dyeing_Waste',
       'Cutting_Waste',
@@ -155,7 +185,7 @@ export class IkgsWorkOrderForm implements OnInit {
 
   setupColorToMainSync(group: FormGroup) {
 
-    const wasteFields = [
+    const wasteFields: string[] = [
       'knitting_Waste',
       'Dyeing_Waste',
       'Cutting_Waste',
@@ -210,25 +240,6 @@ export class IkgsWorkOrderForm implements OnInit {
   }
 
 
-
-  allCustomers: WritableSignal<SelectionValueModel[]> = signal([]);
-
-
-  ngOnInit() {
-
-    this.callCatalogApis();
-
-    this.setupMainToColorSync();
-    this.purchaseOrderArray.controls.forEach(group => {
-      this.setupColorToMainSync(group as FormGroup);
-    });
-
-  }
-
-
-
-
-
   onWasteInput(field: string, event: any) {
     let value = event.target.value;
 
@@ -240,8 +251,31 @@ export class IkgsWorkOrderForm implements OnInit {
     }
   }
 
+
+
+  allCustomers: WritableSignal<SelectionValueModel[]> = signal([]);
+  allColors: WritableSignal<SelectionValueModel[]> = signal([]);
+  allSizes:WritableSignal<SelectionValueModel[]> = signal([]);
+
+
+  ngOnInit() {
+
+    this.callCatalogApis();
+
+    this.setupMainToColorSync();
+    this.purchaseOrderArray.controls.forEach(group => {
+      this.setupColorToMainSync(group as FormGroup);
+    });
+
+    this.minDate = new Date();
+
+  }
+
+
   callCatalogApis() {
     this.getAllCustomers();
+    //this.getAllColors();
+    this.getAllSizes();
   }
 
   getAllCustomers() {
@@ -254,7 +288,38 @@ export class IkgsWorkOrderForm implements OnInit {
       .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
       .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
         if (result?.Code === 200 && result.Data) {
-          this.allCustomers.set(result.Data)
+          this.allCustomers.set(result.Data);
+        }
+      })
+  }
+
+
+  getAllColors() {
+    this.allColors.set([]);
+    let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+    authApiOpts.RequestType = RequestType.GET;
+    authApiOpts.Repository = Repository.Catalog;
+    authApiOpts.EndPoint = EndPoints.GetAllColors;
+    this.restService
+      .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+      .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
+        if (result?.Code === 200 && result.Data) {
+          this.allColors.set(result.Data);
+        }
+      })
+  }
+
+  getAllSizes() {
+    this.allSizes.set([]);
+    let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+    authApiOpts.RequestType = RequestType.GET;
+    authApiOpts.Repository = Repository.Catalog;
+    authApiOpts.EndPoint = EndPoints.GetAllPanelSizes;
+    this.restService
+      .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+      .subscribe((result: ApiResponseModel<SelectionValueModel[]>) =>{
+        if (result?.Code === 200 && result.Data) {
+          this.allSizes.set(result.Data);
         }
       })
   }

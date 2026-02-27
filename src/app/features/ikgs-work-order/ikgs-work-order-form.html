@@ -46,9 +46,9 @@
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Date <br></label>
                         <p-datepicker appendTo="body" formControlName="date" [showIcon]="true" dateFormat="dd/mm/yy"
-                            class="w-full" placeholder="Choose a Date"></p-datepicker>
+                            class="w-full" placeholder="Choose a Date" [minDate]="minDate"></p-datepicker>
                     </div>
-                    
+
 
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Wastages</label>
@@ -56,44 +56,45 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
 
                             <p-floatlabel variant="on">
-                                <label>Knitting</label>
+                                <label class="text-xs">Knitting</label>
                                 <input pInputText pSize="small" type="number" formControlName="knitting_Waste"
-                                class="w-full"  min="1" max="100" (input)="onWasteInput('knitting_Waste', $event)">
+                                    class="w-full" min="1" max="100" (input)="onWasteInput('knitting_Waste', $event)">
                             </p-floatlabel>
 
 
                             <p-floatlabel variant="on">
-                                <label>Dyeing</label>
+                                <label class="text-xs">Dyeing</label>
                                 <input pInputText pSize="small" type="number" formControlName="Dyeing_Waste"
                                     class="w-full" min="1" max="100" (input)="onWasteInput('Dyeing_Waste', $event)">
                             </p-floatlabel>
 
                             <p-floatlabel variant="on">
-                                <label>Cutting</label>
+                                <label class="text-xs">Cutting</label>
                                 <input pInputText pSize="small" type="number" formControlName="Cutting_Waste"
                                     class="w-full" min="1" max="100" (input)="onWasteInput('Cutting_Waste', $event)">
                             </p-floatlabel>
 
                             <p-floatlabel variant="on">
-                                <label>Printing</label>
+                                <label class="text-xs">Printing</label>
                                 <input pInputText pSize="small" type="number" formControlName="Printing_Waste"
                                     class="w-full" min="1" max="100" (input)="onWasteInput('Printing_Waste', $event)">
                             </p-floatlabel>
 
                             <p-floatlabel variant="on">
-                                <label>Embroidery</label>
+                                <label class="text-xs">Embroidery</label>
                                 <input pInputText pSize="small" type="number" formControlName="Embroidery_Waste"
                                     class="w-full" min="1" max="100" (input)="onWasteInput('Embroidery_Waste', $event)">
                             </p-floatlabel>
 
                             <p-floatlabel variant="on">
-                                <label>GWP/Laundry</label>
+                                <label class="text-xs">GWP/Laundry</label>
                                 <input pInputText pSize="small" type="number" formControlName="GWP_Laundry_Waste"
-                                    class="w-full" min="1" max="100" (input)="onWasteInput('GWP_Laundry_Waste', $event)">
+                                    class="w-full" min="1" max="100"
+                                    (input)="onWasteInput('GWP_Laundry_Waste', $event)">
                             </p-floatlabel>
 
                             <p-floatlabel variant="on">
-                                <label>Sewing</label>
+                                <label class="text-xs">Sewing</label>
                                 <input pInputText pSize="small" type="number" formControlName="Sewing_Waste"
                                     class="w-full" min="1" max="100" (input)="onWasteInput('Sewing_Waste', $event)">
                             </p-floatlabel>
@@ -110,43 +111,39 @@
 
                         <hr class="border-t border-slate-200 my-4">
 
-                         <div class="flex items-end gap-2 pb-1">
+                        <div class="flex items-end gap-2 pb-1">
 
-                                <button type="button" (click)="removePurchaseOrder(pOi)"
-                                    [disabled]="purchaseOrderArray.length <= 1 || isLocked"
-                                    class="w-9 h-9 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-all">
-                                    <i class="pi pi-minus text-xs"></i>
-                                </button>
+                            <button type="button" (click)="removePurchaseOrder(pOi)"
+                                [disabled]="purchaseOrderArray.length <= 1 || isLocked"
+                                class="w-9 h-9 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-all">
+                                <i class="pi pi-minus text-xs"></i>
+                            </button>
 
-                                <button *ngIf="pOi === purchaseOrderArray.length - 1" type="button"
-                                    (click)="addPurchaseOrder()" [disabled]="isLocked"
-                                    class="w-9 h-9 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-all">
-                                    <i class="pi pi-plus text-xs"></i>
-                                </button>
+                            <button *ngIf="pOi === purchaseOrderArray.length - 1" type="button"
+                                (click)="addPurchaseOrder()" [disabled]="isLocked"
+                                class="w-9 h-9 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-all">
+                                <i class="pi pi-plus text-xs"></i>
+                            </button>
 
-                            </div>
-
-
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        </div>
 
 
-                           
 
-
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Purchase
                                     Order</label>
-                                <input pInputText type="number" formControlName="purchaseOrder"
-                                    placeholder="Enter Purchase Order Number" class="w-full" />
+                                <input pInputText type="text" formControlName="purchaseOrder"
+                                    placeholder="Enter Purchase Order" class="w-full" />
                             </div>
 
 
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
-                                <p-select appendTo="body" formControlName="color" [options]="colorOptions"
-                                    placeholder="Select Color" class="w-full"></p-select>
+                                <p-select appendTo="body" formControlName="color" [options]="colorOptions" filter="true"
+                                    [emptyFilterMessage]="'No Color Found'" placeholder="Select Color" class="w-full">
+                                </p-select>
                             </div>
 
 
@@ -154,40 +151,42 @@
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Shipment Date
                                     <br></label>
                                 <p-datepicker appendTo="body" formControlName="shipmentDate" [showIcon]="true"
-                                    class="w-full" dateFormat="dd/mm/yy"
-                                    placeholder="Choose a Shipment Date"></p-datepicker>
+                                    class="w-full" dateFormat="dd/mm/yy" placeholder="Choose a Shipment Date"
+                                    [minDate]="minDate"></p-datepicker>
                             </div>
 
                         </div>
 
                         <div *ngIf="purchaseOrderCtrl.get('color')?.value"
-                              class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-9 gap-5">
 
                             <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Size <br></label>
-                                <input pInputText type="number" formControlName="colorSize"
-                                    placeholder="Enter Size Number" class="w-full"/>
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Size
+                                    <br></label>
+                                <p-select appendTo="body" formControlName="colorSize" [options]="allSizes()"
+                                    optionLabel="viewValue" optionValue="value" placeholder="Select Size" filter="true"
+                                    [emptyFilterMessage]="'No Size Found'" class="w-full">
+                                </p-select>
                             </div>
 
                             <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Detail <br></label>
-                                <input pInputText type="number" formControlName="colorDetail"
-                                    placeholder="Enter Detail Pieces Number" class="w-full" />
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Pieces</label>
+                                <input pInputText type="number" formControlName="colorDetail" placeholder="Enter Pieces"
+                                    class="w-full" />
                             </div>
 
 
                             <div *ngIf="
                                         workOrderForm.get('knitting_Waste')?.value > 0 ||
                                         purchaseOrderCtrl.get('color_knitting_Waste')?.value
-                                        " 
-                                    class="space-y-1.5">
+                                        " class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Knitting
-                                    Waste <br></label>
+                                    Waste</label>
                                 <input pInputText type="number" formControlName="color_knitting_Waste"
                                     placeholder="Enter Number" class="w-full" />
                             </div>
-                            
-                            
+
+
                             <div *ngIf="
                                         workOrderForm.get('Dyeing_Waste')?.value > 0 ||
                                         purchaseOrderCtrl.get('color_Dyeing_Waste')?.value
@@ -218,7 +217,7 @@
                                     placeholder="Enter Number" class="w-full" />
                             </div>
 
-                       
+
 
                             <div *ngIf="
                                         workOrderForm.get('Embroidery_Waste')?.value > 0 ||
@@ -234,7 +233,8 @@
                                         workOrderForm.get('GWP_Laundry_Waste')?.value > 0 ||
                                         purchaseOrderCtrl.get('color_GWP_Laundry_Waste')?.value
                                        " class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">GWP/Laundry
+                                <label
+                                    class="text-xs font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap">GWP/Laundry
                                     Waste</label>
                                 <input pInputText type="number" formControlName="color_GWP_Laundry_Waste"
                                     placeholder="Enter Number" class="w-full" />
