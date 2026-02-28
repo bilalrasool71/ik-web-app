@@ -30,7 +30,8 @@
 
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Style</label>
-                        <p-select appendTo="body" formControlName="style" [options]="styleOptions"
+                        <p-select appendTo="body" formControlName="style" [options]="allStyle()" filter="true"
+                            optionLabel="viewValue" optionValue="value" [emptyFilterMessage]="'No Style Found'"
                             placeholder="Select Style" class="w-full" styleClass="w-full"></p-select>
                     </div>
 
@@ -44,9 +45,11 @@
                     </div>
 
                     <div class="space-y-1.5">
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Date <br></label>
-                        <p-datepicker appendTo="body" formControlName="date" [showIcon]="true" dateFormat="dd/mm/yy"
-                            class="w-full" placeholder="Choose a Date" [minDate]="minDate"></p-datepicker>
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Order Receiving Date
+                            <br></label>
+                        <p-datepicker appendTo="body" formControlName="orderReceivingDate" [showIcon]="true"
+                            dateFormat="dd/mm/yy" class="w-full"
+                            placeholder="Choose Order Receiving Date"></p-datepicker>
                     </div>
 
 
@@ -113,13 +116,13 @@
 
                         <div class="flex items-end gap-2 pb-1">
 
-                            <button type="button" (click)="removePurchaseOrder(pOi)"
-                                [disabled]="purchaseOrderArray.length <= 1 || isLocked"
+                            <button *ngIf="purchaseOrderArray.length > 1" type="button"
+                                (click)="removePurchaseOrder(pOi)" [disabled]="isLocked"
                                 class="w-9 h-9 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-all">
                                 <i class="pi pi-minus text-xs"></i>
                             </button>
 
-                            <button *ngIf="pOi === purchaseOrderArray.length - 1" type="button"
+                            <button *ngIf="pOi === purchaseOrderArray.length - 1 && isRowValid(pOi)" type="button"
                                 (click)="addPurchaseOrder()" [disabled]="isLocked"
                                 class="w-9 h-9 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-all">
                                 <i class="pi pi-plus text-xs"></i>
@@ -141,8 +144,10 @@
 
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
-                                <p-select appendTo="body" formControlName="color" [options]="allColors()" filter="true" optionLabel="viewValue" optionValue="value"
-                                    [emptyFilterMessage]="'No Color Found'" placeholder="Select Color" class="w-full">
+                                <p-select appendTo="body" formControlName="color" [options]="allColors()" filter="true"
+                                    optionLabel="viewValue" optionValue="value" [emptyFilterMessage]="'No Color Found'"
+                                    placeholder="Select Color" class="w-full" [virtualScroll]="true"
+                                    [virtualScrollItemSize]="30">
                                 </p-select>
                             </div>
 
@@ -158,22 +163,57 @@
                         </div>
 
                         <div *ngIf="purchaseOrderCtrl.get('color')?.value"
-                            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-9 gap-5">
+                            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-5">
 
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Size
-                                    <br></label>
-                                <p-select appendTo="body" formControlName="colorSize" [options]="allSizes()"
-                                    optionLabel="viewValue" optionValue="value" placeholder="Select Size" filter="true"
-                                    [emptyFilterMessage]="'No Size Found'" class="w-full">
-                                </p-select>
+
+
+                            <div formArrayName="sizes" class="col-span-9 space-y-4">
+
+                                <div *ngFor="let sizeCtrl of getSizesArray(getPurchaseOrderGroup(pOi)).controls; let si = index"
+                                    [formGroupName]="si"
+                                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+
+                                   
+                                    <div class="space-y-1.5">
+                                        <label
+                                            class="text-xs font-bold text-slate-600 uppercase tracking-wider">Size</label>
+                                        <p-select appendTo="body" formControlName="colorSize" [options]="allSizes()"
+                                            optionLabel="viewValue" optionValue="value" placeholder="Select Size"
+                                            filter="true" class="w-full">
+                                        </p-select>
+                                    </div>
+
+                                  
+                                    <div class="space-y-1.5">
+                                        <label
+                                            class="text-xs font-bold text-slate-600 uppercase tracking-wider">Pieces</label>
+                                        <input pInputText type="number" formControlName="colorPieces"
+                                            placeholder="Enter Pieces" class="w-full" />
+                                    </div>
+
+                                  
+                                    <div class="flex gap-2">
+
+                                      
+                                        <button *ngIf="getSizesArray(getPurchaseOrderGroup(pOi)).length > 1"
+                                            type="button" (click)="removeSize(getPurchaseOrderGroup(pOi), si)"
+                                            class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-all">
+                                            <i class="pi pi-minus text-xs"></i>
+                                        </button>
+
+                                       
+                                        <button *ngIf="si === getSizesArray(getPurchaseOrderGroup(pOi)).length - 1"
+                                            type="button" (click)="addSize(getPurchaseOrderGroup(pOi))"
+                                            class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-all">
+                                            <i class="pi pi-plus text-xs"></i>
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
                             </div>
 
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Pieces</label>
-                                <input pInputText type="number" formControlName="colorDetail" placeholder="Enter Pieces"
-                                    class="w-full" />
-                            </div>
 
 
                             <div *ngIf="
@@ -256,7 +296,9 @@
             </form>
         </div>
 
-        <!-- Footer Action -->
+
+
+
         <div class="px-6 sm:px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <button (click)="cancel()"
                 class="px-5 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all">

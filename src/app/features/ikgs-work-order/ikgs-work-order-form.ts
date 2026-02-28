@@ -28,31 +28,6 @@ export class IkgsWorkOrderForm implements OnInit {
   messageService = inject(MessageService);
   loading = signal(false);
 
-
-  //Dummy Data
-  styleOptions = [
-    { label: 'style 1', value: 'style 1' },
-    { label: 'style 2', value: 'style 2' },
-    { label: 'style 3', value: 'style 3' },
-    { label: 'style 4', value: 'style 4' },
-  ];
-
-  customerOptions = [
-    { label: 'customer 1', value: 'customer 1' },
-    { label: 'customer 2', value: 'customer 2' },
-    { label: 'customer 3', value: 'customer 3' },
-    { label: 'customer 4', value: 'customer 4' },
-  ]
-
-  colorOptions = [
-    { label: 'color 1', value: 'color 1' },
-    { label: 'color 2', value: 'color 2' },
-    { label: 'color 3', value: 'color 3' },
-    { label: 'color 4', value: 'color 4' },
-  ]
-
-
-
   workOrderForm: FormGroup;
   isLocked: boolean = false;
   minDate!: Date;
@@ -64,7 +39,7 @@ export class IkgsWorkOrderForm implements OnInit {
 
       style: [null, Validators.required],
       customer: [null, Validators.required],
-      date: [null, Validators.required],
+      orderReceivingDate: [null, Validators.required],
 
       knitting_Waste: [null],
       Dyeing_Waste: [null],
@@ -87,8 +62,7 @@ export class IkgsWorkOrderForm implements OnInit {
       color: [null, Validators.required],
       shipmentDate: [null, Validators.required],
 
-      colorSize: [null, Validators.required],
-      colorDetail: [null, Validators.required],
+      sizes: this.fb.array([this.createSizeRow()]),
 
       color_knitting_Waste: [null, Validators.required],
       color_Dyeing_Waste: [null, Validators.required],
@@ -100,22 +74,59 @@ export class IkgsWorkOrderForm implements OnInit {
     })
   }
 
+
+
+  
+  createSizeRow(): FormGroup {
+    return this.fb.group({
+      colorSize: [null, Validators.required],
+      colorPieces: [null, Validators.required],
+    });
+  }
+  
+  
+  
+  getPurchaseOrderGroup(index: number): FormGroup {
+    return this.purchaseOrderArray.at(index) as FormGroup;
+  }
+  
+  getSizesArray(group: FormGroup): FormArray {
+    return group.get('sizes') as FormArray;
+  }
+  
+  addSize(group: FormGroup) {
+    this.getSizesArray(group).push(this.createSizeRow());
+  }
+  
+  removeSize(group: FormGroup, index: number) {
+    if (this.getSizesArray(group).length > 1) {
+      this.getSizesArray(group).removeAt(index);
+    }
+  }
+  
+  
+  
+  
   get purchaseOrderArray(): FormArray {
     return this.workOrderForm.get('purchaseOrder') as FormArray;
   }
-
-
+  
   addPurchaseOrder(): void {
 
     const group = this.createPurchaseOrderRow();
 
-
     if (this.purchaseOrderArray.length > 0) {
       const firstRow = this.purchaseOrderArray.at(0) as FormGroup;
+      const firstDate = this.purchaseOrderArray.at(0) as FormGroup;
+
       const firstPurchaseOrderValue = firstRow.get('purchaseOrder')?.value;
+      const firstShipmentDate = firstDate.get('shipmentDate')?.value;
 
       if (firstPurchaseOrderValue) {
         group.get('purchaseOrder')?.setValue(firstPurchaseOrderValue);
+      }
+      if (firstShipmentDate) {
+        group.get('shipmentDate')?.setValue(firstShipmentDate);
       }
     }
 
@@ -142,6 +153,13 @@ export class IkgsWorkOrderForm implements OnInit {
 
     this.purchaseOrderArray.push(group);
     this.setupColorToMainSync(group);
+  }
+
+
+  removePurchaseOrder(index: number): void {
+    if (this.purchaseOrderArray.length > 1) {
+      this.purchaseOrderArray.removeAt(index);
+    }
   }
 
   setupMainToColorSync() {
@@ -210,10 +228,13 @@ export class IkgsWorkOrderForm implements OnInit {
 
   }
 
-  removePurchaseOrder(index: number): void {
-    if (this.purchaseOrderArray.length > 1) {
-      this.purchaseOrderArray.removeAt(index);
-    }
+
+
+
+
+  isRowValid(index: number): boolean {
+    const group = this.purchaseOrderArray.at(index) as FormGroup;
+    return group.valid;
   }
 
 
@@ -224,6 +245,17 @@ export class IkgsWorkOrderForm implements OnInit {
       this.workOrderForm.disable();
     } else {
       this.workOrderForm.enable();
+    }
+  }
+
+  onWasteInput(field: string, event: any) {
+    let value = event.target.value;
+
+    if (!value) return;
+    const num = Number(value);
+    if (num <= 0 || num > 100) {
+
+      this.workOrderForm.get(field)?.setValue('', { emitEvent: false });
     }
   }
 
@@ -239,22 +271,10 @@ export class IkgsWorkOrderForm implements OnInit {
   }
 
 
-  onWasteInput(field: string, event: any) {
-    let value = event.target.value;
-
-    if (!value) return;
-    const num = Number(value);
-    if (num <= 0 || num > 100) {
-
-      this.workOrderForm.get(field)?.setValue('', { emitEvent: false });
-    }
-  }
-
-
-  //allStyle: WritableSignal<SelectionValueModel[]>
+  allStyle: WritableSignal<SelectionValueModel[]> = signal([]);
   allCustomers: WritableSignal<SelectionValueModel[]> = signal([]);
   allColors: WritableSignal<SelectionValueModel[]> = signal([]);
-  allSizes:WritableSignal<SelectionValueModel[]> = signal([]);
+  allSizes: WritableSignal<SelectionValueModel[]> = signal([]);
 
 
   ngOnInit() {
@@ -272,6 +292,7 @@ export class IkgsWorkOrderForm implements OnInit {
 
 
   callCatalogApis() {
+    this.getAllStyle();
     this.getAllCustomers();
     this.getAllColors();
     this.getAllSizes();
@@ -279,8 +300,20 @@ export class IkgsWorkOrderForm implements OnInit {
 
 
   getAllStyle() {
-
+    this.allStyle.set([]);
+    let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+    authApiOpts.RequestType = RequestType.GET;
+    authApiOpts.Repository = Repository.Catalog;
+    authApiOpts.EndPoint = EndPoints.GetAllStyle;
+    this.restService
+      .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+      .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
+        if (result?.Code === 200 && result.Data) {
+          this.allStyle.set(result.Data);
+        }
+      })
   }
+
 
   getAllCustomers() {
     this.allCustomers.set([]);
@@ -313,6 +346,7 @@ export class IkgsWorkOrderForm implements OnInit {
       })
   }
 
+
   getAllSizes() {
     this.allSizes.set([]);
     let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
@@ -321,7 +355,7 @@ export class IkgsWorkOrderForm implements OnInit {
     authApiOpts.EndPoint = EndPoints.GetAllPanelSizes;
     this.restService
       .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
-      .subscribe((result: ApiResponseModel<SelectionValueModel[]>) =>{
+      .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
         if (result?.Code === 200 && result.Data) {
           this.allSizes.set(result.Data);
         }
