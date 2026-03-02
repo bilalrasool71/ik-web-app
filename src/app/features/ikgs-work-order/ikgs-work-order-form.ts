@@ -12,6 +12,7 @@ import { SelectionValueModel } from '../../models/common/selection-value.model';
 import { ApiOptionsModel, ApiResponseModel } from '../../core/models/api.model';
 import { EndPoints, Repository, RequestType } from '../../core/enums/api.enum';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { WorkOrderDto } from '../../models/domain/work-order.model';
 
 
 @Component({
@@ -37,7 +38,7 @@ export class IkgsWorkOrderForm implements OnInit {
 
     this.workOrderForm = this.fb.group({
 
-      style: [null, Validators.required],
+      style_Id: [null, Validators.required],
       customer: [null, Validators.required],
       orderReceivingDate: [null, Validators.required],
 
@@ -64,6 +65,18 @@ export class IkgsWorkOrderForm implements OnInit {
 
       sizes: this.fb.array([this.createSizeRow()]),
 
+    })
+  }
+
+
+
+
+  createSizeRow(): FormGroup {
+    return this.fb.group({
+      colorSize: [null, Validators.required],
+      colorPieces: [null, Validators.required],
+
+
       color_knitting_Waste: [null, Validators.required],
       color_Dyeing_Waste: [null, Validators.required],
       color_Cutting_Waste: [null, Validators.required],
@@ -71,65 +84,28 @@ export class IkgsWorkOrderForm implements OnInit {
       color_Embroidery_Waste: [null, Validators.required],
       color_GWP_Laundry_Waste: [null, Validators.required],
       color_Sewing_Waste: [null, Validators.required],
-    })
-  }
 
-
-
-  
-  createSizeRow(): FormGroup {
-    return this.fb.group({
-      colorSize: [null, Validators.required],
-      colorPieces: [null, Validators.required],
     });
   }
-  
-  
-  
+
+
+
   getPurchaseOrderGroup(index: number): FormGroup {
     return this.purchaseOrderArray.at(index) as FormGroup;
   }
-  
+
   getSizesArray(group: FormGroup): FormArray {
     return group.get('sizes') as FormArray;
   }
-  
+
+
+
+
   addSize(group: FormGroup) {
-    this.getSizesArray(group).push(this.createSizeRow());
-  }
-  
-  removeSize(group: FormGroup, index: number) {
-    if (this.getSizesArray(group).length > 1) {
-      this.getSizesArray(group).removeAt(index);
-    }
-  }
-  
-  
-  
-  
-  get purchaseOrderArray(): FormArray {
-    return this.workOrderForm.get('purchaseOrder') as FormArray;
-  }
-  
-  addPurchaseOrder(): void {
 
-    const group = this.createPurchaseOrderRow();
+    const newSize = this.createSizeRow();
 
-    if (this.purchaseOrderArray.length > 0) {
-      const firstRow = this.purchaseOrderArray.at(0) as FormGroup;
-      const firstDate = this.purchaseOrderArray.at(0) as FormGroup;
-
-      const firstPurchaseOrderValue = firstRow.get('purchaseOrder')?.value;
-      const firstShipmentDate = firstDate.get('shipmentDate')?.value;
-
-      if (firstPurchaseOrderValue) {
-        group.get('purchaseOrder')?.setValue(firstPurchaseOrderValue);
-      }
-      if (firstShipmentDate) {
-        group.get('shipmentDate')?.setValue(firstShipmentDate);
-      }
-    }
-
+    (group.get('sizes') as FormArray).push(newSize);
 
     const wasteFields: string[] = [
       'knitting_Waste',
@@ -142,17 +118,87 @@ export class IkgsWorkOrderForm implements OnInit {
     ];
 
     wasteFields.forEach(field => {
+
       const mainValue = this.workOrderForm.get(field)?.value;
       const colorField = 'color_' + field;
 
-      if (mainValue > 0 && group.get(colorField)) {
-        group.get(colorField)?.setValue(mainValue, { emitEvent: false });
+      if (mainValue > 0) {
+        newSize.get(colorField)?.setValue(mainValue, { emitEvent: false });
       }
+
     });
 
+    this.setupColorToMainSync(newSize);
+
+  }
+
+  removeSize(group: FormGroup, index: number) {
+    if (this.getSizesArray(group).length > 1) {
+      this.getSizesArray(group).removeAt(index);
+    }
+  }
+
+
+  isMainFieldsValid(index: number): boolean {
+    const group = this.purchaseOrderArray.at(index) as FormGroup;
+    return !!group.get('purchaseOrder')?.value &&
+      !!group.get('color')?.value &&
+      !!group.get('shipmentDate')?.value;
+  }
+
+  get purchaseOrderArray(): FormArray {
+    return this.workOrderForm.get('purchaseOrder') as FormArray;
+  }
+
+
+
+  addPurchaseOrder(): void {
+
+    const group = this.createPurchaseOrderRow();
+
+    if (this.purchaseOrderArray.length > 0) {
+
+      const firstRow = this.purchaseOrderArray.at(0) as FormGroup;
+
+      const firstPurchaseOrderValue = firstRow.get('purchaseOrder')?.value;
+      const firstShipmentDate = firstRow.get('shipmentDate')?.value;
+
+      if (firstPurchaseOrderValue) {
+        group.get('purchaseOrder')?.setValue(firstPurchaseOrderValue);
+      }
+
+      if (firstShipmentDate) {
+        group.get('shipmentDate')?.setValue(firstShipmentDate);
+      }
+    }
 
     this.purchaseOrderArray.push(group);
-    this.setupColorToMainSync(group);
+
+    const sizesArray = this.getSizesArray(group);
+    const firstSize = sizesArray.at(0) as FormGroup;
+
+    const wasteFields: string[] = [
+      'knitting_Waste',
+      'Dyeing_Waste',
+      'Cutting_Waste',
+      'Printing_Waste',
+      'Embroidery_Waste',
+      'GWP_Laundry_Waste',
+      'Sewing_Waste'
+    ];
+
+    wasteFields.forEach(field => {
+
+      const mainValue = this.workOrderForm.get(field)?.value;
+      const colorField = 'color_' + field;
+
+      if (mainValue > 0) {
+        firstSize.get(colorField)?.setValue(mainValue, { emitEvent: false });
+      }
+
+    });
+
+    this.setupColorToMainSync(firstSize);
   }
 
 
@@ -162,8 +208,9 @@ export class IkgsWorkOrderForm implements OnInit {
     }
   }
 
-  setupMainToColorSync() {
 
+
+  setupMainToColorSync() {
     const wasteFields: string[] = [
       'knitting_Waste',
       'Dyeing_Waste',
@@ -175,33 +222,26 @@ export class IkgsWorkOrderForm implements OnInit {
     ];
 
     wasteFields.forEach(field => {
-
       this.workOrderForm.get(field)?.valueChanges.subscribe(value => {
-
-        this.purchaseOrderArray.controls.forEach(group => {
-
-          const colorField = 'color_' + field;
-
-          if (group.get(colorField)) {
-            if (value > 0 && value <= 100) {
-              group.get(colorField)?.setValue(value, { emitEvent: false });
-            } else {
-              group.get(colorField)?.setValue(null, { emitEvent: false });
+        this.purchaseOrderArray.controls.forEach(poGroup => {
+          const sizesArray = this.getSizesArray(poGroup as FormGroup);
+          sizesArray.controls.forEach(sizeGroup => {
+            const colorField = 'color_' + field;
+            if (sizeGroup.get(colorField)) {
+              if (value > 0 && value <= 100) {
+                sizeGroup.get(colorField)?.setValue(value, { emitEvent: false });
+              } else {
+                sizeGroup.get(colorField)?.setValue(null, { emitEvent: false });
+              }
             }
-          }
-
+          });
         });
-
       });
-
     });
-
   }
 
 
-
-  setupColorToMainSync(group: FormGroup) {
-
+  setupColorToMainSync(sizeGroup: FormGroup) {
     const wasteFields: string[] = [
       'knitting_Waste',
       'Dyeing_Waste',
@@ -213,30 +253,15 @@ export class IkgsWorkOrderForm implements OnInit {
     ];
 
     wasteFields.forEach(field => {
-
       const colorField = 'color_' + field;
-
-      group.get(colorField)?.valueChanges.subscribe(value => {
+      sizeGroup.get(colorField)?.valueChanges.subscribe(value => {
 
         if (value !== null && value !== undefined && value > 0) {
           this.workOrderForm.get(field)?.setValue(null, { emitEvent: false });
         }
-
       });
-
     });
-
   }
-
-
-
-
-
-  isRowValid(index: number): boolean {
-    const group = this.purchaseOrderArray.at(index) as FormGroup;
-    return group.valid;
-  }
-
 
 
   toggleLock(): void {
@@ -267,8 +292,13 @@ export class IkgsWorkOrderForm implements OnInit {
 
   save(): void {
     console.log('workOrderForm:', this.workOrderForm.value);
-    this.router.navigate(['/ikgs/work-order']);
+    //this.router.navigate(['/ikgs/work-order']);
+
+    this.AddUpdateWorkOrder();
   }
+
+
+ 
 
 
   allStyle: WritableSignal<SelectionValueModel[]> = signal([]);
@@ -282,8 +312,13 @@ export class IkgsWorkOrderForm implements OnInit {
     this.callCatalogApis();
 
     this.setupMainToColorSync();
-    this.purchaseOrderArray.controls.forEach(group => {
-      this.setupColorToMainSync(group as FormGroup);
+
+    this.purchaseOrderArray.controls.forEach(poGroup => {
+      const sizesArray = this.getSizesArray(poGroup as FormGroup);
+
+      sizesArray.controls.forEach(sizeGroup => {
+        this.setupColorToMainSync(sizeGroup as FormGroup);
+      });
     });
 
     this.minDate = new Date();
@@ -361,5 +396,43 @@ export class IkgsWorkOrderForm implements OnInit {
         }
       })
   }
+
+
+  AddUpdateWorkOrder() {
+    this.loading.set(true);
+    let apiOpts: ApiOptionsModel<WorkOrderDto> = new ApiOptionsModel<WorkOrderDto>();
+    apiOpts.RequestType = RequestType.POST;
+    apiOpts.ParamObj = this.workOrderForm.value;
+    apiOpts.Repository = Repository.Order;
+    apiOpts.EndPoint = EndPoints.AddUpdateWorkOrder;
+    this.restService.CallApi<WorkOrderDto, WorkOrderDto>(apiOpts).subscribe(
+      (result: ApiResponseModel<WorkOrderDto>) => {
+        if (result) {
+          if (result.Code === 200) {
+            if (result.Data) {
+              this.loading.set(false);
+
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Basic configuration saved successfully.'
+              });
+            }
+          } else {
+            this.loading.set(false)
+          }
+        }
+      },
+      (error: any) => {
+        this.loading.set(false);
+      }
+    );
+  }
+
+
+
+
+
+
 
 }

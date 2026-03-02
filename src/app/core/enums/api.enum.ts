@@ -11,6 +11,8 @@ export enum Repository {
     Auth = "Auth/",
     Catalog = "Catalog/",
     StyleConfiguration = "StyleConfiguration/",
+
+    Order = "Order/",  //Work Order
 }
 
 export enum EndPoints {
@@ -50,6 +52,11 @@ export enum EndPoints {
     GetAllAddsOnCatalog = "GetAllAddsOnCatalog",
     AddUpdateStyleConfigMain = "AddUpdateStyleConfigMain",
     AddUpdateStyleConfigColor = "AddUpdateStyleConfigColor",
-    AddUpdateStyleConfigFabric = "AddUpdateStyleConfigFabric"
+    AddUpdateStyleConfigFabric = "AddUpdateStyleConfigFabric",
+    //#endregion
+
+
+    //#region Order == WorkOrder
+    AddUpdateWorkOrder = "AddUpdateWorkOrder"
     //#endregion
 }
