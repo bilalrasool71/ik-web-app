@@ -17,6 +17,11 @@ import { RequestType, Repository, EndPoints } from '../../core/enums/api.enum';
 import { ApiOptionsModel, ApiResponseModel } from '../../core/models/api.model';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { StyleConfigMainDto } from '../../models/domain/style-configuration.model';
+import { AddsOnCatalogDto } from '../../models/domain/addson-catalog.model';
+import { StyleConfigColorDto } from '../../models/domain/style-config-color.model';
+import { FileUploadComponent } from '../../shared/components/file-upload/file-upload';
+import { FileUploadType } from '../../core/enums/file-upload-type.enum';
+
 
 @Component({
     selector: 'app-ikgs-style-configuration-form',
@@ -24,7 +29,7 @@ import { StyleConfigMainDto } from '../../models/domain/style-configuration.mode
         CommonModule, ReactiveFormsModule,
         StepperModule, SelectModule, InputTextModule,
         RadioButtonModule, ButtonModule, TextareaModule,
-        TableModule, InputNumberModule, SelectButtonModule
+        TableModule, InputNumberModule, SelectButtonModule, FileUploadComponent
     ],
     templateUrl: './ikgs-style-configuration-form.html',
     styleUrl: './ikgs-style-configuration-form.scss',
@@ -32,26 +37,14 @@ import { StyleConfigMainDto } from '../../models/domain/style-configuration.mode
 export class IkgsStyleConfigurationForm {
     messageService = inject(MessageService);
     restService = inject(IkgsRest);
-    loading = signal(false);
-
-
-
     activeStep = signal(0);
-
+    FileUploadType = FileUploadType;
 
     styleTypes = signal([
         { value: 'G', viewValue: 'Garment' },
         { value: 'F', viewValue: 'Fabric' },
     ]);
 
-    colorOptions = [
-        { label: 'Black', value: 'Black' },
-        { label: 'White', value: 'White' },
-        { label: 'Navy Blue', value: 'Navy Blue' },
-        { label: 'Red', value: 'Red' },
-        { label: 'Grey', value: 'Grey' },
-        { label: 'Green', value: 'Green' },
-    ];
 
     placementOptions = [
         { label: 'Front', value: 'Front' },
@@ -126,11 +119,7 @@ export class IkgsStyleConfigurationForm {
         { label: 'Camo', value: 'Camo' },
         { label: 'Floral', value: 'Floral' },
     ];
-    printColorOptions = [
-        { label: 'Multi Color', value: 'Multi Color' },
-        { label: 'Single Color', value: 'Single Color' },
-        { label: 'Two Tone', value: 'Two Tone' },
-    ];
+
     fiberOptions = [
         { label: 'Cotton', value: 'Cotton' },
         { label: 'Polyester', value: 'Polyester' },
@@ -142,11 +131,7 @@ export class IkgsStyleConfigurationForm {
         { label: 'High', value: 'High' },
         { label: 'Low', value: 'Low' },
     ];
-    fiberColorOptions = [
-        { label: 'Raw White', value: 'Raw White' },
-        { label: 'Optical White', value: 'Optical White' },
-        { label: 'Melange', value: 'Melange' },
-    ];
+
 
     // Size Consumption default rows
     sizeRows = [
@@ -211,17 +196,17 @@ export class IkgsStyleConfigurationForm {
     // Color Details helpers
     createColorGroup(): FormGroup {
         return this.fb.group({
-            color: [null],
-            garmentPrint: ['Yes'],
-            printPlacement: [null],
-            printType: [null],
-            printDesign: [null],
-            garmentEmbroidery: ['Yes'],
-            embPlacement: [null],
-            embType: [null],
-            embDesign: [null],
-            garmentWash: ['Yes'],
-            washType: [null],
+            style_Id: [this.configForm.value.style_Id],
+            color_Id: [0],
+            adds_On: ['N'],
+            // printType: [null],
+            // printDesign: [null],
+            // garmentEmbroidery: ['Yes'],
+            // embPlacement: [null],
+            // embType: [null],
+            // embDesign: [null],
+            // garmentWash: ['Yes'],
+            // washType: [null],
         });
     }
 
@@ -242,22 +227,25 @@ export class IkgsStyleConfigurationForm {
     // Fabric Panels helpers
     createPanelGroup(): FormGroup {
         return this.fb.group({
-            color: [null],
-            panel: [null],
-            panelSize: [null],
-            fabric: [null],
-            panelType: ['Main Body'],
-            rndNumber: [''],
-            composition: [null],
-            widthType: ['Open'],
-            width: [null],
+            style_Id: [this.configForm.value.style_Id],
+            color_RowId: [0],
+            fabric_RowId: [0],
+            panel_Id: [0],
+            size_Id: [0],
+            fabric_Id: [0],
+            is_Main_Body: ['N'],
+            fabric_Composition_Id: [0],
+            width_Type: ['Open'],
             gsm: [null],
-            fabricColor: [null],
-            dyeProcessRoute: [null],
-            specialProcess: [null],
-            rotaryPrint: ['Yes'],
-            printDesign: [null],
-            printColor: [null],
+            fab_Color_Id: [null],
+            dye_Route_Id: [null],
+            dye_Special_Process: [null],
+            is_Rotary: ['N'],
+            rotary_Design_Id: [null],
+            rotary_Color_Id: [null],
+            is_Active: ['Y'],
+            eby: [0],
+            edate: [new Date()],
         });
     }
 
@@ -328,6 +316,24 @@ export class IkgsStyleConfigurationForm {
             this.addUpdateStyleConfigMain();
             return;
         }
+
+        if (this.activeStep() === 1) {
+
+            if (this.colorDetailsForm.invalid) {
+                this.colorDetailsForm.markAllAsTouched();
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Validation',
+                    detail: 'Please fill all required fields.'
+                });
+                return;
+            }
+
+            this.addUpdateStyleConfigColor();
+            this.getStyleConfigColorShortByStyleIdForFabric();
+            return;
+        }
+
         if (this.activeStep() < 4) {
             this.activeStep.set(this.activeStep() + 1);
         }
@@ -375,7 +381,7 @@ export class IkgsStyleConfigurationForm {
     allFibers: WritableSignal<SelectionValueModel[]> = signal([]);
     allFiberColors: WritableSignal<SelectionValueModel[]> = signal([]);
     allFiberConsumptions: WritableSignal<SelectionValueModel[]> = signal([]);
-
+    allShortColorsForFabricPanels: WritableSignal<SelectionValueModel[]> = signal([]);
 
 
     ngOnInit() {
@@ -383,12 +389,29 @@ export class IkgsStyleConfigurationForm {
     }
 
 
-    callCatalogApis() {
+    callCatalogApis(calledFor?: string) {
         this.getAllCustomers();
         this.getAllGenders();
         this.getAllProductTypes();
-        this.getAllProductSubTypes();
         this.getAllSeasons();
+        this.getAllColors();
+        this.getAllPlacementsForPrint();
+        this.getAllPlacementsForEmbroidery();
+        this.getAllPrintTypes();
+        this.getAllDesignsForPrint();
+        this.getAllDesignsForEmbroidery();
+        this.getAllEmbTypes();
+        this.getAllGarmentWashTypes();
+        this.getAllPanels();
+        this.getAllFabricColors();
+        this.getAllPrintColors();
+        this.getAllDyeProcessRoutes();
+        this.getAllSpecialProcess();
+        this.getAllFibers();
+        this.getAllFiberColors();
+        this.getAllFiberConsumptions();
+        this.getAllAddsOnCatalog();
+        this.getAllPanelSizes();
     }
 
     getAllCustomers() {
@@ -722,8 +745,22 @@ export class IkgsStyleConfigurationForm {
             });
     }
 
+    getAllPanelSizes() {
+        this.allPanelSizes.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllPanelSizes;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allPanelSizes.set(result.Data);
+                }
+            });
+    }
+
     addUpdateStyleConfigMain() {
-        this.loading.set(true);
         let apiOpts: ApiOptionsModel<StyleConfigMainDto> = new ApiOptionsModel<StyleConfigMainDto>();
         apiOpts.RequestType = RequestType.POST;
         apiOpts.ParamObj = this.configForm.value;
@@ -735,7 +772,6 @@ export class IkgsStyleConfigurationForm {
                     if (result.Code === 200) {
                         if (result.Data) {
                             this.configForm.patchValue({ style_Id: result.Data.style_Id });
-                            this.loading.set(false);
                             this.activeStep.set(1);
                             this.messageService.add({
                                 severity: 'success',
@@ -744,13 +780,75 @@ export class IkgsStyleConfigurationForm {
                             });
                         }
                     }
-                } else {
-                    this.loading.set(false)
                 }
-            },
-            (error: any) => {
-                this.loading.set(false);
             }
         );
     }
+
+
+    getAllAddsOnCatalog() {
+        this.allFiberConsumptions.set([]);
+        let authApiOpts = new ApiOptionsModel<AddsOnCatalogDto[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllAddsOnCatalog;
+
+        this.restService.CallApi<AddsOnCatalogDto[], AddsOnCatalogDto[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    console.log(result.Data)
+                }
+            });
+    }
+
+
+    addUpdateStyleConfigColor() {
+        const styleId = this.configForm.value.style_Id;
+
+        const colorList: StyleConfigColorDto[] = this.colorsArray.controls.map(ctrl => {
+            const color: StyleConfigColorDto = { ...ctrl.value, style_Id: styleId };
+            return color;
+        });
+
+        let apiOpts: ApiOptionsModel<StyleConfigColorDto[]> = new ApiOptionsModel<StyleConfigColorDto[]>();
+        apiOpts.RequestType = RequestType.POST;
+        apiOpts.ParamObj = colorList;
+        apiOpts.Repository = Repository.StyleConfiguration;
+        apiOpts.EndPoint = EndPoints.AddUpdateStyleConfigColor;
+        this.restService.CallApi<StyleConfigColorDto[], StyleConfigColorDto[]>(apiOpts).subscribe(
+            (result: ApiResponseModel<StyleConfigColorDto[]>) => {
+                if (result) {
+                    if (result.Code === 200) {
+                        this.activeStep.set(2);
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Success',
+                            detail: 'Color details saved successfully.'
+                        });
+                    }
+                }
+            }
+        );
+    }
+
+    getStyleConfigColorShortByStyleIdForFabric() {
+        this.allShortColorsForFabricPanels.set([]);
+        let authApiOpts = new ApiOptionsModel<AddsOnCatalogDto[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.StyleConfiguration;
+        authApiOpts.ReqQueryParams = [{
+            Key: 'style_Id',
+            Value: this.configForm.value.style_Id,
+            IsDate: false
+        }]
+        authApiOpts.EndPoint = EndPoints.GetStyleConfigColorShortByStyleIdForFabric;
+        this.restService.CallApi<AddsOnCatalogDto[], AddsOnCatalogDto[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allShortColorsForFabricPanels.set(result.Data);
+                }
+            });
+    }
+
+
 }

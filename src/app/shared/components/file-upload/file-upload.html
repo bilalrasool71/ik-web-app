@@ -1,0 +1,370 @@
+<div class="file-upload-wrapper w-full relative z-10">
+  <p-toast></p-toast>
+
+  <!-- Trigger -->
+  <div
+    class="flex items-center justify-between h-12 px-5 border border-slate-200 rounded-xl bg-white cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all duration-300 group"
+    (click)="openDialog()"
+  >
+    <div class="flex items-center gap-3">
+      <div
+        class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors"
+      >
+        <i
+          class="pi pi-paperclip text-slate-400 group-hover:text-indigo-600 transition-colors text-sm"
+        ></i>
+      </div>
+      <span
+        class="text-sm font-semibold transition-colors"
+        [class.text-indigo-700]="getTotalFilesCount() > 0"
+        [class.text-slate-600]="getTotalFilesCount() === 0"
+      >
+        {{
+          getTotalFilesCount() > 0
+            ? getTotalFilesCount() + ' File(s) Attached'
+            : 'Click to Attach Picture'
+        }}
+      </span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span
+        *ngIf="getTotalFilesCount() > 0"
+        class="text-xs font-bold text-white bg-indigo-500 px-2 py-0.5 rounded-md"
+        >{{ getTotalFilesCount() }}</span
+      >
+      <i
+        class="pi pi-expand text-slate-300 text-xs group-hover:text-indigo-500 transition-colors"
+      ></i>
+    </div>
+  </div>
+
+  <!-- Main Dialog -->
+  <p-dialog
+    [(visible)]="dialogVisible"
+    [modal]="true"
+    [style]="{ width: '70vw' }"
+    [breakpoints]="{ '960px': '85vw', '640px': '100vw' }"
+    [maximizable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    contentStyleClass="p-0 dialog-no-padding dialog-custom-bg"
+    headerStyleClass="hidden"
+    [showHeader]="false"
+  >
+    <div class="flex flex-col h-full bg-slate-50/50">
+      <!-- Header -->
+      <div
+        class="flex items-center justify-between px-8 py-6 bg-white border-b border-slate-100 shrink-0"
+      >
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 tracking-tight">Manage Files</h2>
+          <p class="text-sm text-slate-500 mt-1">
+            Upload and manage attachments for this configuration
+          </p>
+        </div>
+        <button
+          (click)="dialogVisible = false"
+          class="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+        >
+          <i class="pi pi-times text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Content Area -->
+      <div class="flex-1 overflow-y-auto p-8 space-y-10 relative">
+        <!-- Error Message -->
+        <div
+          *ngIf="errorMessage"
+          class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl flex items-start gap-3 animate-fade-in-up shadow-sm"
+        >
+          <i class="pi pi-exclamation-circle text-red-500 mt-0.5 text-lg"></i>
+          <div>
+            <h4 class="text-sm font-bold text-red-800 tracking-tight">Upload Error</h4>
+            <p class="text-xs font-medium text-red-600 mt-1">{{ errorMessage }}</p>
+          </div>
+          <button
+            (click)="errorMessage = null"
+            class="ml-auto w-7 h-7 rounded-md hover:bg-red-100 flex items-center justify-center text-red-400 transition-colors"
+          >
+            <i class="pi pi-times text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Upload Dropzone (Custom) -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i class="pi pi-cloud-upload text-indigo-500"></i>Upload New Files
+            </h3>
+            <div class="flex items-center gap-3" *ngIf="selectedFiles.length > 0">
+              <button
+                (click)="clearAllNewFiles()"
+                class="text-sm font-semibold text-slate-500 hover:text-red-500 transition-colors"
+              >
+                Clear All
+              </button>
+              <button
+                (click)="confirmUpload()"
+                class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2"
+              >
+                <i class="pi pi-check text-xs"></i> Confirm ({{ selectedFiles.length }})
+              </button>
+            </div>
+          </div>
+
+          <!-- The Drag & Drop Area -->
+          <div
+            class="relative w-full rounded-2xl border-2 border-dashed transition-all duration-300 min-h-[20rem] flex flex-col items-center justify-center p-8 overflow-hidden bg-white"
+            [class.border-indigo-400]="isDragging"
+            [class.bg-indigo-50/50]="isDragging"
+            [class.border-slate-200]="!isDragging && selectedFiles.length === 0"
+            [class.border-transparent]="!isDragging && selectedFiles.length > 0"
+            [class.shadow-sm]="selectedFiles.length > 0"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+          >
+            <!-- Hidden Input -->
+            <input
+              type="file"
+              #fileInputForm
+              class="hidden"
+              [multiple]="isMultiple"
+              [accept]="acceptTypes"
+              (change)="onFileSelected($event)"
+            />
+
+            <!-- Overlay shown ONLY when dragging over -->
+            <div
+              *ngIf="isDragging"
+              class="absolute inset-0 z-20 flex items-center justify-center bg-indigo-600/5 backdrop-blur-[2px] pointer-events-none transition-all"
+            >
+              <div
+                class="bg-white px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 border border-indigo-100 transform scale-105 animate-fade-in-up"
+              >
+                <div
+                  class="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 animate-bounce"
+                >
+                  <i class="pi pi-cloud-download text-3xl"></i>
+                </div>
+                <span class="text-slate-800 font-bold text-xl tracking-tight">Drop files here</span>
+              </div>
+            </div>
+
+            <!-- EMPTY STATE: No files selected yet -->
+            <div
+              *ngIf="selectedFiles.length === 0 && !isDragging"
+              class="flex flex-col items-center text-center max-w-sm relative z-10"
+            >
+              <div
+                class="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 mb-6 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform"
+              >
+                <i class="pi pi-upload text-3xl"></i>
+              </div>
+              <h4 class="text-xl font-bold text-slate-800 mb-2">Drag and drop files</h4>
+              <p class="text-sm text-slate-500 mb-8 font-medium">
+                Drag your files here or click to browse
+              </p>
+
+              <button
+                (click)="triggerFileInput()"
+                class="px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:border-indigo-500 hover:text-indigo-600 shadow-sm transition-all focus:ring-4 focus:ring-indigo-50"
+              >
+                Browse Device
+              </button>
+
+              <div class="flex items-center gap-4 mt-8 text-xs font-semibold text-slate-400">
+                <span class="flex items-center gap-1.5"
+                  ><i class="pi pi-file"></i>
+                  {{ acceptTypes === '*' ? 'Any format' : acceptTypes }}</span
+                >
+                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                <span class="flex items-center gap-1.5"
+                  ><i class="pi pi-database"></i> Up to {{ formatSize(maxFileSize) }}</span
+                >
+              </div>
+            </div>
+
+            <!-- SELECTED FILES STATE -->
+            <div *ngIf="selectedFiles.length > 0" class="w-full h-full flex flex-col relative z-10">
+              <div
+                class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 w-full"
+              >
+                <!-- The files -->
+                <div
+                  *ngFor="let file of selectedFiles; let i = index"
+                  class="group relative flex flex-col bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-300 transition-all duration-300"
+                >
+                  <!-- Remove Button -->
+                  <button
+                    class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-slate-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-10"
+                    (click)="removeNewFile(i)"
+                  >
+                    <i class="pi pi-times text-xs font-bold"></i>
+                  </button>
+
+                  <!-- Preview Area -->
+                  <div
+                    class="w-full aspect-square bg-slate-100 flex items-center justify-center relative overflow-hidden"
+                  >
+                    <img
+                      *ngIf="isImage(file)"
+                      [src]="createObjectURL(file)"
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      alt="preview"
+                    />
+
+                    <div
+                      *ngIf="!isImage(file)"
+                      class="flex flex-col items-center justify-center text-slate-400"
+                    >
+                      <i class="pi pi-file text-5xl mb-3"></i>
+                      <span
+                        class="text-[10px] font-black tracking-widest text-slate-500 bg-white px-3 py-1 rounded-full shadow-sm"
+                        >{{ file.name.split('.').pop() }}</span
+                      >
+                    </div>
+                  </div>
+
+                  <!-- Details Area -->
+                  <div class="p-4 bg-white border-t border-slate-100 flex flex-col">
+                    <span
+                      class="text-sm font-bold text-slate-800 w-full truncate"
+                      [title]="file.name"
+                      >{{ file.name }}</span
+                    >
+                    <span class="text-xs text-slate-500 font-medium mt-1">{{
+                      formatSize(file.size)
+                    }}</span>
+                  </div>
+                </div>
+
+                <!-- "Add More" Button -->
+                <div
+                  *ngIf="isMultiple"
+                  class="flex flex-col items-center justify-center gap-3 bg-white border-2 border-dashed border-slate-200 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50/50 transition-all cursor-pointer min-h-[200px] group"
+                  (click)="triggerFileInput()"
+                >
+                  <div
+                    class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors"
+                  >
+                    <i class="pi pi-plus text-xl"></i>
+                  </div>
+                  <span class="text-sm font-bold text-slate-600 group-hover:text-indigo-700"
+                    >Add More files</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Existing Files Section (Separated visually) -->
+        <div *ngIf="existingFiles.length > 0" class="space-y-4 pt-8 border-t border-slate-200">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <i class="pi pi-folder-open text-emerald-500"></i>Previously Uploaded
+          </h3>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-5">
+            <div
+              *ngFor="let file of existingFiles"
+              class="group relative flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-slate-200 transition-all duration-300"
+            >
+              <!-- Hover Actions Overlay -->
+              <div
+                class="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 flex items-start justify-end p-2 gap-1.5 z-10 transition-opacity"
+              >
+                <button
+                  type="button"
+                  (click)="viewFile(file.url)"
+                  class="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/40 flex items-center justify-center transition-colors"
+                  title="View"
+                >
+                  <i class="pi pi-eye text-sm"></i>
+                </button>
+                <button
+                  type="button"
+                  (click)="downloadFile(file)"
+                  class="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/40 flex items-center justify-center transition-colors"
+                  title="Download"
+                >
+                  <i class="pi pi-download text-sm"></i>
+                </button>
+                <button
+                  type="button"
+                  (click)="removeExistingFile(file)"
+                  class="w-8 h-8 rounded-full bg-red-500/80 backdrop-blur-sm text-white hover:bg-red-500 flex items-center justify-center transition-colors shadow-sm ml-auto"
+                  title="Delete"
+                >
+                  <i class="pi pi-trash text-sm"></i>
+                </button>
+              </div>
+
+              <!-- Thumbnail -->
+              <div
+                class="w-full aspect-square bg-slate-50 flex items-center justify-center relative overflow-hidden"
+              >
+                <img
+                  *ngIf="isImageUrl(file.url)"
+                  [src]="file.url"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  alt="preview"
+                />
+                <div
+                  *ngIf="!isImageUrl(file.url)"
+                  class="flex flex-col items-center justify-center text-emerald-400"
+                >
+                  <i class="pi pi-file text-5xl mb-3"></i>
+                  <span
+                    class="text-[10px] font-black tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full"
+                    >{{ file.name.split('.').pop() || 'FILE' }}</span
+                  >
+                </div>
+              </div>
+
+              <!-- Details -->
+              <div class="p-4 bg-white border-t border-slate-100 flex flex-col">
+                <span
+                  class="text-sm font-bold text-slate-800 w-full truncate"
+                  [title]="file.name"
+                  >{{ file.name }}</span
+                >
+                <span
+                  class="text-xs text-slate-500 font-medium mt-1 inline-flex items-center gap-1.5"
+                >
+                  <i class="pi pi-clock text-[10px]"></i> Existing
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- Image Preview Dialog (Unchanged structure, refined visually) -->
+  <p-dialog
+    [(visible)]="previewVisible"
+    [modal]="true"
+    [dismissableMask]="true"
+    [showHeader]="false"
+    styleClass="bg-transparent shadow-none"
+    [style]="{ width: 'auto', maxWidth: '90vw' }"
+    maskStyleClass="bg-slate-900/90 backdrop-blur-md"
+  >
+    <div class="relative flex justify-center items-center group">
+      <button
+        type="button"
+        class="absolute -top-12 right-0 w-10 h-10 bg-white/10 hover:bg-white/30 text-white rounded-full flex items-center justify-center transition-colors z-50 backdrop-blur-md opacity-0 group-hover:opacity-100"
+        (click)="previewVisible = false"
+      >
+        <i class="pi pi-times text-lg"></i>
+      </button>
+      <img
+        *ngIf="previewUrl"
+        [src]="previewUrl"
+        class="max-w-[90vw] max-h-[85vh] object-contain shadow-2xl rounded-2xl border border-white/10"
+        alt="Full size preview"
+      />
+    </div>
+  </p-dialog>
+</div>
