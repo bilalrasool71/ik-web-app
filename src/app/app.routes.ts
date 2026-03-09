@@ -47,6 +47,10 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'work-order/edit/:woNo',
+        loadComponent: () => import('./features/ikgs-work-order/ikgs-work-order-form').then(x => x.IkgsWorkOrderForm)
+      },
+      {
         path: 'contract',
         loadComponent: () =>
           import('./features/ikgs-contract/ikgs-contract').then((x) => x.IkgsContract),
