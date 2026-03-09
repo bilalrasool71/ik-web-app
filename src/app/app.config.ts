@@ -17,18 +17,20 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([headerEmbedInterceptor, apiCallInterceptor, errorInterceptor])),
+    provideHttpClient(
+      withInterceptors([/*headerEmbedInterceptor,*/ apiCallInterceptor, errorInterceptor]),
+    ),
     providePrimeNG({
       ripple: true,
       theme: {
         preset: Aura,
         options: {
-          darkModeSelector: 'none'
-        }
-      }
+          darkModeSelector: 'none',
+        },
+      },
     }),
     MessageService,
     CookieService,
     { provide: DatePipe, useClass: DatePipe },
-  ]
+  ],
 };

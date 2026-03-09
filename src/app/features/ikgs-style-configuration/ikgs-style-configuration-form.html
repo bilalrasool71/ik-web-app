@@ -41,8 +41,7 @@
                 </span>
                 <span class="hidden sm:inline">{{ step }}</span>
             </button>
-            @if(i < 4) { <div class="w-6 h-[2px] shrink-0"
-                [class]="activeStep() > i ? 'bg-emerald-300' : 'bg-slate-200'">
+            @if(i < 4) { <div class="w-6 h-0.5 shrink-0" [class]="activeStep() > i ? 'bg-emerald-300' : 'bg-slate-200'">
         </div>
         }
         }
@@ -63,13 +62,14 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Customer</label>
-                        <p-select optionValue="value" [emptyFilterMessage]="'No Customer Found'" optionLabel="viewValue"
-                            filter="true" formControlName="customer_Id" [options]="allCustomers()"
-                            placeholder="Select Customer" class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            optionValue="value" [emptyFilterMessage]="'No Customer Found'" optionLabel="viewValue"
+                            formControlName="customer_Id" [options]="allCustomers()" placeholder="Select Customer"
+                            class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Style Type</label>
-                        <div class="flex items-center gap-4 h-[42px]">
+                        <div class="flex items-center gap-4 h-10.5">
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <p-radiobutton formControlName="config_Type" value="G" />
                                 <span class="text-sm font-medium text-slate-700">Garment</span>
@@ -80,13 +80,10 @@
                             </label>
                         </div>
                     </div>
-                    <div class="space-y-1.5">
+                    <div class="space-y-1.5 h-full relative z-10">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Picture</label>
-                        <div
-                            class="flex items-center gap-2 h-[42px] px-4 border border-dashed border-slate-300 rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all">
-                            <i class="pi pi-paperclip text-slate-400 text-sm"></i>
-                            <span class="text-sm text-slate-500">Click to Attach Picture</span>
-                        </div>
+                        <app-file-upload [uploadType]="FileUploadType.Multiple" allowedFileTypes="image/*">
+                        </app-file-upload>
                     </div>
                 </div>
 
@@ -94,15 +91,16 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Season</label>
-                        <p-select formControlName="season_Id" [options]="allSeasons()" optionValue="value"
-                            optionLabel="viewValue" filter="true" [emptyFilterMessage]="'No Season Found'"
-                            placeholder="Select Season" class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            formControlName="season_Id" [options]="allSeasons()" optionValue="value"
+                            optionLabel="viewValue" [emptyFilterMessage]="'No Season Found'" placeholder="Select Season"
+                            class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Gender</label>
-                        <p-select formControlName="gender_Id" (onChange)="getAllProductSubTypes()"
-                            [options]="allGenders()" optionValue="value" optionLabel="viewValue"
-                            placeholder="Select Gender" class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            formControlName="gender_Id" (onChange)="getAllProductSubTypes()" [options]="allGenders()"
+                            optionValue="value" optionLabel="viewValue" placeholder="Select Gender" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Lead Days</label>
@@ -115,16 +113,17 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Product Type</label>
-                        <p-select formControlName="product_Type_Id" [options]="allProductTypes()" optionValue="value"
-                            optionLabel="viewValue" filter="true" placeholder="Select" class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            formControlName="product_Type_Id" [options]="allProductTypes()" optionValue="value"
+                            optionLabel="viewValue" placeholder="Select" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Product Sub
                             Type</label>
-                        <p-select
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
                             [disabled]="configForm.get('product_Type_Id')?.value === 0 || configForm.get('gender_Id')?.value === 0"
                             formControlName="product_Sub_Type_Id" [options]="allProductSubTypes()" optionValue="value"
-                            optionLabel="viewValue" filter="true" placeholder="Select" class="w-full" />
+                            optionLabel="viewValue" placeholder="Select" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric GSM</label>
@@ -164,7 +163,9 @@
                         <div class="flex items-center gap-4">
                             <div class="flex-1 space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
-                                <p-select formControlName="color" [options]="colorOptions" placeholder="Select Color"
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    [virtualScrollItemSize]="30" formControlName="color_Id" optionValue="value"
+                                    optionLabel="viewValue" [options]="allColors()" placeholder="Select Color"
                                     class="w-full" />
                             </div>
                             <button (click)="removeColor(ci)" type="button"
@@ -181,7 +182,7 @@
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment
                                     Print</label>
-                                <div class="flex items-center gap-4 h-[42px]">
+                                <div class="flex items-center gap-4 h-10.5">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <p-radiobutton formControlName="garmentPrint" value="Yes" />
                                         <span class="text-sm font-medium text-slate-700">Yes</span>
@@ -195,19 +196,22 @@
                             <div class="space-y-1.5">
                                 <label
                                     class="text-xs font-bold text-slate-600 uppercase tracking-wider">Placement</label>
-                                <p-select formControlName="printPlacement" [options]="placementOptions"
+                                <p-select appendTo="body" [filter]="true" formControlName="printPlacement"
+                                    optionLabel="viewValue" optionValue="value" [options]="allPlacementsForPrint()"
                                     placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Print
                                     Type</label>
-                                <p-select formControlName="printType" [options]="printTypeOptions" placeholder="Select"
-                                    class="w-full" />
+                                <p-select appendTo="body" [filter]="true" formControlName="printType"
+                                    optionValue="value" optionLabel="viewValue" [options]="allPrintTypes()"
+                                    placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Design</label>
-                                <p-select formControlName="printDesign" [options]="designOptions" placeholder="Select"
-                                    class="w-full" />
+                                <p-select appendTo="body" [filter]="true" formControlName="printDesign"
+                                    optionValue="value" optionLabel="viewValue" [options]="allDesignsForPrint()"
+                                    placeholder="Select" class="w-full" />
                             </div>
                         </div>
 
@@ -216,7 +220,7 @@
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment
                                     Embroidery</label>
-                                <div class="flex items-center gap-4 h-[42px]">
+                                <div class="flex items-center gap-4 h-10.5">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <p-radiobutton formControlName="garmentEmbroidery" value="Yes" />
                                         <span class="text-sm font-medium text-slate-700">Yes</span>
@@ -230,19 +234,22 @@
                             <div class="space-y-1.5">
                                 <label
                                     class="text-xs font-bold text-slate-600 uppercase tracking-wider">Placement</label>
-                                <p-select formControlName="embPlacement" [options]="placementOptions"
+                                <p-select appendTo="body" [filter]="true" formControlName="embPlacement"
+                                    [options]="allPlacementsForEmbroidery()" optionValue="value" optionLabel="viewValue"
                                     placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Emb
                                     Type</label>
-                                <p-select formControlName="embType" [options]="embTypeOptions" placeholder="Select"
-                                    class="w-full" />
+                                <p-select [filter]="true" appendTo="body" formControlName="embType"
+                                    [options]="allEmbTypes()" optionValue="value" optionLabel="viewValue"
+                                    placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Design</label>
-                                <p-select formControlName="embDesign" [options]="designOptions" placeholder="Select"
-                                    class="w-full" />
+                                <p-select appendTo="body" formControlName="embDesign"
+                                    [options]="allDesignsForEmbriodery()" placeholder="Select" class="w-full"
+                                    optionLabel="viewValue" optionValue="value" />
                             </div>
                         </div>
 
@@ -251,7 +258,7 @@
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment Wash
                                     (Laundry)</label>
-                                <div class="flex items-center gap-4 h-[42px]">
+                                <div class="flex items-center gap-4 h-10.5">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <p-radiobutton formControlName="garmentWash" value="Yes" />
                                         <span class="text-sm font-medium text-slate-700">Yes</span>
@@ -265,8 +272,9 @@
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Garment Wash
                                     Type</label>
-                                <p-select formControlName="washType" [options]="washTypeOptions" placeholder="Select"
-                                    class="w-full" />
+                                <p-select [filter]="true" appendTo="body" formControlName="washType"
+                                    [options]="allGarmentWashTypes()" placeholder="Select" class="w-full"
+                                    optionLabel="viewValue" optionValue="value" />
                             </div>
                         </div>
                     </div>
@@ -301,14 +309,18 @@
                                 <div class="space-y-1.5">
                                     <label
                                         class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
-                                    <p-select formControlName="color" [options]="colorOptions"
+                                    <p-select [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                                        appendTo="body" optionLabel="viewValue" optionValue="value"
+                                        formControlName="color_RowId" [options]="allShortColorsForFabricPanels()"
                                         placeholder="Select Color" class="w-full" />
                                 </div>
                                 <div class="space-y-1.5">
                                     <label
                                         class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
-                                    <p-select formControlName="panel" [options]="panelOptions"
-                                        placeholder="Select Panel" class="w-full" />
+                                    <p-select [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                                        appendTo="body" optionLabel="viewValue" optionValue="value"
+                                        formControlName="panel_Id" [options]="allPanels()" placeholder="Select Panel"
+                                        class="w-full" />
                                 </div>
                             </div>
                             <button (click)="removePanel(pi)" type="button"
@@ -323,32 +335,36 @@
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel
                                     Size</label>
-                                <p-select formControlName="panelSize" [options]="panelSizeOptions" placeholder="Select"
-                                    class="w-full" />
+                                <p-select [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                                    appendTo="body" optionLabel="viewValue" optionValue="value"
+                                    formControlName="size_Id" [options]="allPanelSizes()"
+                                    placeholder="Select Panel Size" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
-                                <p-select formControlName="fabric" [options]="fabricOptions" placeholder="Select"
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    virtualScrollItemSize="30" formControlName="fabric_Id" [options]="fabricOptions"
+                                    optionLabel="viewValue" optionValue="value" [showClear]="true" placeholder="Select"
                                     class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel
                                     Type</label>
-                                <div class="flex items-center gap-4 h-[42px]">
+                                <div class="flex items-center gap-4 h-10.5">
                                     <label class="flex items-center gap-2 cursor-pointer">
-                                        <p-radiobutton formControlName="panelType" value="Main Body" />
+                                        <p-radiobutton name="is_Main_Body" formControlName="is_Main_Body" value="Y" />
                                         <span class="text-xs font-medium text-slate-700">Main Body</span>
                                     </label>
                                     <label class="flex items-center gap-2 cursor-pointer">
-                                        <p-radiobutton formControlName="panelType" value="Trim" />
+                                        <p-radiobutton name="is_Main_Body" formControlName="is_Main_Body" value="N" />
                                         <span class="text-xs font-medium text-slate-700">Trim</span>
                                     </label>
                                 </div>
                             </div>
-                            <div class="space-y-1.5">
+                            <!-- <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">R&D #</label>
                                 <input pInputText formControlName="rndNumber" placeholder="R&D #" class="w-full" />
-                            </div>
+                            </div> -->
                         </div>
 
                         <!-- Row 2 -->
@@ -356,32 +372,34 @@
                             <div class="space-y-1.5">
                                 <label
                                     class="text-xs font-bold text-slate-600 uppercase tracking-wider">Composition</label>
-                                <p-select formControlName="composition" [options]="compositionOptions"
-                                    placeholder="Select" class="w-full" />
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    virtualScrollItemSize="30" formControlName="fabric_Composition_Id"
+                                    [options]="allFabricConumptions()" optionLabel="viewValue" optionValue="value"
+                                    [showClear]="true" placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Width
                                     Type</label>
-                                <div class="flex items-center gap-3 h-[42px]">
+                                <div class="flex items-center gap-3 h-10.5">
                                     <label class="flex items-center gap-1.5 cursor-pointer">
-                                        <p-radiobutton formControlName="widthType" value="Open" />
+                                        <p-radiobutton formControlName="width_Type" value="Open" />
                                         <span class="text-xs font-medium text-slate-700">Open</span>
                                     </label>
                                     <label class="flex items-center gap-1.5 cursor-pointer">
-                                        <p-radiobutton formControlName="widthType" value="Tubular" />
+                                        <p-radiobutton formControlName="width_Type" value="Tubular" />
                                         <span class="text-xs font-medium text-slate-700">Tubular</span>
                                     </label>
                                     <label class="flex items-center gap-1.5 cursor-pointer">
-                                        <p-radiobutton formControlName="widthType" value="Flat" />
+                                        <p-radiobutton formControlName="width_Type" value="Flat" />
                                         <span class="text-xs font-medium text-slate-700">Flat</span>
                                     </label>
                                 </div>
                             </div>
-                            <div class="space-y-1.5">
+                            <!-- <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Width</label>
                                 <input pInputText type="number" formControlName="width" placeholder="Width"
                                     class="w-full" />
-                            </div>
+                            </div> -->
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">GSM</label>
                                 <input pInputText type="number" formControlName="gsm" placeholder="GSM"
@@ -394,20 +412,26 @@
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric
                                     Color</label>
-                                <p-select formControlName="fabricColor" [options]="fabricColorOptions"
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    virtualScrollItemSize="30" formControlName="fab_Color_Id" optionLabel="viewValue"
+                                    optionValue="value" [showClear]="true" [options]="allFabricColors()"
                                     placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5 sm:col-span-2">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Dye Process
                                     Route</label>
-                                <p-select formControlName="dyeProcessRoute" [options]="dyeProcessOptions"
-                                    placeholder="Select" class="w-full" />
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    virtualScrollItemSize="30" formControlName="dye_Route_Id"
+                                    [options]="allDyeProcessRoutes()" optionLabel="viewValue" optionValue="value"
+                                    [showClear]="true" placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Special
                                     Process</label>
-                                <p-select formControlName="specialProcess" [options]="specialProcessOptions"
-                                    placeholder="Select" class="w-full" />
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    virtualScrollItemSize="30" formControlName="dye_Special_Process"
+                                    [options]="allSpecialProcess()" optionLabel="viewValue" optionValue="value"
+                                    [showClear]="true" placeholder="Select" class="w-full" />
                             </div>
                         </div>
 
@@ -416,13 +440,13 @@
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Rotary
                                     Print</label>
-                                <div class="flex items-center gap-4 h-[42px]">
+                                <div class="flex items-center gap-4 h-10.5">
                                     <label class="flex items-center gap-2 cursor-pointer">
-                                        <p-radiobutton formControlName="rotaryPrint" value="Yes" />
+                                        <p-radiobutton formControlName="is_Rotary" value="Yes" />
                                         <span class="text-xs font-medium text-slate-700">Yes</span>
                                     </label>
                                     <label class="flex items-center gap-2 cursor-pointer">
-                                        <p-radiobutton formControlName="rotaryPrint" value="No" />
+                                        <p-radiobutton formControlName="is_Rotary" value="No" />
                                         <span class="text-xs font-medium text-slate-700">No</span>
                                     </label>
                                 </div>
@@ -430,14 +454,18 @@
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Print
                                     Design</label>
-                                <p-select formControlName="printDesign" [options]="printDesignOptions"
-                                    placeholder="Select" class="w-full" />
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    virtualScrollItemSize="30" formControlName="rotary_Design_Id"
+                                    [options]="allDesignsForPrint()" optionLabel="viewValue" optionValue="value"
+                                    [showClear]="true" placeholder="Select" class="w-full" />
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Print
                                     Color</label>
-                                <p-select formControlName="printColor" [options]="printColorOptions"
-                                    placeholder="Select" class="w-full" />
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    virtualScrollItemSize="30" formControlName="rotary_Color_Id"
+                                    [options]="allPrintColors()" optionLabel="viewValue" optionValue="value"
+                                    [showClear]="true" placeholder="Select" class="w-full" />
                             </div>
                         </div>
                     </div>
@@ -465,18 +493,21 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
-                        <p-select formControlName="color" [options]="colorOptions" placeholder="Select Color"
-                            class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            formControlName="color" [options]="allColors()" optionLabel="viewValue" optionValue="value"
+                            [showClear]="true" placeholder="Select Color" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
-                        <p-select formControlName="fabric" [options]="fabricOptions" placeholder="Select Fabric"
-                            class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            formControlName="fabric" [options]="fabricOptions" optionLabel="viewValue"
+                            optionValue="value" [showClear]="true" placeholder="Select Fabric" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
-                        <p-select formControlName="panel" [options]="panelOptions" placeholder="Select Panel"
-                            class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            formControlName="panel" [options]="panelOptions" optionLabel="viewValue" optionValue="value"
+                            [showClear]="true" placeholder="Select Panel" class="w-full" />
                     </div>
                 </div>
 
@@ -499,13 +530,15 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" [formGroupName]="fi">
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fiber</label>
-                            <p-select formControlName="fiber" [options]="fiberOptions" placeholder="Select"
-                                class="w-full" />
+                            <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                                formControlName="fiber" [options]="fiberOptions" optionLabel="viewValue"
+                                optionValue="value" [showClear]="true" placeholder="Select" class="w-full" />
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Consumption</label>
-                            <p-select formControlName="consumption" [options]="consumptionOptions" placeholder="Select"
-                                class="w-full" />
+                            <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                                formControlName="consumption" [options]="consumptionOptions" optionLabel="viewValue"
+                                optionValue="value" [showClear]="true" placeholder="Select" class="w-full" />
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Ratio</label>
@@ -514,7 +547,7 @@
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Knit Type</label>
-                            <div class="flex items-center gap-2 h-[42px] flex-wrap">
+                            <div class="flex items-center gap-2 h-10.5 flex-wrap">
                                 <label class="flex items-center gap-1.5 cursor-pointer">
                                     <p-radiobutton formControlName="knitType" value="Knit" />
                                     <span class="text-xs font-medium text-slate-700">Knit</span>
@@ -531,7 +564,7 @@
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Yarn Dye</label>
-                            <div class="flex items-center gap-3 h-[42px]">
+                            <div class="flex items-center gap-3 h-10.5">
                                 <label class="flex items-center gap-1.5 cursor-pointer">
                                     <p-radiobutton formControlName="yarnDye" value="Yes" />
                                     <span class="text-xs font-medium text-slate-700">Yes</span>
@@ -544,8 +577,9 @@
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fiber Color</label>
-                            <p-select formControlName="fiberColor" [options]="fiberColorOptions" placeholder="Select"
-                                class="w-full" />
+                            <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                                formControlName="fiberColor" [options]="allFiberColors()" optionLabel="viewValue"
+                                optionValue="value" [showClear]="true" placeholder="Select" class="w-full" />
                         </div>
                     </div>
                     }
@@ -566,18 +600,21 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
-                        <p-select formControlName="color" [options]="colorOptions" placeholder="Select Color"
-                            class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            formControlName="color" [options]="allColors()" optionLabel="viewValue" optionValue="value"
+                            [showClear]="true" placeholder="Select Color" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
-                        <p-select formControlName="fabric" [options]="fabricOptions" placeholder="Select Fabric"
-                            class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            formControlName="fabric" [options]="fabricOptions" optionLabel="viewValue"
+                            optionValue="value" [showClear]="true" placeholder="Select Fabric" class="w-full" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
-                        <p-select formControlName="panel" [options]="panelOptions" placeholder="Select Panel"
-                            class="w-full" />
+                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
+                            formControlName="panel" [options]="panelOptions" optionLabel="viewValue" optionValue="value"
+                            [showClear]="true" placeholder="Select Panel" class="w-full" />
                     </div>
                 </div>
 
@@ -628,17 +665,17 @@
         </button>
         <div class="flex items-center gap-3">
             @if(activeStep() > 0) {
-            <button (click)="prevStep()" [disabled]="loading()"
+            <button (click)="prevStep()"
                 class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-xl transition-all">
                 <i class="pi pi-arrow-left text-xs mr-2"></i>Back
             </button>
             }
-            @if(activeStep() < 4) { <button (click)="nextStep()" [disabled]="loading()"
+            @if(activeStep() < 4) { <button (click)="nextStep()"
                 class="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all active:scale-95">
                 Save & Forward<i class="pi pi-arrow-right text-xs ml-2"></i>
                 </button>
                 } @else {
-                <button (click)="save()" [disabled]="loading()"
+                <button (click)="save()"
                     class="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all active:scale-95">
                     <i class="pi pi-check text-xs mr-2"></i>Save
                 </button>

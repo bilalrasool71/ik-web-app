@@ -52,7 +52,14 @@ export enum EndPoints {
     GetAllAddsOnCatalog = "GetAllAddsOnCatalog",
     AddUpdateStyleConfigMain = "AddUpdateStyleConfigMain",
     AddUpdateStyleConfigColor = "AddUpdateStyleConfigColor",
-    AddUpdateStyleConfigFabric = "AddUpdateStyleConfigFabric",
+    GetStyleConfigColorShortByStyleIdForFabric = "GetStyleConfigColorShortByStyleIdForFabric",
+    AddUpdateStyleConfigFabricAsync = "AddUpdateStyleConfigFabricAsync",
+    GetStyleConfigColorShortByStyleIdForFiberAsync = "GetStyleConfigColorShortByStyleIdForFiberAsync",
+    GetStyleConfigFabricShortByStyleIdForFiber = "GetStyleConfigFabricShortByStyleIdForFiber",
+    GetStyleConfigPanelShortByStyleIdForFiberAsync = "GetStyleConfigPanelShortByStyleIdForFiberAsync",
+    AddUpdateStyleConfigFiberAsync = "AddUpdateStyleConfigFiberAsync",
+    AddUpdateStyleConfigSizeConsumptionAsync = "AddUpdateStyleConfigSizeConsumptionAsync",
+
     //#endregion
 
 
