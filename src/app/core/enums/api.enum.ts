@@ -59,6 +59,7 @@ export enum EndPoints {
     GetStyleConfigPanelShortByStyleIdForFiberAsync = "GetStyleConfigPanelShortByStyleIdForFiberAsync",
     AddUpdateStyleConfigFiberAsync = "AddUpdateStyleConfigFiberAsync",
     AddUpdateStyleConfigSizeConsumptionAsync = "AddUpdateStyleConfigSizeConsumptionAsync",
+    GetAllStyleConfigurations = "GetAllStyleConfigurations",
 
     //#endregion
 
