@@ -32,17 +32,17 @@ export class WorkOrderDto {
 
 export class WorkOrderColorDto {
     wo!: number ;
-    customer_Po!: number ;
+    customer_Po!: number;
     color_RowId!: number;
-    color_Id!: number ;
-    ship_Date!: string ;
-    edate!: string ;
-    eby!: number ;
-    eip!: string ;
-    mby!: number ;
-    mip!: string ;
-    mdate!: string ;
-    is_Active!: string ;
+    color_Id!: number;
+    ship_Date!: string | Date;
+    edate!: string;
+    eby!: number;
+    eip!: string;
+    mby!: number;
+    mip!: string;
+    mdate!: string;
+    is_Active!: string;
 
 
     sizeDetailList!: WorkOrderColorSizeDto[];

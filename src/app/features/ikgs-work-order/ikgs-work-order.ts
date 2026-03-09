@@ -1,9 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
+import { IkgsRest } from '../../core/services/ikgs-rest';
+import { MessageService } from 'primeng/api';
+import { ApiOptionsModel, ApiResponseModel } from '../../core/models/api.model';
+import { EndPoints, Repository, RequestType } from '../../core/enums/api.enum';
+import { AllWorkOrderModel } from '../../models/domain/all_work-order.model';
 
 @Component({
   selector: 'app-ikgs-work-order',
@@ -12,22 +17,58 @@ import { TagModule } from 'primeng/tag';
   templateUrl: './ikgs-work-order.html',
   styleUrl: './ikgs-work-order.scss',
 })
-export class IkgsWorkOrder {
+export class IkgsWorkOrder implements OnInit {
 
-  configurations = [
-    { id: 1, customer: 'Fila', styleType: 'Fabric', season: 'Summer 2026', gender: 'Kids', productType: 'Shorts', status: 'Draft' },
-    { id: 2, customer: 'Adidas', styleType: 'Garment', season: 'Fall 2026', gender: 'Women', productType: 'Polo Shirt', status: 'Completed' },
-    { id: 3, customer: 'Nike', styleType: 'Garment', season: 'Spring 2026', gender: 'Men', productType: 'T-Shirt', status: 'Draft' },
-    { id: 4, customer: 'Reebok', styleType: 'Fabric', season: 'Summer 2026', gender: 'Men', productType: 'T-Shirt', status: 'Completed' },
-    { id: 5, customer: 'Puma', styleType: 'Fabric', season: 'Summer 2026', gender: 'Kids', productType: 'Shorts', status: 'In Progress' },
-    ];
+  restService = inject(IkgsRest);
+  messageService = inject(MessageService);
+  loading = signal(false);
+  router = inject(Router);
 
-    getStatusSeverity(status: string): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" | undefined {
-        switch (status) {
-            case 'Completed': return 'success';
-            case 'In Progress': return 'info';
-            case 'Draft': return 'warn';
-            default: return 'secondary';
-        }
+
+
+  getStatusSeverity(status: string): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" | undefined {
+    switch (status) {
+      case 'Completed': return 'success';
+      case 'In Progress': return 'info';
+      case 'Draft': return 'warn';
+      default: return 'secondary';
     }
+  }
+
+
+  ngOnInit(): void {
+    this.callOrderApis();
+  }
+
+  allWorkOrder: WritableSignal<AllWorkOrderModel[]> = signal([]);
+
+  callOrderApis() {
+    this.GetAllWorkOrder();
+  }
+
+  GetAllWorkOrder() {
+    this.allWorkOrder.set([]);
+    let authApiOpts = new ApiOptionsModel<AllWorkOrderModel[]>();
+    authApiOpts.RequestType = RequestType.GET;
+    authApiOpts.Repository = Repository.Order;
+    authApiOpts.EndPoint = EndPoints.GetAllWorkOrder;
+
+
+    this.restService
+      .CallApi<AllWorkOrderModel[], AllWorkOrderModel[]>(authApiOpts)
+      .subscribe((result: ApiResponseModel<AllWorkOrderModel[]>) => {
+
+        //console.log("API WorkOrder List", result.Data);
+        if (result?.Code === 200 && result.Data) {
+          this.allWorkOrder.set(result.Data);
+        }
+      });
+  }
+
+
+  onEdit(woNo: number) {
+    this.router.navigate(['/ikgs/work-order/edit', woNo])
+  }
+
+
 }

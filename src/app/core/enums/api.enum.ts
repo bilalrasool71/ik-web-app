@@ -12,7 +12,7 @@ export enum Repository {
     Catalog = "Catalog/",
     StyleConfiguration = "StyleConfiguration/",
 
-    Order = "Order/",  //Work Order
+    Order = "Order/"  //Work Order
 }
 
 export enum EndPoints {
@@ -57,6 +57,8 @@ export enum EndPoints {
 
 
     //#region Order == WorkOrder
-    AddUpdateWorkOrder = "AddUpdateWorkOrder"
+    AddUpdateWorkOrder = "AddUpdateWorkOrder",
+    GetAllWorkOrder = "GetAllWorkOrder",
+    GetSingleWorkOrder = "GetSingleWorkOrder"
     //#endregion
 }
