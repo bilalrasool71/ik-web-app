@@ -6,15 +6,23 @@
   <!-- WORK ORDER -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div>
-      <label for="WorKOrder" class="text-sm font-semibold text-gray-600">Work Order</label>
-      <input
-        pInputText
-        type="text"
+      <label for="WorKOrder" class="text-sm font-semibold text-gray-600 block mb-2"
+        >Work Order</label
+      >
+      <p-select
+        [options]="workOrderlist"
         formControlName="WorKOrder"
-        placeholder="Work Order"
+        optionLabel="label"
+        optionValue="value"
+        [editable]="true"
+        [filter]="true"
+        filterBy="label"
+        placeholder="Search or Type Work Order"
         id="WorKOrder"
-        class="w-full"
-      />
+        (onFilter)="getWorkOrdersList()"
+        styleClass="w-full"
+      >
+      </p-select>
     </div>
   </div>
 
@@ -25,7 +33,8 @@
         formControlName="YarnProcure"
         inputId="YarnProcure"
         binary="true"
-        (onChange)="onStageChange($event)"
+        #yarn
+        (onChange)="onStageChange($event, yarn.value)"
       >
       </p-checkbox>
       <label for="YarnProcure">Yarn Procurement</label>
@@ -36,7 +45,8 @@
         formControlName="Knitting"
         inputId="Knitting"
         binary="true"
-        (onChange)="onStageChange($event)"
+        #knitt
+        (onChange)="onStageChange($event, knitt.value)"
       >
       </p-checkbox>
       <label for="Knitting">Knitting</label>
@@ -47,7 +57,8 @@
         formControlName="Dyeing"
         inputId="Dyeing"
         binary="true"
-        (onChange)="onStageChange($event)"
+        #dye
+        (onChange)="onStageChange($event, dye.value)"
       >
       </p-checkbox>
       <label for="Dyeing">Dyeing</label>
@@ -56,8 +67,9 @@
       <p-checkbox
         formControlName="Cutting"
         inputId="Cutting"
+        #cutt
         binary="true"
-        (onChange)="onStageChange($event)"
+        (onChange)="onStageChange($event, cutt.value)"
       >
       </p-checkbox>
       <label for="Cutting">Cutting</label>
