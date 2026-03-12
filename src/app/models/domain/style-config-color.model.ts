@@ -15,9 +15,8 @@ export class StyleConfigColorAddsOnDto {
     color_RowId!: number;
     addson_RowId!: number;
     addson_Type_Id!: number;
-    placement_Id!: number;
-    addson_Subtype_Id!: number;
-    addson_Process_Id!: number;
+    requirement_Id!: number;
+    requirement!: string;
     is_Active!: string;
     eby!: number;
     edate!: Date;
