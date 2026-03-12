@@ -15,7 +15,7 @@ export class IkgsRest {
     if (location.origin.includes('localhost')) {
       this.baseUrl.set('https://localhost:7251/api/')
     } else {
-      this.baseUrl.set('https://ikgsapi.com/api/')
+      this.baseUrl.set('10.10.100.10:4101/kgsapi/api/')
     }
   }
 

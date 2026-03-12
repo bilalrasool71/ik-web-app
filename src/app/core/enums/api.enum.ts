@@ -12,7 +12,7 @@ export enum Repository {
     Catalog = "Catalog/",
     StyleConfiguration = "StyleConfiguration/",
 
-    Order = "Order/",  //Work Order
+    Order = "Order/"  //Work Order
 }
 
 export enum EndPoints {
@@ -45,6 +45,8 @@ export enum EndPoints {
     GetAllFibers = "GetAllFibers",
     GetAllFiberColors = "GetAllFiberColors",
     GetAllFiberConsumptions = "GetAllFiberConsumptions",
+    GetAllFabrics = "GetAllFabrics",
+    GetAllCompositions = "GetAllCompositions",
     GetAllStyle = "GetAllStyle",
     //#endregion
 
@@ -59,11 +61,14 @@ export enum EndPoints {
     GetStyleConfigPanelShortByStyleIdForFiberAsync = "GetStyleConfigPanelShortByStyleIdForFiberAsync",
     AddUpdateStyleConfigFiberAsync = "AddUpdateStyleConfigFiberAsync",
     AddUpdateStyleConfigSizeConsumptionAsync = "AddUpdateStyleConfigSizeConsumptionAsync",
+    GetAllStyleConfigurations = "GetAllStyleConfigurations",
 
     //#endregion
 
 
     //#region Order == WorkOrder
-    AddUpdateWorkOrder = "AddUpdateWorkOrder"
+    AddUpdateWorkOrder = "AddUpdateWorkOrder",
+    GetAllWorkOrder = "GetAllWorkOrder",
+    GetSingleWorkOrder = "GetSingleWorkOrder"
     //#endregion
 }

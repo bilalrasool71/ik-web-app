@@ -1,18 +1,19 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { Component, inject, OnInit, signal, WritableSignal } from '@angular/core';
+import { Component, inject, OnInit, Signal, signal, WritableSignal } from '@angular/core';
 import { ReactiveFormsModule, FormArray, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { IkgsRest } from '../../core/services/ikgs-rest';
 import { SelectionValueModel } from '../../models/common/selection-value.model';
 import { ApiOptionsModel, ApiResponseModel } from '../../core/models/api.model';
 import { EndPoints, Repository, RequestType } from '../../core/enums/api.enum';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import { WorkOrderDto } from '../../models/domain/work-order.model';
+import { WorkOrderColorDto, WorkOrderDto } from '../../models/domain/work-order.model';
+
 
 
 
@@ -26,15 +27,18 @@ import { WorkOrderDto } from '../../models/domain/work-order.model';
 })
 export class IkgsWorkOrderForm implements OnInit {
 
+  paramWoNo: WritableSignal<number> = signal(0);
   restService = inject(IkgsRest);
   messageService = inject(MessageService);
+  activatedRoute = inject(ActivatedRoute);
   loading = signal(false);
-
+  datePipe = inject(DatePipe);
   workOrderForm: FormGroup;
   isLocked: boolean = false;
   minDate: Date = new Date();
 
-  constructor(private fb: FormBuilder, private router: Router, private datePipe: DatePipe) {
+
+  constructor(private fb: FormBuilder, private router: Router) {
 
     this.workOrderForm = this.fb.group({
       customer: [null, Validators.required],
@@ -67,12 +71,18 @@ export class IkgsWorkOrderForm implements OnInit {
 
       colorsDetailList: this.fb.array([this.createColorRow()])
     });
+
+
+    this.paramWoNo.set(this.activatedRoute.snapshot.params['woNo']);
+    if (this.paramWoNo() > 0) {
+      this.GetSingleWorkOrder();
+    }
   }
 
   createColorRow(): FormGroup {
     return this.fb.group({
       wo: [0],
-      customer_pO: [null],
+      customer_Po: [null],
       color_RowId: [0],
       color_Id: [null, Validators.required],
       ship_Date: [null, Validators.required],
@@ -285,11 +295,11 @@ export class IkgsWorkOrderForm implements OnInit {
     if (this.colorsArray.length > 0) {
       const firstRow = this.colorsArray.at(0) as FormGroup;
 
-      const firstPurchaseOrderValue = firstRow.get('customer_pO')?.value;
+      const firstPurchaseOrderValue = firstRow.get('customer_Po')?.value;
       const firstShipmentDate = firstRow.get('ship_Date')?.value;
 
       if (firstPurchaseOrderValue) {
-        group.get('customer_pO')?.setValue(firstPurchaseOrderValue);
+        group.get('customer_Po')?.setValue(firstPurchaseOrderValue);
       }
 
       if (firstShipmentDate) {
@@ -369,11 +379,11 @@ export class IkgsWorkOrderForm implements OnInit {
 
   isMainFieldsValid(index: number): boolean {
     const group = this.colorsArray.at(index) as FormGroup;
-    return !!group.get('customer_pO')?.value &&
+    return !!group.get('customer_Po')?.value &&
       !!group.get('color_Id')?.value &&
       !!group.get('ship_Date')?.value;
   }
-  
+
 
   createPurchaseOrderRow(): FormGroup {
     return this.fb.group({
@@ -387,15 +397,16 @@ export class IkgsWorkOrderForm implements OnInit {
   }
 
 
-
-
-
-
   toggleLock(): void {
     this.isLocked = !this.isLocked;
+    this.applyLock(this.isLocked);
+  }
 
 
-    this.workOrderForm.get('lock_Flag')?.setValue(this.isLocked ? 'Y' : 'N');
+
+  applyLock(lock: boolean) {
+    this.workOrderForm.get('lock_Flag')?.setValue(lock ? 'Y' : 'N');
+
 
 
     const topFields = [
@@ -403,47 +414,33 @@ export class IkgsWorkOrderForm implements OnInit {
       'knitting_Waste', 'dyeing_Waste', 'cutting_Waste',
       'printing_Waste', 'embroidery_Waste', 'gWP_Laundry_Waste', 'sewing_Waste'
     ];
-
     topFields.forEach(f => {
       const ctrl = this.workOrderForm.get(f);
-      if (ctrl) {
-        this.isLocked ? ctrl.disable({ emitEvent: false }) : ctrl.enable({ emitEvent: false });
-      }
+      if (ctrl) lock ? ctrl.disable({ emitEvent: false }) : ctrl.enable({ emitEvent: false });
     });
-
 
     this.colorsArray.controls.forEach(colorGroup => {
       const sizes = this.getSizesArray(colorGroup as FormGroup);
 
       sizes.controls.forEach(sizeGroup => {
-
-        const sizeFields = ['size_Id', 'qty', 'excess_Qty', 'uom'];
-        sizeFields.forEach(sf => {
+        ['size_Id', 'qty', 'excess_Qty', 'uom'].forEach(sf => {
           const ctrl = (sizeGroup as FormGroup).get(sf);
-          if (ctrl) this.isLocked ? ctrl.disable({ emitEvent: false }) : ctrl.enable({ emitEvent: false });
+          if (ctrl) lock ? ctrl.disable({ emitEvent: false }) : ctrl.enable({ emitEvent: false });
         });
-
 
         const wastes = this.getWastagesArray(sizeGroup);
         wastes.controls.forEach(wCtrl => {
           const wastageControl = wCtrl.get('wastage');
-          if (wastageControl) {
-            this.isLocked ? wastageControl.disable({ emitEvent: false }) : wastageControl.enable({ emitEvent: false });
-          }
+          if (wastageControl) lock ? wastageControl.disable({ emitEvent: false }) : wastageControl.enable({ emitEvent: false });
         });
       });
 
-
-      const colorFields = ['customer_pO', 'color_Id', 'ship_Date'];
-      colorFields.forEach(cf => {
+      ['customer_Po', 'color_Id', 'ship_Date'].forEach(cf => {
         const ctrl = (colorGroup as FormGroup).get(cf);
-        if (ctrl) this.isLocked ? ctrl.disable({ emitEvent: false }) : ctrl.enable({ emitEvent: false });
+        if (ctrl) lock ? ctrl.disable({ emitEvent: false }) : ctrl.enable({ emitEvent: false });
       });
     });
   }
-
-
-
 
 
   onWasteInput(field: string, event: any) {
@@ -498,8 +495,6 @@ export class IkgsWorkOrderForm implements OnInit {
   cancel(): void {
     this.router.navigate(['/ikgs/work-order']);
   }
-
-
 
 
   allStyle: WritableSignal<SelectionValueModel[]> = signal([]);
@@ -585,11 +580,9 @@ export class IkgsWorkOrderForm implements OnInit {
       })
   }
 
-
-
   AddUpdateWorkOrder() {
 
-     if (!this.workOrderForm.valid) {
+    if (!this.workOrderForm.valid) {
       this.messageService.add({
         severity: 'error',
         summary: 'Invalid',
@@ -598,25 +591,39 @@ export class IkgsWorkOrderForm implements OnInit {
       return;
     }
 
-    const now = new Date();
     this.workOrderForm.get('lock_Flag')?.setValue(this.isLocked ? 'Y' : 'N');
+
+    let payload = { ...this.workOrderForm.getRawValue() };
+    if (payload.rec_Date) {
+      payload.rec_Date = this.datePipe.transform(payload.rec_Date, 'dd-MMM-yyyy');
+    }
+    payload.colorsDetailList.forEach((color: any) => {
+      if (color.ship_Date) {
+        color.ship_Date = this.datePipe.transform(color.ship_Date, 'dd-MMM-yyyy');
+      }
+      color.sizeDetailList.forEach((size: any) => {
+        size.wastagesList = size.wastagesList.filter((w: any) => {
+          return w.wastage && w.wastage > 0;
+        });
+      });
+    });
+    //console.log('payloads::', payload);
 
 
     this.loading.set(true);
     let apiOpts: ApiOptionsModel<WorkOrderDto> = new ApiOptionsModel<WorkOrderDto>();
     apiOpts.RequestType = RequestType.POST;
-    apiOpts.ParamObj = this.workOrderForm.value;
+    apiOpts.ParamObj = payload;
     apiOpts.Repository = Repository.Order;
     apiOpts.EndPoint = EndPoints.AddUpdateWorkOrder;
 
     this.restService.CallApi<WorkOrderDto, WorkOrderDto>(apiOpts).subscribe(
       (result: ApiResponseModel<WorkOrderDto>) => {
-        this.loading.set(false);
         if (result?.Code === 200 && result.Data) {
 
-          console.log(result.Data);
-          this.workOrderForm.patchValue({ wo: result.Data.wo });
-          
+          //console.log('form data response::', result.Data);
+
+          this.loading.set(false);
           this.messageService.add({
             severity: 'success',
             summary: 'Success',
@@ -632,6 +639,149 @@ export class IkgsWorkOrderForm implements OnInit {
     );
   }
 
+  GetSingleWorkOrder() {
+    let authApiOpts = new ApiOptionsModel<WorkOrderDto>();
+    authApiOpts.RequestType = RequestType.GET;
+    authApiOpts.Repository = Repository.Order;
+    authApiOpts.EndPoint = EndPoints.GetSingleWorkOrder;
+    authApiOpts.ReqQueryParams = [
+      {
+        Key: 'wo',
+        Value: this.paramWoNo(),
+        IsDate: false
+      }
+    ]
+    this.restService
+      .CallApi<WorkOrderDto, WorkOrderDto>(authApiOpts)
+      .subscribe((result: ApiResponseModel<WorkOrderDto>) => {
+        if (result?.Code === 200 && result.Data) {
+          setTimeout(() => {
+            this.patchValueToForm(result.Data!);
 
-  
+            this.isLocked = result.Data?.lock_Flag === 'Y';
+            if (this.isLocked) {
+              this.applyLock(true);
+            }
+
+          })
+        }
+      });
+  }
+
+
+
+
+  patchValueToForm(obj: WorkOrderDto) {
+    const stringifiedData = this.convertValuesToString(obj);
+
+    if (stringifiedData.rec_Date) {
+      stringifiedData.rec_Date = new Date(stringifiedData.rec_Date);
+    }
+
+    this.colorsArray.clear();
+
+    if (stringifiedData.colorsDetailList && Array.isArray(stringifiedData.colorsDetailList)) {
+      stringifiedData.colorsDetailList.forEach((color: WorkOrderColorDto) => {
+        color = this.convertValuesToString(color);
+        const colorGroup = this.createColorRow();
+        const validShipDate = color.ship_Date ? new Date(color.ship_Date) : null;
+
+        colorGroup.patchValue({
+          wo: color.wo,
+          customer_Po: color.customer_Po,
+          color_RowId: color.color_RowId,
+          color_Id: color.color_Id,
+          ship_Date: validShipDate,
+          edate: color.edate,
+          eby: color.eby
+        });
+
+        const sizesArray = colorGroup.get('sizeDetailList') as FormArray;
+        sizesArray.clear();
+
+        if (color.sizeDetailList && Array.isArray(color.sizeDetailList)) {
+          color.sizeDetailList.forEach((size: any) => {
+            const sizeGroup = this.createSizeRow();
+            sizeGroup.patchValue({
+              wo: size.wo,
+              color_RowId: size.color_RowId,
+              size_RowId: size.size_RowId,
+              size_Id: size.size_Id,
+              qty: size.qty,
+              excess_Qty: size.excess_Qty,
+              uom: size.uom,
+              edate: size.edate,
+              eby: size.eby
+            });
+
+            const wastagesArray = sizeGroup.get('wastagesList') as FormArray;
+            if (size.wastagesList && Array.isArray(size.wastagesList)) {
+              size.wastagesList.forEach((waste: any, index: number) => {
+                const wCtrl = wastagesArray.at(index);
+                if (wCtrl) {
+                  wCtrl.patchValue({
+                    wo: waste.wo,
+                    color_RowId: waste.color_RowId,
+                    size_RowId: waste.size_RowId,
+                    wastage_Type: waste.wastage_Type,
+                    wastage: waste.wastage,
+                    wast_RowId: waste.wast_RowId
+                  });
+                }
+              });
+            }
+
+            sizesArray.push(sizeGroup);
+          });
+        }
+
+        this.colorsArray.push(colorGroup);
+      });
+    }
+
+    this.workOrderForm.patchValue({
+      customer: stringifiedData.customer,
+      style_Id: stringifiedData.style_Id,
+      wo: stringifiedData.wo,
+      rec_Date: stringifiedData.rec_Date,
+      order_Staus: stringifiedData.order_Staus,
+      eby: stringifiedData.eby,
+      lock_Flag: stringifiedData.lock_Flag,
+      mby: stringifiedData.mby,
+      mip: stringifiedData.mip,
+      mdate: stringifiedData.mdate,
+      isClose: stringifiedData.isClose,
+      close_Date: stringifiedData.close_Date,
+      close_By: stringifiedData.close_By,
+      close_Ip: stringifiedData.close_Ip,
+      knitting_Waste: stringifiedData.knitting_Waste,
+      dyeing_Waste: stringifiedData.dyeing_Waste,
+      cutting_Waste: stringifiedData.cutting_Waste,
+      printing_Waste: stringifiedData.printing_Waste,
+      embroidery_Waste: stringifiedData.embroidery_Waste,
+      gWP_Laundry_Waste: stringifiedData.gWP_Laundry_Waste,
+      sewing_Waste: stringifiedData.sewing_Waste
+    });
+
+    //console.log('Form patched with all colors, sizes & wastages', obj);
+
+  }
+
+  convertValuesToString(obj: any): any {
+    if (obj === null || typeof obj !== 'object') {
+      if (typeof obj === 'string' && obj.includes('T')) return obj;
+      return typeof obj === 'number' ? obj.toString() : obj;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.convertValuesToString(item));
+    }
+    const newObj: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        newObj[key] = this.convertValuesToString(obj[key]);
+      }
+    }
+    return newObj;
+  }
+
 }

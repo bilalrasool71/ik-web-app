@@ -15,35 +15,40 @@
 
     <!-- Table Card -->
     <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-        <p-table [value]="configurations" [paginator]="true" [rows]="10" [rowHover]="true"
+        <!-- <app-ikgs-header (search)="onSearch($event)"></app-ikgs-header> -->
+        <p-table [value]="allWorkOrder()" [paginator]="true" [rows]="10" [rowHover]="true"
             [showCurrentPageReport]="true" currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
             styleClass="p-datatable-sm">
             <ng-template #header>
                 <tr>
-                    <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">ID</th>
+                    <!-- <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">ID</th> -->
+
+                    <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">WO</th>
+
                     <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Customer</th>
-                    <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Style Type</th>
+                    <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Style</th>
                     <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Season</th>
                     <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Gender</th>
                     <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Product Type</th>
-                    <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Status</th>
+                    <!-- <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Status</th> -->
                     <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest !text-right">Actions
                     </th>
                 </tr>
             </ng-template>
-            <ng-template #body let-config>
+            <ng-template #body let-workOrder>
                 <tr class="hover:bg-slate-50/50 transition-colors">
-                    <td class="!text-sm !font-semibold !text-slate-700">{{ config.id }}</td>
-                    <td class="!text-sm !font-semibold !text-slate-700">{{ config.customer }}</td>
-                    <td class="!text-sm !text-slate-600">{{ config.styleType }}</td>
-                    <td class="!text-sm !text-slate-600">{{ config.season }}</td>
-                    <td class="!text-sm !text-slate-600">{{ config.gender }}</td>
-                    <td class="!text-sm !text-slate-600">{{ config.productType }}</td>
-                    <td>
-                        <p-tag [value]="config.status" [severity]="getStatusSeverity(config.status)" [rounded]="true" />
-                    </td>
+                    <!-- <td class="!text-sm !font-semibold !text-slate-700">{{ workOrder.id }}</td> -->
+                    <td class="!text-sm !font-semibold !text-slate-700">{{ workOrder.wo }}</td>
+                    <td class="!text-sm !font-semibold !text-slate-700">{{ workOrder.customer }}</td>
+                    <td class="!text-sm !text-slate-600">{{ workOrder.style }}</td>
+                    <td class="!text-sm !text-slate-600">{{ workOrder.season }}</td>
+                    <td class="!text-sm !text-slate-600">{{ workOrder.gender }}</td>
+                    <td class="!text-sm !text-slate-600">{{ workOrder.product_Type }}</td>
+                    <!-- <td>
+                        <p-tag [value]="workOrder.status" [severity]="getStatusSeverity(workOrder.status)" [rounded]="true" />
+                    </td> -->
                     <td class="!text-right">
-                        <button
+                        <button (click)="onEdit(workOrder.wo)"
                             class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
                             <i class="pi pi-pencil text-xs"></i>
                         </button>
@@ -62,8 +67,8 @@
                                 class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400">
                                 <i class="pi pi-box text-2xl"></i>
                             </div>
-                            <p class="text-sm font-medium text-slate-500">No configurations found</p>
-                            <a routerLink="/ikgs/style-configuration/new"
+                            <p class="text-sm font-medium text-slate-500">No Work Order found</p>
+                            <a routerLink="/ikgs/work-order/new"
                                 class="text-xs font-bold text-indigo-600 hover:underline">Create your first one</a>
                         </div>
                     </td>

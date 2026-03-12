@@ -47,6 +47,10 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'work-order/edit/:woNo',
+        loadComponent: () => import('./features/ikgs-work-order/ikgs-work-order-form').then(x => x.IkgsWorkOrderForm)
+      },
+      {
         path: 'contract',
         loadComponent: () =>
           import('./features/ikgs-contract/ikgs-contract').then((x) => x.IkgsContract),
@@ -54,10 +58,11 @@ export const routes: Routes = [
       {
         path: 'contract/new',
         loadComponent: () =>
-          import('./features/ikgs-contract/ikgs-contract-form/ikgs-contract-form').then(
+          import('./features/ikgs-contract/ikgs-contract-form').then(
             (x) => x.IkgsContractForm,
           ),
       },
+
     ],
   },
 ];

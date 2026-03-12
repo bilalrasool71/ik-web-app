@@ -1,5 +1,5 @@
 export class SelectionValueModel {
-    value!: string;
+    value!: string | number;
     viewValue!: string;
     parentValue!: string;
     isChecked!: boolean;

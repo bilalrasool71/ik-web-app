@@ -1,7 +1,11 @@
 
+export class AddsOnRequirementDto {
+    addsOn_Requirements!: string;
+    requirements_Id!: number;
+}
+
 export class AddsOnCatalogDto {
-    AddsOn_Id!: number;
-    AddsOn_Ds!: string;
-    AddsOn_Requirements!: string;
-    AddsOn_RequirementsList!: string[]
+    addsOn_Id!: number;
+    addsOn_Ds!: string;
+    requirements!: AddsOnRequirementDto[];
 }
