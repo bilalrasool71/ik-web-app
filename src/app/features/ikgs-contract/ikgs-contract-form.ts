@@ -19,7 +19,7 @@ import { MessageService } from 'primeng/api';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { CheckboxModule } from 'primeng/checkbox';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { IkgsContract } from '../../../models/domain/contract,model';
+import { IkgsContract } from '../../models/domain/contract.model';
 
 @Component({
   selector: 'app-ikgs-contract-form',

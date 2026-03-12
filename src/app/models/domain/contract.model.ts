@@ -79,7 +79,7 @@ export interface CuttingStage {
 // ==========================================
 
 export interface IkgsContract {
-  WorKOrder: string;
+  WorkOrder: string;
   stages: StagesConfig;
   Yarn: YarnStage;
   Knitting: KnittingStage[];
