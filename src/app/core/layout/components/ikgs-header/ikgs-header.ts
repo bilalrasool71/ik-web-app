@@ -74,7 +74,8 @@ export class IkgsHeader {
       'work-order/new': 'Work Order',
       'work-order': 'Work Order',
       'staff': 'Staff',
-      'contractors': 'Contractors',
+      'contract': 'Contract',
+      'contract/new': 'Contract'
     };
     for (const [route, title] of Object.entries(routeTitleMap)) {
       if (url.includes(route)) return title;

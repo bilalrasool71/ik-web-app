@@ -357,4 +357,8 @@ export class IkgsContractForm implements OnInit {
     }
     return invalid;
   }
+
+  backArrowBtn(): void {
+    this.router.navigate(['/ikgs/contract']);
+  }
 }

@@ -58,10 +58,11 @@ export const routes: Routes = [
       {
         path: 'contract/new',
         loadComponent: () =>
-          import('./features/ikgs-contract/ikgs-contract-form/ikgs-contract-form').then(
+          import('./features/ikgs-contract/ikgs-contract-form').then(
             (x) => x.IkgsContractForm,
           ),
       },
+
     ],
   },
 ];
