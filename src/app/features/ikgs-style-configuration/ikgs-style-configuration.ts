@@ -1,9 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
+import { RequestType, Repository, EndPoints } from '../../core/enums/api.enum';
+import { ApiOptionsModel } from '../../core/models/api.model';
+import { SelectionValueModel } from '../../models/common/selection-value.model';
+import { StyleConfigMainDsDto } from '../../models/domain/style-configuration.model';
+import { IkgsRest } from '../../core/services/ikgs-rest';
 
 @Component({
     selector: 'app-ikgs-style-configuration',
@@ -11,19 +16,25 @@ import { TagModule } from 'primeng/tag';
     templateUrl: './ikgs-style-configuration.html',
     styleUrl: './ikgs-style-configuration.scss',
 })
-export class IkgsStyleConfiguration {
-    configurations = [
-        { id: 1, customer: 'Nike', styleType: 'Garment', season: 'Spring 2026', gender: 'Men', productType: 'T-Shirt', status: 'Draft' },
-        { id: 2, customer: 'Adidas', styleType: 'Garment', season: 'Fall 2026', gender: 'Women', productType: 'Polo Shirt', status: 'Completed' },
-        { id: 3, customer: 'Puma', styleType: 'Fabric', season: 'Summer 2026', gender: 'Kids', productType: 'Shorts', status: 'In Progress' },
-    ];
+export class IkgsStyleConfiguration implements OnInit {
+    restService = inject(IkgsRest)
+    allStyleConfigurations: WritableSignal<StyleConfigMainDsDto[]> = signal([]);
+    ngOnInit() {
+        this.getAllStyleConfigurations();
+    }
 
-    getStatusSeverity(status: string): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" | undefined {
-        switch (status) {
-            case 'Completed': return 'success';
-            case 'In Progress': return 'info';
-            case 'Draft': return 'warn';
-            default: return 'secondary';
-        }
+    getAllStyleConfigurations() {
+        this.allStyleConfigurations.set([]);
+        let authApiOpts = new ApiOptionsModel<StyleConfigMainDsDto[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.StyleConfiguration;
+        authApiOpts.EndPoint = EndPoints.GetAllStyleConfigurations;
+
+        this.restService.CallApi<StyleConfigMainDsDto[], StyleConfigMainDsDto[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allStyleConfigurations.set(result.Data);
+                }
+            });
     }
 }

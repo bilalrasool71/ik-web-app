@@ -14,7 +14,7 @@
 
     <!-- Table Card -->
     <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-        <p-table [value]="configurations" [paginator]="true" [rows]="10" [rowHover]="true"
+        <p-table [value]="allStyleConfigurations()" [paginator]="true" [rows]="10" [rowHover]="true"
             [showCurrentPageReport]="true" currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
             styleClass="p-datatable-sm">
             <ng-template #header>
@@ -25,21 +25,22 @@
                     <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Season</th>
                     <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Gender</th>
                     <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Product Type</th>
-                    <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Status</th>
+                    <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest">Locked</th>
                     <th class="!font-bold !text-[10px] !text-slate-400 !uppercase !tracking-widest !text-right">Actions
                     </th>
                 </tr>
             </ng-template>
             <ng-template #body let-config>
                 <tr class="hover:bg-slate-50/50 transition-colors">
-                    <td class="!text-sm !font-semibold !text-slate-700">{{ config.id }}</td>
-                    <td class="!text-sm !font-semibold !text-slate-700">{{ config.customer }}</td>
-                    <td class="!text-sm !text-slate-600">{{ config.styleType }}</td>
-                    <td class="!text-sm !text-slate-600">{{ config.season }}</td>
-                    <td class="!text-sm !text-slate-600">{{ config.gender }}</td>
-                    <td class="!text-sm !text-slate-600">{{ config.productType }}</td>
+                    <td class="!text-sm !font-semibold !text-slate-700">{{ config.style_Id }}</td>
+                    <td class="!text-sm !font-semibold !text-slate-700">{{ config.customer_Ds }}</td>
+                    <td class="!text-sm !text-slate-600">{{ config.config_Type_Ds }}</td>
+                    <td class="!text-sm !text-slate-600">{{ config.season_Name }}</td>
+                    <td class="!text-sm !text-slate-600">{{ config.gender_Ds }}</td>
+                    <td class="!text-sm !text-slate-600">{{ config.product_Type_Ds }}</td>
                     <td>
-                        <p-tag [value]="config.status" [severity]="getStatusSeverity(config.status)" [rounded]="true" />
+                        <p-tag [value]="config.lock_Flag == 'Y' ? 'Locked' : 'Unlocked'"
+                            [severity]="config.lock_Flag == 'Y' ? 'warn' : 'contrast'" [rounded]="true" />
                     </td>
                     <td class="!text-right">
                         <button

@@ -1,6 +1,6 @@
 import { Component, inject, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StepperModule } from 'primeng/stepper';
 import { SelectModule } from 'primeng/select';
@@ -40,28 +40,9 @@ export class IkgsStyleConfigurationForm {
     activeStep = signal(0);
     FileUploadType = FileUploadType;
 
-    styleTypes = signal([
-        { value: 'G', viewValue: 'Garment' },
-        { value: 'F', viewValue: 'Fabric' },
-    ]);
 
 
-    placementOptions = [
-        { label: 'Front', value: 'Front' },
-        { label: 'Back', value: 'Back' },
-        { label: 'Left Chest', value: 'Left Chest' },
-        { label: 'Right Sleeve', value: 'Right Sleeve' },
-    ];
-    printTypeOptions = [
-        { label: 'Screen Print', value: 'Screen Print' },
-        { label: 'Digital Print', value: 'Digital Print' },
-        { label: 'Heat Transfer', value: 'Heat Transfer' },
-    ];
-    designOptions = [
-        { label: 'Logo', value: 'Logo' },
-        { label: 'All Over', value: 'All Over' },
-        { label: 'Placement', value: 'Placement' },
-    ];
+
     embTypeOptions = [
         { label: 'Flat', value: 'Flat' },
         { label: '3D Puff', value: '3D Puff' },
@@ -85,19 +66,7 @@ export class IkgsStyleConfigurationForm {
         { label: 'L', value: 'L' },
         { label: 'XL', value: 'XL' },
     ];
-    fabricOptions = [
-        { label: 'Single Jersey', value: 'Single Jersey' },
-        { label: 'Pique', value: 'Pique' },
-        { label: 'Interlock', value: 'Interlock' },
-        { label: 'Fleece', value: 'Fleece' },
-        { label: 'Rib', value: 'Rib' },
-    ];
-    compositionOptions = [
-        { label: '100% Cotton', value: '100% Cotton' },
-        { label: '60/40 CVC', value: '60/40 CVC' },
-        { label: '100% Polyester', value: '100% Polyester' },
-        { label: '50/50 TC', value: '50/50 TC' },
-    ];
+
     fabricColorOptions = [
         { label: 'White', value: 'White' },
         { label: 'Black', value: 'Black' },
@@ -120,16 +89,38 @@ export class IkgsStyleConfigurationForm {
         { label: 'Floral', value: 'Floral' },
     ];
 
-    fiberOptions = [
-        { label: 'Cotton', value: 'Cotton' },
-        { label: 'Polyester', value: 'Polyester' },
-        { label: 'Spandex', value: 'Spandex' },
-        { label: 'Nylon', value: 'Nylon' },
+    fiberOptions = signal([
+        { viewValue: 'Cotton', value: 'Cotton' },
+        { viewValue: 'Polyester', value: 'Polyester' },
+        { viewValue: 'Spandex', value: 'Spandex' },
+        { viewValue: 'Nylon', value: 'Nylon' },
+    ]);
+    consumptionOptions = signal([
+        { viewValue: 'Regular', value: 'Regular' },
+        { viewValue: 'High', value: 'High' },
+        { viewValue: 'Low', value: 'Low' },
+    ]);
+    yesNoOptions = [
+        { label: 'Yes', value: 'Y' },
+        { label: 'No', value: 'N' }
     ];
-    consumptionOptions = [
-        { label: 'Regular', value: 'Regular' },
-        { label: 'High', value: 'High' },
-        { label: 'Low', value: 'Low' },
+    configTypeOptions = [
+        { label: 'Garment', value: 'G' },
+        { label: 'Fabric', value: 'F' }
+    ];
+    widthTypeOptions = [
+        { label: 'Open', value: 'O' },
+        { label: 'Tubular', value: 'T' },
+        { label: 'Flat', value: 'F' }
+    ];
+    knitTypeOptions = [
+        { label: 'Knit', value: 'K' },
+        { label: 'Tuck', value: 'T' },
+        { label: 'Loop', value: 'L' }
+    ];
+    panelTypeOptions = [
+        { label: 'Main Body', value: 'Y' },
+        { label: 'Trim', value: 'N' }
     ];
 
 
@@ -193,20 +184,93 @@ export class IkgsStyleConfigurationForm {
         });
     }
 
-    // Color Details helpers
+    groupedAddsOns = signal<any[]>([]);
+
+    prepareAddsOns() {
+        const data = this.allAddsOnCatalog();
+
+        const grouped = data.map(item => {
+            const requirements = item.requirements.map(req => {
+                let lovSignal: any = null;
+                const ds = item.addsOn_Ds ?? '';
+
+                if (ds.includes('Embroidery')) {
+                    if (req.requirements_Id === 1 || req.addsOn_Requirements?.includes('Placement')) lovSignal = this.allPlacementsForEmbroidery;
+                    if (req.requirements_Id === 2 || req.addsOn_Requirements?.includes('Type')) lovSignal = this.allEmbTypes;
+                    if (req.requirements_Id === 3 || req.addsOn_Requirements?.includes('Process')) lovSignal = this.allDesignsForEmbroidery;
+                } else if (ds.includes('Print')) {
+                    if (req.requirements_Id === 1 || req.addsOn_Requirements?.includes('Placement')) lovSignal = this.allPlacementsForPrint;
+                    if (req.requirements_Id === 2 || req.addsOn_Requirements?.includes('Type')) lovSignal = this.allPrintTypes;
+                    if (req.requirements_Id === 3 || req.addsOn_Requirements?.includes('Process')) lovSignal = this.allDesignsForPrint;
+                } else if (ds.includes('Wash')) {
+                    if (req.requirements_Id === 3 || req.addsOn_Requirements?.includes('Process')) lovSignal = this.allGarmentWashTypes;
+                } else {
+                    if (req.addsOn_Requirements?.includes('Placement')) lovSignal = this.allPlacementsForEmbroidery;
+                    else if (req.addsOn_Requirements?.includes('Type')) lovSignal = this.allEmbTypes;
+                    else if (req.addsOn_Requirements?.includes('Process')) lovSignal = this.allDesignsForEmbroidery;
+                }
+
+                return {
+                    name: req.addsOn_Requirements,
+                    signal: lovSignal
+                };
+            });
+
+            return {
+                id: item.addsOn_Id,
+                name: item.addsOn_Ds,
+                requirements: requirements
+            };
+        });
+
+        this.groupedAddsOns.set(grouped);
+    }
+
     createColorGroup(): FormGroup {
+
+        const addOnsGroup: any = {};
+
+        this.groupedAddsOns().forEach((addon: any) => {
+
+            const reqGroup: any = {
+                enabled: new FormControl('N')
+            };
+
+            addon.requirements.forEach((req: any) => {
+                reqGroup[req.name] = new FormControl(null);
+            });
+
+            const group = this.fb.group(reqGroup);
+
+            // Sync Logic: If any requirement is selected, set enabled to 'Y'
+            // OR: If enabled is set to 'N', clear requirements
+            group.valueChanges.subscribe(val => {
+                const requirements = addon.requirements.map((r: any) => r.name);
+                const hasValue = requirements.some((name: string) => !!val[name]);
+
+                if (hasValue && val['enabled'] === 'N') {
+                    group.get('enabled')?.setValue('Y', { emitEvent: false });
+                }
+            });
+
+            group.get('enabled')?.valueChanges.subscribe(enabled => {
+                if (enabled === 'N') {
+                    const patch: any = {};
+                    addon.requirements.forEach((req: any) => {
+                        patch[req.name] = null;
+                    });
+                    group.patchValue(patch, { emitEvent: false });
+                }
+            });
+
+            addOnsGroup[addon.name] = group;
+        });
+
         return this.fb.group({
-            style_Id: [this.configForm.value.style_Id],
-            color_Id: [0],
-            adds_On: ['N'],
-            // printType: [null],
-            // printDesign: [null],
-            // garmentEmbroidery: ['Yes'],
-            // embPlacement: [null],
-            // embType: [null],
-            // embDesign: [null],
-            // garmentWash: ['Yes'],
-            // washType: [null],
+            color_RowId: [0],
+            color_Id: [null],
+            hasAddsOn: ['N'],
+            addsOns: this.fb.group(addOnsGroup)
         });
     }
 
@@ -230,21 +294,21 @@ export class IkgsStyleConfigurationForm {
             style_Id: [this.configForm.value.style_Id],
             color_RowId: [0],
             fabric_RowId: [0],
-            panel_Id: [0],
-            size_Id: [0],
-            fabric_Id: [0],
+            panel_Id: [null, Validators.required],
+            size_Id: [null, Validators.required],
+            fabric_Id: [null, Validators.required],
             is_Main_Body: ['N'],
-            fabric_Composition_Id: [0],
-            width_Type: ['Open'],
-            gsm: [null],
-            fab_Color_Id: [null],
-            dye_Route_Id: [null],
+            fabric_Composition_Id: [null, Validators.required],
+            width_Type: ['O'],
+            gsm: [null, Validators.required],
+            fab_Color_Id: [null, Validators.required],
+            dye_Route_Id: [null, Validators.required],
             dye_Special_Process: [null],
             is_Rotary: ['N'],
             rotary_Design_Id: [null],
             rotary_Color_Id: [null],
             is_Active: ['Y'],
-            eby: [0],
+            eby: [1],
             edate: [new Date()],
         });
     }
@@ -266,12 +330,17 @@ export class IkgsStyleConfigurationForm {
     // Fibers helpers
     createFiberRow(): FormGroup {
         return this.fb.group({
-            fiber: [null],
-            consumption: [null],
-            ratio: [null],
-            knitType: ['Knit'],
-            yarnDye: ['Yes'],
-            fiberColor: [null],
+            style_Id: [this.configForm.value.style_Id],
+            color_RowId: [0],
+            fabric_RowId: [0],
+            fiber_Id: [null, Validators.required],
+            knit_Type: ['K'],
+            fiber_Ratio: [null],
+            is_Fiber_Dye: ['N'],
+            fiber_Color_Id: [null],
+            is_Active: ['Y'],
+            eby: [1],
+            edate: [new Date()],
         });
     }
 
@@ -334,6 +403,21 @@ export class IkgsStyleConfigurationForm {
             return;
         }
 
+        if (this.activeStep() === 2) {
+            if (this.fabricPanelsForm.invalid) {
+                this.fabricPanelsForm.markAllAsTouched();
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Validation',
+                    detail: 'Please fill all required fields.'
+                });
+                return;
+            }
+
+            this.addUpdateStyleConfigFabric();
+            return;
+        }
+
         if (this.activeStep() < 4) {
             this.activeStep.set(this.activeStep() + 1);
         }
@@ -346,11 +430,6 @@ export class IkgsStyleConfigurationForm {
     }
 
     save(): void {
-        console.log('Configuration:', this.configForm.value);
-        console.log('Color Details:', this.colorDetailsForm.value);
-        console.log('Fabric Panels:', this.fabricPanelsForm.value);
-        console.log('Fibers:', this.fibersForm.value);
-        console.log('Size Consumption:', this.sizeConsumptionForm.value);
         this.router.navigate(['/ikgs/style-configuration']);
     }
 
@@ -369,20 +448,22 @@ export class IkgsStyleConfigurationForm {
     allPrintTypes: WritableSignal<SelectionValueModel[]> = signal([]);
     allEmbTypes: WritableSignal<SelectionValueModel[]> = signal([]);
     allDesignsForPrint: WritableSignal<SelectionValueModel[]> = signal([]);
-    allDesignsForEmbriodery: WritableSignal<SelectionValueModel[]> = signal([]);
+    allDesignsForEmbroidery: WritableSignal<SelectionValueModel[]> = signal([]);
     allGarmentWashTypes: WritableSignal<SelectionValueModel[]> = signal([]);
     allPanels: WritableSignal<SelectionValueModel[]> = signal([]);
     allFabricColors: WritableSignal<SelectionValueModel[]> = signal([]);
     allPrintColors: WritableSignal<SelectionValueModel[]> = signal([]);
     allPanelSizes: WritableSignal<SelectionValueModel[]> = signal([]);
-    allFabricConumptions: WritableSignal<SelectionValueModel[]> = signal([]);
+    allFabricConsumptions: WritableSignal<SelectionValueModel[]> = signal([]);
     allDyeProcessRoutes: WritableSignal<SelectionValueModel[]> = signal([]);
     allSpecialProcess: WritableSignal<SelectionValueModel[]> = signal([]);
     allFibers: WritableSignal<SelectionValueModel[]> = signal([]);
     allFiberColors: WritableSignal<SelectionValueModel[]> = signal([]);
     allFiberConsumptions: WritableSignal<SelectionValueModel[]> = signal([]);
     allShortColorsForFabricPanels: WritableSignal<SelectionValueModel[]> = signal([]);
-
+    allAddsOnCatalog: WritableSignal<AddsOnCatalogDto[]> = signal([]);
+    allFabrics: WritableSignal<SelectionValueModel[]> = signal([]);
+    allCompositions: WritableSignal<SelectionValueModel[]> = signal([]);
 
     ngOnInit() {
         this.callCatalogApis();
@@ -412,6 +493,7 @@ export class IkgsStyleConfigurationForm {
         this.getAllFiberConsumptions();
         this.getAllAddsOnCatalog();
         this.getAllPanelSizes();
+        this.getAllFabrics();
     }
 
     getAllCustomers() {
@@ -579,6 +661,7 @@ export class IkgsStyleConfigurationForm {
                 }
             });
     }
+
     getAllDesignsForPrint() {
         this.allDesignsForPrint.set([]);
         let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
@@ -595,7 +678,7 @@ export class IkgsStyleConfigurationForm {
     }
 
     getAllDesignsForEmbroidery() {
-        this.allDesignsForEmbriodery.set([]);
+        this.allDesignsForEmbroidery.set([]);
         let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
         authApiOpts.RequestType = RequestType.GET;
         authApiOpts.Repository = Repository.Catalog;
@@ -604,7 +687,7 @@ export class IkgsStyleConfigurationForm {
         this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
-                    this.allDesignsForEmbriodery.set(result.Data);
+                    this.allDesignsForEmbroidery.set(result.Data);
                 }
             });
     }
@@ -745,6 +828,25 @@ export class IkgsStyleConfigurationForm {
             });
     }
 
+    refreshFiberOptions() {
+        this.fiberOptions.set([
+            { viewValue: 'Cotton', value: 'Cotton' },
+            { viewValue: 'Polyester', value: 'Polyester' },
+            { viewValue: 'Spandex', value: 'Spandex' },
+            { viewValue: 'Nylon', value: 'Nylon' },
+        ]);
+        this.messageService.add({ severity: 'info', summary: 'Refreshed', detail: 'Fiber options refreshed' });
+    }
+
+    refreshConsumptionOptions() {
+        this.consumptionOptions.set([
+            { viewValue: 'Regular', value: 'Regular' },
+            { viewValue: 'High', value: 'High' },
+            { viewValue: 'Low', value: 'Low' },
+        ]);
+        this.messageService.add({ severity: 'info', summary: 'Refreshed', detail: 'Consumption options refreshed' });
+    }
+
     getAllPanelSizes() {
         this.allPanelSizes.set([]);
         let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
@@ -756,6 +858,36 @@ export class IkgsStyleConfigurationForm {
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
                     this.allPanelSizes.set(result.Data);
+                }
+            });
+    }
+
+    getAllFabrics() {
+        this.allFabrics.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllFabrics;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allFabrics.set(result.Data);
+                }
+            });
+    }
+
+    getAllCompositions() {
+        this.allCompositions.set([]);
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.Catalog;
+        authApiOpts.EndPoint = EndPoints.GetAllCompositions;
+
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allCompositions.set(result.Data);
                 }
             });
     }
@@ -787,7 +919,7 @@ export class IkgsStyleConfigurationForm {
 
 
     getAllAddsOnCatalog() {
-        this.allFiberConsumptions.set([]);
+        this.allAddsOnCatalog.set([]);
         let authApiOpts = new ApiOptionsModel<AddsOnCatalogDto[]>();
         authApiOpts.RequestType = RequestType.GET;
         authApiOpts.Repository = Repository.Catalog;
@@ -796,7 +928,15 @@ export class IkgsStyleConfigurationForm {
         this.restService.CallApi<AddsOnCatalogDto[], AddsOnCatalogDto[]>(authApiOpts)
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
-                    console.log(result.Data)
+                    this.allAddsOnCatalog.set(result.Data);
+                    this.prepareAddsOns();
+                    const existingCount = this.colorsArray.length;
+                    this.colorDetailsForm.setControl(
+                        'colors',
+                        this.fb.array(
+                            Array(Math.max(existingCount, 1)).fill(null).map(() => this.createColorGroup())
+                        )
+                    );
                 }
             });
     }
@@ -804,9 +944,51 @@ export class IkgsStyleConfigurationForm {
 
     addUpdateStyleConfigColor() {
         const styleId = this.configForm.value.style_Id;
-
         const colorList: StyleConfigColorDto[] = this.colorsArray.controls.map(ctrl => {
-            const color: StyleConfigColorDto = { ...ctrl.value, style_Id: styleId };
+            const colorFormValue = ctrl.value;
+            const color: StyleConfigColorDto = {
+                ...colorFormValue,
+                style_Id: styleId,
+                addsOnList: []
+            };
+
+            if (colorFormValue.addsOns) {
+                const groupedData = this.groupedAddsOns();
+
+                Object.keys(colorFormValue.addsOns).forEach(addonName => {
+                    const addonData = colorFormValue.addsOns[addonName];
+                    if (addonData && addonData.enabled === 'Y') {
+                        const catalogAddon = groupedData.find(a => a.name === addonName);
+                        if (catalogAddon) {
+                            catalogAddon.requirements.forEach((req: any) => {
+                                const reqValue = addonData[req.name];
+                                if (reqValue) {
+                                    let reqId = 0;
+                                    if (addonName.includes('Embroidery') || addonName.includes('Print')) {
+                                        if (req.name === 'Placement') reqId = 1;
+                                        else if (req.name === 'Type') reqId = 2;
+                                        else if (req.name === 'Process') reqId = 3;
+                                    } else if (addonName.includes('Wash')) {
+                                        if (req.name === 'Process') reqId = 3;
+                                    }
+
+                                    color.addsOnList.push({
+                                        style_Id: styleId,
+                                        color_RowId: colorFormValue.color_RowId || 0,
+                                        addson_RowId: 0,
+                                        addson_Type_Id: catalogAddon.id,
+                                        requirement_Id: reqId,
+                                        requirement: reqValue,
+                                        is_Active: 'Y',
+                                        eby: 1,
+                                        edate: new Date()
+                                    });
+                                }
+                            });
+                        }
+                    }
+                });
+            }
             return color;
         });
 
@@ -819,6 +1001,16 @@ export class IkgsStyleConfigurationForm {
             (result: ApiResponseModel<StyleConfigColorDto[]>) => {
                 if (result) {
                     if (result.Code === 200) {
+                        if (result.Data && result.Data.length > 0) {
+                            result.Data.forEach((item, index) => {
+                                if (this.colorsArray.at(index)) {
+                                    this.colorsArray.at(index).patchValue({
+                                        color_RowId: item.color_RowId
+                                    }, { emitEvent: false });
+                                }
+                            });
+                        }
+
                         this.activeStep.set(2);
                         this.messageService.add({
                             severity: 'success',
@@ -826,6 +1018,7 @@ export class IkgsStyleConfigurationForm {
                             detail: 'Color details saved successfully.'
                         });
                     }
+
                 }
             }
         );
@@ -833,7 +1026,7 @@ export class IkgsStyleConfigurationForm {
 
     getStyleConfigColorShortByStyleIdForFabric() {
         this.allShortColorsForFabricPanels.set([]);
-        let authApiOpts = new ApiOptionsModel<AddsOnCatalogDto[]>();
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
         authApiOpts.RequestType = RequestType.GET;
         authApiOpts.Repository = Repository.StyleConfiguration;
         authApiOpts.ReqQueryParams = [{
@@ -842,7 +1035,7 @@ export class IkgsStyleConfigurationForm {
             IsDate: false
         }]
         authApiOpts.EndPoint = EndPoints.GetStyleConfigColorShortByStyleIdForFabric;
-        this.restService.CallApi<AddsOnCatalogDto[], AddsOnCatalogDto[]>(authApiOpts)
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
                     this.allShortColorsForFabricPanels.set(result.Data);
@@ -850,5 +1043,63 @@ export class IkgsStyleConfigurationForm {
             });
     }
 
+    addUpdateStyleConfigFabric() {
+        const styleId = this.configForm.value.style_Id;
+        const panelList = this.panelsArray.value.map((p: any) => ({
+            ...p,
+            style_Id: styleId,
+            is_Active: p.is_Active || 'Y',
+            eby: p.eby || 1,
+            edate: p.edate || new Date()
+        }));
 
+        let apiOpts: ApiOptionsModel<any[]> = new ApiOptionsModel<any[]>();
+        apiOpts.RequestType = RequestType.POST;
+        apiOpts.ParamObj = panelList;
+        apiOpts.Repository = Repository.StyleConfiguration;
+        apiOpts.EndPoint = EndPoints.AddUpdateStyleConfigFabricAsync;
+
+        this.restService.CallApi<any[], any[]>(apiOpts).subscribe(
+            (result: ApiResponseModel<any[]>) => {
+                if (result?.Code === 200) {
+                    if (result.Data && result.Data.length > 0) {
+                        result.Data.forEach((item, index) => {
+                            if (this.panelsArray.at(index)) {
+                                this.panelsArray.at(index).patchValue({
+                                    fabric_RowId: item.fabric_RowId
+                                }, { emitEvent: false });
+                            }
+                        });
+                    }
+
+                    this.activeStep.set(3);
+                    this.getStyleConfigFabricShortByStyleIdForFiber();
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        detail: 'Fabric panels saved successfully.'
+                    });
+                }
+            }
+        );
+    }
+
+    getStyleConfigFabricShortByStyleIdForFiber() {
+        this.allFabrics.set([]); // Or some other signal for fiber dropdown
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.StyleConfiguration;
+        authApiOpts.ReqQueryParams = [{
+            Key: 'style_Id',
+            Value: this.configForm.value.style_Id,
+            IsDate: false
+        }]
+        authApiOpts.EndPoint = EndPoints.GetStyleConfigFabricShortByStyleIdForFiber;
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allFabrics.set(result.Data); // Assuming this signal is used in fibers step
+                }
+            });
+    }
 }

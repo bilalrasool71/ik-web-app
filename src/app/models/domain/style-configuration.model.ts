@@ -12,3 +12,12 @@ export class StyleConfigMainDto {
     garment_Gsm!: number;
     style_Description!: string;
 }
+
+export class StyleConfigMainDsDto extends StyleConfigMainDto {
+    customer_Ds!: string;
+    config_Type_Ds!: string;
+    season_Name!: string;
+    gender_Ds!: string;
+    product_Type_Ds!: string;
+    product_Sub_Type_Ds!: string;
+}
