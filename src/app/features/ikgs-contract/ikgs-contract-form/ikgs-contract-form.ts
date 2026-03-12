@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgClass } from '@angular/common';
 import { Component, inject, OnInit, signal, WritableSignal } from '@angular/core';
 import {
   ReactiveFormsModule,
@@ -24,6 +24,7 @@ import { IkgsContract } from '../../../models/domain/contract,model';
 @Component({
   selector: 'app-ikgs-contract-form',
   imports: [
+    NgClass,
     CommonModule,
     ReactiveFormsModule,
     SelectModule,
@@ -47,17 +48,60 @@ export class IkgsContractForm implements OnInit {
   maxKnittingQty: number = 0;
   maxDyeingQty: number = 0;
   maxCuttingQty: number = 0;
-
+  lockedStages: Record<string, boolean> = {
+    YarnProcurement: false,
+    Knitting: false,
+    Dyeing: false,
+    Cutting: false,
+  };
   workOrderlist: string[] = [];
 
   showYarn: boolean = true;
   showKnitting: boolean = false;
   showDyeing: boolean = false;
   showcutting: boolean = false;
+  activeKnittingRow: Record<number, number> = {};
+  activeDyeingRow: Record<number, { cIdx: number; rIdx: number }> = {};
+  activeCuttingRow: Record<number, { cIdx: number; rIdx: number }> = {};
+
+  selectKnittingRow(knittingIndex: number, requiredItemIndex: number) {
+    this.activeKnittingRow[knittingIndex] = requiredItemIndex;
+  }
+  selectDyeingRow(dyeIndex: number, colorIndex: number, itemIndex: number) {
+    this.activeDyeingRow[dyeIndex] = { cIdx: colorIndex, rIdx: itemIndex };
+  }
+  selectCuttingRow(cutIndex: number, colorIndex: number, dataIndex: number) {
+    this.activeCuttingRow[cutIndex] = { cIdx: colorIndex, rIdx: dataIndex };
+  }
 
   ngOnInit(): void {
     this.forminit();
     this.step.set(0);
+    this.getWorkOrdersList();
+    this.contractForm.get('Yarn.Qty')?.valueChanges.subscribe(() => {
+      this.contractForm.get('Knitting')?.updateValueAndValidity({ emitEvent: false });
+      this.contractForm.get('Dyeing')?.updateValueAndValidity({ emitEvent: false });
+      this.contractForm.get('Cutting')?.updateValueAndValidity({ emitEvent: false });
+    });
+  }
+
+  lockStages(stageName: 'YarnProcurement' | 'Knitting' | 'Dyeing' | 'Cutting') {
+    if (stageName === 'YarnProcurement') {
+      this.lockedStages['YarnProcurement'] = true;
+      return;
+    }
+    if (stageName === 'Knitting') {
+      this.lockedStages['Knitting'] = true;
+      return;
+    }
+    if (stageName === 'Dyeing') {
+      this.lockedStages['Dyeing'] = true;
+      return;
+    }
+    if (stageName === 'Cutting') {
+      this.lockedStages['Cutting'] = true;
+      return;
+    }
   }
 
   stepPlus() {
@@ -105,7 +149,7 @@ export class IkgsContractForm implements OnInit {
 
   forminit() {
     this.contractForm = this.fb.group({
-      WorKOrder: ['', Validators.required],
+      WorkOrder: [null, Validators.required],
       stages: this.fb.group({
         YarnProcure: [true],
         Knitting: [false],
@@ -126,19 +170,34 @@ export class IkgsContractForm implements OnInit {
   }
 
   //  VALIDATOR
+  // ==========================================
   maxArrayQtyValidator(getMaxQty: () => number): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
-      const max = getMaxQty();
-      if (!max || !(control instanceof FormArray)) return null;
+      if (!(control instanceof FormArray)) return null;
 
       let currentTotal = 0;
       for (let i = 0; i < control.controls.length; i++) {
         currentTotal += Number(control.at(i).get('Qty')?.value || 0);
       }
 
-      if (currentTotal > max) {
-        return { maxQtyExceeded: { max, actual: currentTotal } };
+      if (currentTotal === 0) return null;
+
+      const backendMax = getMaxQty();
+      if (backendMax > 0 && currentTotal > backendMax) {
+        return {
+          maxQtyExceeded: { max: backendMax, actual: currentTotal, reason: 'backend limit' },
+        };
       }
+
+      if (this.contractForm) {
+        const yarnProcureActive = this.contractForm.get('stages.YarnProcure')?.value;
+        const yarnQty = Number(this.contractForm.get('Yarn.Qty')?.value || 0);
+
+        if (yarnProcureActive && currentTotal > yarnQty) {
+          return { maxQtyExceeded: { max: yarnQty, actual: currentTotal, reason: 'yarn limit' } };
+        }
+      }
+
       return null;
     };
   }
@@ -183,38 +242,43 @@ export class IkgsContractForm implements OnInit {
       UOM: ['', Validators.required],
       FromDate: [null],
       ToDate: [null],
-      RequiredItems: this.fb.array([
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
-      ]),
       InputItems: this.fb.array([
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
+        this.createReqiredItemGroupKnitting(),
+        this.createReqiredItemGroupKnitting(),
+        this.createReqiredItemGroupKnitting(),
       ]),
+    });
+  }
+  createReqiredItemGroupKnitting() {
+    return this.fb.group({
+      ItemName: ['', Validators.required],
+      Qty: [0, [Validators.required, Validators.min(1)]],
+      RequiredInputs: this.fb.array([this.createItemQtyGroup()]),
     });
   }
 
   getRequiredItemsKnitting(index: number): FormArray {
-    return this.Knitting.at(index).get('RequiredItems') as FormArray;
+    return this.Knitting.at(index).get('InputItems') as FormArray;
   }
   newReqItemsKnitting(index: number) {
-    this.getRequiredItemsKnitting(index).push(this.createItemQtyGroup());
+    this.getRequiredItemsKnitting(index).push(this.createReqiredItemGroupKnitting());
   }
   removeReqItemsKnitting(parentInd: number, index: number) {
     this.getRequiredItemsKnitting(parentInd).removeAt(index);
   }
 
-  getInputItemsKnitting(index: number): FormArray {
-    return this.Knitting.at(index).get('InputItems') as FormArray;
+  getRequiredInputItemsKnitting(knittingIndex: number, reqIndex: number): FormArray {
+    return this.getRequiredItemsKnitting(knittingIndex)
+      .at(reqIndex)
+      .get('RequiredInputs') as FormArray;
   }
 
-  newInputItemsKnitting(index: number) {
-    this.getInputItemsKnitting(index).push(this.createItemQtyGroup());
+  newInputItemsKnitting(knittingIndex: number, reqIndex: number) {
+    this.getRequiredInputItemsKnitting(knittingIndex, reqIndex).push(this.createItemQtyGroup());
   }
-  removeInputItemsKnitting(parentInd: number, index: number) {
-    this.getInputItemsKnitting(parentInd).removeAt(index);
+
+  removeInputItemsKnitting(knittingIndex: number, reqIndex: number, itemIndex: number) {
+    this.getRequiredInputItemsKnitting(knittingIndex, reqIndex).removeAt(itemIndex);
   }
 
   // shared
@@ -231,7 +295,7 @@ export class IkgsContractForm implements OnInit {
       Qty: ['', Validators.required],
       UOM: ['', Validators.required],
       FromDate: [null],
-      ToDAte: [null],
+      ToDate: [null],
       Requireditems: this.fb.array([
         this.createItemQtyGroup(),
         this.createItemQtyGroup(),
@@ -257,12 +321,6 @@ export class IkgsContractForm implements OnInit {
       FromDate: [null],
       ToDate: [null],
       ColorInputs: this.fb.array([this.createColorInputsGroup()]),
-
-      ItemsInput: this.fb.array([
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
-      ]),
     });
   }
 
@@ -270,24 +328,20 @@ export class IkgsContractForm implements OnInit {
     return this.fb.group({
       Color: ['', Validators.required],
       ItemInputs: this.fb.array([
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
+        this.createRequiredItemsGroupDyeing(),
+        this.createRequiredItemsGroupDyeing(),
+        this.createRequiredItemsGroupDyeing(),
       ]),
     });
   }
 
-  getItemInputDyeing(index: number): FormArray {
-    return this.Dyeing.at(index).get('ItemsInput') as FormArray;
+  createRequiredItemsGroupDyeing() {
+    return this.fb.group({
+      ItemName: ['', Validators.required],
+      Qty: [0, [Validators.required, Validators.min(1)]],
+      RequiredInputs: this.fb.array([this.createItemQtyGroup()]),
+    });
   }
-  newItemInputDyeing(index: number) {
-    this.getItemInputDyeing(index).push(this.createItemQtyGroup());
-  }
-
-  removeItemInputDyeing(parentInd: number, index: number) {
-    this.getItemInputDyeing(parentInd).removeAt(index);
-  }
-
   getColorInputsDyeing(index: number): FormArray {
     return this.Dyeing.at(index).get('ColorInputs') as FormArray;
   }
@@ -299,15 +353,31 @@ export class IkgsContractForm implements OnInit {
     this.getColorInputsDyeing(parentInd).removeAt(index);
   }
 
-  getInnerItemInputsDyeing(dyeIndex: number, colorIndex: number): FormArray {
+  getItemInputsDyeing(dyeIndex: number, colorIndex: number): FormArray {
     return this.getColorInputsDyeing(dyeIndex).at(colorIndex).get('ItemInputs') as FormArray;
   }
-
-  newInnerItemInputsDyeing(dyeIndex: number, colorIndex: number) {
-    this.getInnerItemInputsDyeing(dyeIndex, colorIndex).push(this.createItemQtyGroup());
+  newItemInputDyeing(dyeIndex: number, colorIndex: number) {
+    this.getItemInputsDyeing(dyeIndex, colorIndex).push(this.createRequiredItemsGroupDyeing());
   }
-  removeInnerItemInputsDyeing(dyeIndex: number, colorIndex: number, index: number) {
-    this.getInnerItemInputsDyeing(dyeIndex, colorIndex).removeAt(index);
+  removeItemInputDyeing(dyeIndex: number, colorIndex: number, itemIndex: number) {
+    this.getItemInputsDyeing(dyeIndex, colorIndex).removeAt(itemIndex);
+  }
+
+  getRequiredInputsDyeing(dyeIndex: number, colorIndex: number, itemIndex: number): FormArray {
+    return this.getItemInputsDyeing(dyeIndex, colorIndex)
+      .at(itemIndex)
+      .get('RequiredInputs') as FormArray;
+  }
+  newRequiredInputDyeing(dyeIndex: number, colorIndex: number, itemIndex: number) {
+    this.getRequiredInputsDyeing(dyeIndex, colorIndex, itemIndex).push(this.createItemQtyGroup());
+  }
+  removeRequiredInputDyeing(
+    dyeIndex: number,
+    colorIndex: number,
+    itemIndex: number,
+    reqIndex: number,
+  ) {
+    this.getRequiredInputsDyeing(dyeIndex, colorIndex, itemIndex).removeAt(reqIndex);
   }
 
   createCuttingFormGroup(): FormGroup {
@@ -317,91 +387,112 @@ export class IkgsContractForm implements OnInit {
       UOM: ['', Validators.required],
       FromDate: [null],
       ToDate: [null],
-      ColorInputs: this.fb.array([this.createCuttingColorGroup()]),
-      InputItems: this.fb.array([this.createInputItemsGroup()]),
+      ColorsGroup: this.fb.array([this.createCuttingColorGroup()]),
     });
   }
 
   createCuttingColorGroup(): FormGroup {
     return this.fb.group({
       Color: ['', Validators.required],
-      ItemsInputs: this.fb.array([
+      ColorData: this.fb.array([
         this.cuttingSizeColorQtyGroup(),
         this.cuttingSizeColorQtyGroup(),
         this.cuttingSizeColorQtyGroup(),
       ]),
     });
   }
-  createInputItemsGroup(): FormGroup {
-    return this.fb.group({
-      Color: ['', Validators.required],
-      ItemsInputs: this.fb.array([
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
-        this.createItemQtyGroup(),
-      ]),
-    });
-  }
-
-  getItemInputsCutting(index: number): FormArray {
-    return this.Cutting.at(index).get('InputItems') as FormArray;
-  }
-  newItemInputCutting(index: number) {
-    this.getItemInputsCutting(index).push(this.createInputItemsGroup());
-  }
-
-  removeItemInputCutting(parentInd: number, index: number) {
-    this.getItemInputsCutting(parentInd).removeAt(index);
-  }
-
-  getInnerItemInputsCutting(parentInd: number, itemInd: number): FormArray {
-    return this.getItemInputsCutting(parentInd).at(itemInd).get('ItemsInputs') as FormArray;
-  }
-  newInnerItemInputsCutting(cutIndex: number, colorIndex: number) {
-    this.getInnerItemInputsCutting(cutIndex, colorIndex).push(this.createItemQtyGroup());
-  }
-  removeInnerItemInputsCutting(cutIndex: number, colorIndex: number, index: number) {
-    this.getInnerItemInputsCutting(cutIndex, colorIndex).removeAt(index);
-  }
-
-  getColorInputsCutting(index: number): FormArray {
-    return this.Cutting.at(index).get('ColorInputs') as FormArray;
-  }
-
-  newColorInputsCutting(index: number) {
-    this.getColorInputsCutting(index).push(this.createCuttingColorGroup());
-  }
-  removeColorInputsCutting(parentInd: number, index: number) {
-    this.getColorInputsCutting(parentInd).removeAt(index);
-  }
-
-  getInnerColorInputsCutting(cutIndex: number, colorIndex: number): FormArray {
-    return this.getColorInputsCutting(cutIndex).at(colorIndex).get('ItemsInputs') as FormArray;
-  }
-
-  newInnerColorInputsCutting(cutIndex: number, colorIndex: number) {
-    this.getInnerColorInputsCutting(cutIndex, colorIndex).push(this.cuttingSizeColorQtyGroup());
-  }
-  removeInnerColorInputsCutting(cutIndex: number, colorIndex: number, index: number) {
-    this.getInnerColorInputsCutting(cutIndex, colorIndex).removeAt(index);
-  }
-
   cuttingSizeColorQtyGroup(): FormGroup {
     return this.fb.group({
       Size: ['', Validators.required],
       ItemName: ['', Validators.required],
       Qty: [0, [Validators.required, Validators.min(1)]],
+      RequiredInputs: this.fb.array([this.createRequiredItemsGroupCutting()]),
     });
   }
 
-  getWorkOrdersList() {
-    const searchTerm = this.contractForm.value.WorkOrder.toLowerCase() || '';
+  createRequiredItemsGroupCutting() {
+    return this.fb.group({
+      ItemName: ['', Validators.required],
+      Qty: [0, [Validators.required, Validators.min(1)]],
+      InputItems: this.fb.array([this.createCuttingInputGroup()]),
+    });
+  }
+  createCuttingInputGroup(): FormGroup {
+    return this.fb.group({
+      Color: ['', Validators.required],
+      ItemName: ['', Validators.required],
+      Qty: [0, [Validators.required, Validators.min(1)]],
+    });
+  }
 
+  getColorsGroupCutting(cutIndex: number): FormArray {
+    return this.Cutting.at(cutIndex).get('ColorsGroup') as FormArray;
+  }
+  newColorsGroupCutting(cutIndex: number) {
+    this.getColorsGroupCutting(cutIndex).push(this.createCuttingColorGroup());
+  }
+  removeColorsGroupCutting(cutIndex: number, colorIndex: number) {
+    this.getColorsGroupCutting(cutIndex).removeAt(colorIndex);
+  }
+
+  getColorDataCutting(cutIndex: number, colorIndex: number): FormArray {
+    return this.getColorsGroupCutting(cutIndex).at(colorIndex).get('ColorData') as FormArray;
+  }
+  newColorDataCutting(cutIndex: number, colorIndex: number) {
+    this.getColorDataCutting(cutIndex, colorIndex).push(this.cuttingSizeColorQtyGroup());
+  }
+  removeColorDataCutting(cutIndex: number, colorIndex: number, dataIndex: number) {
+    this.getColorDataCutting(cutIndex, colorIndex).removeAt(dataIndex);
+  }
+
+  getRequiredInputsCutting(cutIndex: number, colorIndex: number, dataIndex: number): FormArray {
+    return this.getColorDataCutting(cutIndex, colorIndex)
+      .at(dataIndex)
+      .get('RequiredInputs') as FormArray;
+  }
+  newRequiredInputCutting(cutIndex: number, colorIndex: number, dataIndex: number) {
+    this.getRequiredInputsCutting(cutIndex, colorIndex, dataIndex).push(
+      this.createRequiredItemsGroupCutting(),
+    );
+  }
+  removeRequiredInputCutting(
+    cutIndex: number,
+    colorIndex: number,
+    dataIndex: number,
+    reqIndex: number,
+  ) {
+    this.getRequiredInputsCutting(cutIndex, colorIndex, dataIndex).removeAt(reqIndex);
+  }
+
+  getInputItemsCutting(
+    cutIndex: number,
+    colorIndex: number,
+    dataIndex: number,
+    reqIndex: number,
+  ): FormArray {
+    return this.getRequiredInputsCutting(cutIndex, colorIndex, dataIndex)
+      .at(reqIndex)
+      .get('InputItems') as FormArray;
+  }
+  newInputItemCutting(cutIndex: number, colorIndex: number, dataIndex: number, reqIndex: number) {
+    this.getInputItemsCutting(cutIndex, colorIndex, dataIndex, reqIndex).push(
+      this.createCuttingInputGroup(),
+    );
+  }
+  removeInputItemCutting(
+    cutIndex: number,
+    colorIndex: number,
+    dataIndex: number,
+    reqIndex: number,
+    itemIndex: number,
+  ) {
+    this.getInputItemsCutting(cutIndex, colorIndex, dataIndex, reqIndex).removeAt(itemIndex);
+  }
+
+  getWorkOrdersList() {
     this.http.get<string[]>(`https://localhost:3000/workorder/list`).subscribe({
       next: (res) => {
-        const filteredList = res.filter((item) => item.toLowerCase().includes(searchTerm));
-
-        this.workOrderlist = filteredList;
+        this.workOrderlist = res;
       },
       error: (err) => {
         console.error('Error fetching work orders:', err);
@@ -409,8 +500,17 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
-  patchValues() {
-    const workOrder = this.contractForm.value.WorKOrder;
+  filterWorkOrder() {
+    const searchTerm = this.contractForm.value.WorkOrder.toLowerCase() || '';
+
+    const filteredList = this.workOrderlist.filter((item) =>
+      item.toLowerCase().includes(searchTerm),
+    );
+    this.workOrderlist = filteredList;
+  }
+
+  patchValues(query: any) {
+    const workOrder = query.value.toLowerCase();
 
     const params = new HttpParams().append('WorkOrder', workOrder);
     this.http
@@ -424,18 +524,15 @@ export class IkgsContractForm implements OnInit {
           this.maxCuttingQty =
             res.Cutting?.reduce((sum: number, item: any) => sum + Number(item.Qty || 0), 0) || 0;
 
-          this.contractForm.get('Knitting')?.updateValueAndValidity();
-          this.contractForm.get('Dyeing')?.updateValueAndValidity();
-          this.contractForm.get('Cutting')?.updateValueAndValidity();
-
           this.contractForm.patchValue({
-            WorKOrder: res.WorKOrder,
+            WorkOrder: res.WorkOrder,
             stages: res.stages,
           });
 
           // 3. PATCH YARN
           if (res.Yarn) {
             this.requiredItemsYarn.clear();
+
             res.Yarn.Requireditems?.forEach(() =>
               this.requiredItemsYarn.push(this.createItemQtyGroup()),
             );
@@ -459,6 +556,8 @@ export class IkgsContractForm implements OnInit {
               group.patchValue(kStage);
               this.Knitting.push(group);
             });
+
+            this.contractForm.get('Knitting')?.updateValueAndValidity();
           }
 
           // 5. PATCH DYEING
@@ -485,6 +584,7 @@ export class IkgsContractForm implements OnInit {
               group.patchValue(dStage);
               this.Dyeing.push(group);
             });
+            this.contractForm.get('Dyeing')?.updateValueAndValidity();
           }
 
           // 6. PATCH CUTTING
@@ -507,7 +607,7 @@ export class IkgsContractForm implements OnInit {
               const inputItems = group.get('InputItems') as FormArray;
               inputItems.clear();
               cStage.InputItems?.forEach((ii: any) => {
-                const iiGroup = this.createInputItemsGroup();
+                const iiGroup = this.createColorInputsGroup();
                 const items = iiGroup.get('ItemsInputs') as FormArray;
                 items.clear();
                 ii.ItemsInputs?.forEach(() => items.push(this.createItemQtyGroup()));
@@ -518,6 +618,8 @@ export class IkgsContractForm implements OnInit {
               group.patchValue(cStage);
               this.Cutting.push(group);
             });
+
+            this.contractForm.get('Cutting')?.updateValueAndValidity();
           }
         },
         error: (err) => {
