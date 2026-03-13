@@ -1,5 +1,5 @@
 import { CommonModule, NgClass } from '@angular/common';
-import { Component, inject, OnInit, signal, WritableSignal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import {
   ReactiveFormsModule,
   FormBuilder,
@@ -48,14 +48,14 @@ export class IkgsContractForm implements OnInit {
   maxKnittingQty: number = 0;
   maxDyeingQty: number = 0;
   maxCuttingQty: number = 0;
-  lockedStages: Record<string, boolean> = {
-    YarnProcurement: false,
-    Knitting: false,
-    Dyeing: false,
-    Cutting: false,
+  lockedStages: Record<string, Record<number, boolean>> = {
+    YarnProcurement: {},
+    Knitting: {},
+    Dyeing: {},
+    Cutting: {},
   };
-  workOrderlist: string[] = [];
 
+  workOrderlist: string[] = [];
   showYarn: boolean = true;
   showKnitting: boolean = false;
   showDyeing: boolean = false;
@@ -85,72 +85,10 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
-  lockStages(stageName: 'YarnProcurement' | 'Knitting' | 'Dyeing' | 'Cutting') {
-    if (stageName === 'YarnProcurement') {
-      this.lockedStages['YarnProcurement'] = true;
-      return;
-    }
-    if (stageName === 'Knitting') {
-      this.lockedStages['Knitting'] = true;
-      return;
-    }
-    if (stageName === 'Dyeing') {
-      this.lockedStages['Dyeing'] = true;
-      return;
-    }
-    if (stageName === 'Cutting') {
-      this.lockedStages['Cutting'] = true;
-      return;
-    }
-  }
-
-  stepPlus() {
-    if (this.step() === 3) return;
-    this.step.set(this.step() + 1);
-    if (this.step() === 1) {
-      this.showKnitting = true;
-    }
-    if (this.step() === 2) {
-      this.showDyeing = true;
-    }
-    if (this.step() === 3) {
-      this.showcutting = true;
-    }
-  }
-  stepMinus() {
-    if (this.step() === 0) return;
-    this.step.set(this.step() - 1);
-    if (this.step() < 3) this.showcutting = false;
-    if (this.step() < 2) this.showDyeing = false;
-    if (this.step() < 1) this.showKnitting = false;
-  }
-
-  onStageChange(event: any, stageName: string) {
-    const stageControl = this.contractForm.get(stageName);
-
-    if (event.checked) {
-      stageControl?.enable();
-
-      if (stageName === 'Knitting') this.showKnitting = true;
-      if (stageName === 'Dyeing') this.showDyeing = true;
-      if (stageName === 'Cutting') this.showcutting = true;
-
-      this.stepPlus();
-    } else {
-      stageControl?.disable();
-
-      if (stageName === 'Knitting') this.showKnitting = false;
-      if (stageName === 'Dyeing') this.showDyeing = false;
-      if (stageName === 'Cutting') this.showcutting = false;
-
-      this.stepMinus();
-    }
-  }
-
   forminit() {
     this.contractForm = this.fb.group({
       WorkOrder: [null, Validators.required],
-      stages: this.fb.group({
+      Stages: this.fb.group({
         YarnProcure: [true],
         Knitting: [false],
         Dyeing: [false],
@@ -190,7 +128,7 @@ export class IkgsContractForm implements OnInit {
       }
 
       if (this.contractForm) {
-        const yarnProcureActive = this.contractForm.get('stages.YarnProcure')?.value;
+        const yarnProcureActive = this.contractForm.get('Stages.YarnProcure')?.value;
         const yarnQty = Number(this.contractForm.get('Yarn.Qty')?.value || 0);
 
         if (yarnProcureActive && currentTotal > yarnQty) {
@@ -380,6 +318,8 @@ export class IkgsContractForm implements OnInit {
     this.getRequiredInputsDyeing(dyeIndex, colorIndex, itemIndex).removeAt(reqIndex);
   }
 
+  // cutting section
+
   createCuttingFormGroup(): FormGroup {
     return this.fb.group({
       Party: ['', Validators.required],
@@ -406,22 +346,7 @@ export class IkgsContractForm implements OnInit {
       Size: ['', Validators.required],
       ItemName: ['', Validators.required],
       Qty: [0, [Validators.required, Validators.min(1)]],
-      RequiredInputs: this.fb.array([this.createRequiredItemsGroupCutting()]),
-    });
-  }
-
-  createRequiredItemsGroupCutting() {
-    return this.fb.group({
-      ItemName: ['', Validators.required],
-      Qty: [0, [Validators.required, Validators.min(1)]],
-      InputItems: this.fb.array([this.createCuttingInputGroup()]),
-    });
-  }
-  createCuttingInputGroup(): FormGroup {
-    return this.fb.group({
-      Color: ['', Validators.required],
-      ItemName: ['', Validators.required],
-      Qty: [0, [Validators.required, Validators.min(1)]],
+      RequiredInputs: this.fb.array([this.createItemQtyGroup()]),
     });
   }
 
@@ -451,9 +376,7 @@ export class IkgsContractForm implements OnInit {
       .get('RequiredInputs') as FormArray;
   }
   newRequiredInputCutting(cutIndex: number, colorIndex: number, dataIndex: number) {
-    this.getRequiredInputsCutting(cutIndex, colorIndex, dataIndex).push(
-      this.createRequiredItemsGroupCutting(),
-    );
+    this.getRequiredInputsCutting(cutIndex, colorIndex, dataIndex).push(this.createItemQtyGroup());
   }
   removeRequiredInputCutting(
     cutIndex: number,
@@ -476,7 +399,7 @@ export class IkgsContractForm implements OnInit {
   }
   newInputItemCutting(cutIndex: number, colorIndex: number, dataIndex: number, reqIndex: number) {
     this.getInputItemsCutting(cutIndex, colorIndex, dataIndex, reqIndex).push(
-      this.createCuttingInputGroup(),
+      this.createItemQtyGroup(),
     );
   }
   removeInputItemCutting(
@@ -487,6 +410,114 @@ export class IkgsContractForm implements OnInit {
     itemIndex: number,
   ) {
     this.getInputItemsCutting(cutIndex, colorIndex, dataIndex, reqIndex).removeAt(itemIndex);
+  }
+
+  // ==========================================
+  // 2. SKIPPABLE NAVIGATION & DATA CLEARING
+  // ==========================================
+
+  updateVisibleStages() {
+    const s = this.contractForm.value.Stages;
+    this.showYarn = s.YarnProcure;
+    this.showKnitting = s.Knitting;
+    this.showDyeing = s.Dyeing;
+    this.showcutting = s.Cutting;
+  }
+
+  // Triggered when the user clicks a stage checkbox
+  onStageChange(event: any, stageName: string) {
+    if (event.checked) {
+      this.updateVisibleStages();
+    } else {
+      this.updateVisibleStages();
+
+      this.clearStageData(stageName);
+
+      const currentStep = this.step();
+      const stageIndex = ['YarnProcure', 'Knitting', 'Dyeing', 'Cutting'].indexOf(stageName);
+
+      if (currentStep === stageIndex) {
+        this.stepToNearestActive();
+      }
+    }
+  }
+
+  // Wipes form arrays back to their default state when a section is deselected
+  clearStageData(stageName: string) {
+    if (stageName === 'YarnProcure') {
+      this.contractForm.setControl('Yarn', this.CreateYarnformGroup());
+      this.lockedStages['YarnProcurement'] = {};
+    } else if (stageName === 'Knitting') {
+      this.Knitting.clear();
+      this.newKnittingGroup();
+      this.lockedStages['Knitting'] = {};
+    } else if (stageName === 'Dyeing') {
+      this.Dyeing.clear();
+      this.newDyeingGroup();
+      this.lockedStages['Dyeing'] = {};
+    } else if (stageName === 'Cutting') {
+      this.Cutting.clear();
+      this.newCuttingGroup();
+      this.lockedStages['Cutting'] = {};
+    }
+  }
+
+  stepPlus() {
+    const currentStep = this.step();
+    const s = this.contractForm.value.Stages;
+    const isStageActive = [s.YarnProcure, s.Knitting, s.Dyeing, s.Cutting];
+
+    for (let i = currentStep + 1; i <= 3; i++) {
+      if (isStageActive[i]) {
+        this.step.set(i);
+        return;
+      }
+    }
+  }
+
+  // Looks for the previous available active stage when navigating backward
+  stepMinus() {
+    const currentStep = this.step();
+    const s = this.contractForm.value.Stages;
+    const isStageActive = [s.YarnProcure, s.Knitting, s.Dyeing, s.Cutting];
+
+    for (let i = currentStep - 1; i >= 0; i--) {
+      if (isStageActive[i]) {
+        this.step.set(i);
+        return;
+      }
+    }
+  }
+
+  stepToNearestActive() {
+    const s = this.contractForm.value.Stages;
+    const isStageActive = [s.YarnProcure, s.Knitting, s.Dyeing, s.Cutting];
+
+    for (let i = this.step() - 1; i >= 0; i--) {
+      if (isStageActive[i]) {
+        this.step.set(i);
+        return;
+      }
+    }
+    // If no previous stages are active, try to fall forward
+    for (let i = this.step() + 1; i <= 3; i++) {
+      if (isStageActive[i]) {
+        this.step.set(i);
+        return;
+      }
+    }
+    this.step.set(0);
+  }
+
+  lockStages(stageName: string, index: number = 0) {
+    if (!this.lockedStages[stageName]) {
+      this.lockedStages[stageName] = {};
+    }
+    this.lockedStages[stageName][index] = true;
+  }
+
+  isLocked(stageName: string, index: number = 0): boolean {
+    return !!this.lockedStages[stageName]?.[index];
   }
 
   getWorkOrdersList() {
@@ -500,86 +531,107 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
-  filterWorkOrder() {
-    const searchTerm = this.contractForm.value.WorkOrder.toLowerCase() || '';
+  patchValues(query: string) {
+    if (!query) return;
 
-    const filteredList = this.workOrderlist.filter((item) =>
-      item.toLowerCase().includes(searchTerm),
+    const workOrder = query.toLowerCase();
+    const exactMatchExists = this.workOrderlist.some(
+      (wo) => wo.toLowerCase().trim() === workOrder.trim(),
     );
-    this.workOrderlist = filteredList;
-  }
-
-  patchValues(query: any) {
-    const workOrder = query.value.toLowerCase();
+    if (!exactMatchExists) return;
 
     const params = new HttpParams().append('WorkOrder', workOrder);
     this.http
       .get<IkgsContract>('https://localhost:3000/contract/getcontract', { params })
       .subscribe({
-        next: (res) => {
+        next: (res: any) => {
           this.maxKnittingQty =
-            res.Knitting?.reduce((sum: number, item: any) => sum + Number(item.Qty || 0), 0) || 0;
+            res.Knitting.reduce((sum: number, item: any) => sum + Number(item.Qty || 0), 0) || 0;
           this.maxDyeingQty =
-            res.Dyeing?.reduce((sum: number, item: any) => sum + Number(item.Qty || 0), 0) || 0;
+            res.Dyeing.reduce((sum: number, item: any) => sum + Number(item.Qty || 0), 0) || 0;
           this.maxCuttingQty =
-            res.Cutting?.reduce((sum: number, item: any) => sum + Number(item.Qty || 0), 0) || 0;
+            res.Cutting.reduce((sum: number, item: any) => sum + Number(item.Qty || 0), 0) || 0;
 
+          // 2. Patch Root Info & Active Stages
           this.contractForm.patchValue({
             WorkOrder: res.WorkOrder,
-            stages: res.stages,
+            Stages: res.Stages,
           });
+          this.updateVisibleStages();
 
-          // 3. PATCH YARN
+          // 3. PATCH YARN (1 Level Deep)
           if (res.Yarn) {
             this.requiredItemsYarn.clear();
-
-            res.Yarn.Requireditems?.forEach(() =>
-              this.requiredItemsYarn.push(this.createItemQtyGroup()),
-            );
+            res.Yarn.Requireditems?.forEach(() => {
+              this.requiredItemsYarn.push(this.createItemQtyGroup());
+            });
             this.contractForm.get('Yarn')?.patchValue(res.Yarn);
           }
 
-          // 4. PATCH KNITTING
+          // 4. PATCH KNITTING (2 Levels Deep)
           if (res.Knitting && Array.isArray(res.Knitting)) {
             this.Knitting.clear();
+
             res.Knitting.forEach((kStage: any) => {
               const group = this.createKnittingGroup();
 
-              const req = group.get('RequiredItems') as FormArray;
-              req.clear();
-              kStage.RequiredItems?.forEach(() => req.push(this.createItemQtyGroup()));
+              const inputItemsArray = group.get('InputItems') as FormArray;
+              inputItemsArray.clear();
 
-              const inp = group.get('InputItems') as FormArray;
-              inp.clear();
-              kStage.InputItems?.forEach(() => inp.push(this.createItemQtyGroup()));
+              kStage.InputItems?.forEach((inputItem: any) => {
+                const iGroup = this.createReqiredItemGroupKnitting();
+                const reqInputsArray = iGroup.get('RequiredInputs') as FormArray;
+                reqInputsArray.clear();
+
+                inputItem.RequiredInputs?.forEach((reqInput: any) => {
+                  const rGroup = this.createItemQtyGroup();
+                  rGroup.patchValue(reqInput);
+                  reqInputsArray.push(rGroup);
+                });
+
+                iGroup.patchValue(inputItem);
+                inputItemsArray.push(iGroup);
+              });
 
               group.patchValue(kStage);
               this.Knitting.push(group);
             });
-
             this.contractForm.get('Knitting')?.updateValueAndValidity();
           }
 
-          // 5. PATCH DYEING
+          // 5. PATCH DYEING (3 Levels Deep)
           if (res.Dyeing && Array.isArray(res.Dyeing)) {
             this.Dyeing.clear();
+
             res.Dyeing.forEach((dStage: any) => {
               const group = this.createDyeingFormGroup();
 
-              const colorInputs = group.get('ColorInputs') as FormArray;
-              colorInputs.clear();
-              dStage.ColorInputs?.forEach((c: any) => {
-                const cGroup = this.createColorInputsGroup();
-                const inner = cGroup.get('ItemInputs') as FormArray;
-                inner.clear();
-                c.ItemInputs?.forEach(() => inner.push(this.createItemQtyGroup()));
-                cGroup.patchValue(c);
-                colorInputs.push(cGroup);
-              });
+              const colorInputsArray = group.get('ColorInputs') as FormArray;
+              colorInputsArray.clear();
 
-              const itemsInput = group.get('ItemsInput') as FormArray;
-              itemsInput.clear();
-              dStage.ItemsInput?.forEach(() => itemsInput.push(this.createItemQtyGroup()));
+              dStage.ColorInputs?.forEach((colorInput: any) => {
+                const cGroup = this.createColorInputsGroup();
+                const itemInputsArray = cGroup.get('ItemInputs') as FormArray;
+                itemInputsArray.clear();
+
+                colorInput.ItemInputs?.forEach((itemInput: any) => {
+                  const iGroup = this.createRequiredItemsGroupDyeing();
+                  const reqInputsArray = iGroup.get('RequiredInputs') as FormArray;
+                  reqInputsArray.clear();
+
+                  itemInput.RequiredInputs?.forEach((reqInput: any) => {
+                    const rGroup = this.createItemQtyGroup();
+                    rGroup.patchValue(reqInput);
+                    reqInputsArray.push(rGroup);
+                  });
+
+                  iGroup.patchValue(itemInput);
+                  itemInputsArray.push(iGroup);
+                });
+
+                cGroup.patchValue(colorInput);
+                colorInputsArray.push(cGroup);
+              });
 
               group.patchValue(dStage);
               this.Dyeing.push(group);
@@ -587,43 +639,47 @@ export class IkgsContractForm implements OnInit {
             this.contractForm.get('Dyeing')?.updateValueAndValidity();
           }
 
-          // 6. PATCH CUTTING
+          // 6. PATCH CUTTING (3 Levels Deep)
           if (res.Cutting && Array.isArray(res.Cutting)) {
             this.Cutting.clear();
+
             res.Cutting.forEach((cStage: any) => {
               const group = this.createCuttingFormGroup();
 
-              const colorInputs = group.get('ColorInputs') as FormArray;
-              colorInputs.clear();
-              cStage.ColorInputs?.forEach((ci: any) => {
-                const ciGroup = this.createCuttingColorGroup();
-                const items = ciGroup.get('ItemsInputs') as FormArray;
-                items.clear();
-                ci.ItemsInputs?.forEach(() => items.push(this.cuttingSizeColorQtyGroup()));
-                ciGroup.patchValue(ci);
-                colorInputs.push(ciGroup);
-              });
+              const colorsGroupArray = group.get('ColorsGroup') as FormArray;
+              colorsGroupArray.clear();
 
-              const inputItems = group.get('InputItems') as FormArray;
-              inputItems.clear();
-              cStage.InputItems?.forEach((ii: any) => {
-                const iiGroup = this.createColorInputsGroup();
-                const items = iiGroup.get('ItemsInputs') as FormArray;
-                items.clear();
-                ii.ItemsInputs?.forEach(() => items.push(this.createItemQtyGroup()));
-                iiGroup.patchValue(ii);
-                inputItems.push(iiGroup);
-              });
+              cStage.ColorsGroup?.forEach((colorGroup: any) => {
+                const cGroup = this.createCuttingColorGroup();
+                const colorDataArray = cGroup.get('ColorData') as FormArray;
+                colorDataArray.clear();
 
+                colorGroup.ColorData?.forEach((colorData: any) => {
+                  const dGroup = this.cuttingSizeColorQtyGroup();
+                  const reqInputsArray = dGroup.get('RequiredInputs') as FormArray;
+                  reqInputsArray.clear();
+
+                  colorData.RequiredInputs?.forEach((reqInput: any) => {
+                    const rGroup = this.createItemQtyGroup();
+                    rGroup.patchValue(reqInput);
+                    reqInputsArray.push(rGroup);
+                  });
+
+                  dGroup.patchValue(colorData);
+                  colorDataArray.push(dGroup);
+                });
+
+                cGroup.patchValue(colorGroup);
+                colorsGroupArray.push(cGroup);
+              });
               group.patchValue(cStage);
               this.Cutting.push(group);
             });
-
             this.contractForm.get('Cutting')?.updateValueAndValidity();
           }
         },
         error: (err) => {
-          console.log(err.error);
+          console.error('Error fetching contract data:', err.error || err);
         },
       });
   }
