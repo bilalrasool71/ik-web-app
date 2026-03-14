@@ -61,7 +61,9 @@ export enum EndPoints {
     GetStyleConfigPanelShortByStyleIdForFiberAsync = "GetStyleConfigPanelShortByStyleIdForFiberAsync",
     AddUpdateStyleConfigFiberAsync = "AddUpdateStyleConfigFiberAsync",
     AddUpdateStyleConfigSizeConsumptionAsync = "AddUpdateStyleConfigSizeConsumptionAsync",
+    GetStyleConfigMainByStyleIdAsync = "GetStyleConfigMainByStyleIdAsync",
     GetAllStyleConfigurations = "GetAllStyleConfigurations",
+
 
     //#endregion
 
@@ -74,8 +76,9 @@ export enum EndPoints {
 
     //#region Contract
     GetAllWoShortAsync = "GetAllWoShortAsync",
-    GetStageItems = "GetStageItems",
+    GetStageItemsAsync = "GetStageItemsAsync",
     GetOrderStagesShortAsync = "GetOrderStagesShortAsync",
-    GetAllPartiesByStageId = "GetAllPartiesByStageId"
+    GetAllPartiesByStageIdAsync = "GetAllPartiesByStageIdAsync",
+    AddUpdateContractsAsync = "AddUpdateContractsAsync"
     //#endregion
 }

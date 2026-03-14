@@ -1,3 +1,8 @@
+import { StyleConfigColorDto } from "./style-config-color.model";
+import { StyleConfigFabricDto } from "./style-config-fabric.model";
+import { StyleConfigFibersDto } from "./style-config-fiber.model";
+import { StyleConfigSizeConsumptionDto } from "./style-config-size-consumption.model";
+
 export class StyleConfigMainDto {
     style_Id!: number;
     customer_Id!: number;
@@ -20,4 +25,12 @@ export class StyleConfigMainDsDto extends StyleConfigMainDto {
     gender_Ds!: string;
     product_Type_Ds!: string;
     product_Sub_Type_Ds!: string;
+}
+
+export class GetStyleConfigMainDto {
+    styleConfigMain!: StyleConfigMainDto;
+    styleConfigColorList!: StyleConfigColorDto[];
+    styleConfigFabricList!: StyleConfigFabricDto[];
+    styleConfigFibers!: StyleConfigFibersDto[];
+    styleConfigSizeConsumptionList!: StyleConfigSizeConsumptionDto[];
 }

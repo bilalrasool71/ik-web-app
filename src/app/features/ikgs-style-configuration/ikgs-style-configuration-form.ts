@@ -1,7 +1,7 @@
 import { Component, inject, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { StepperModule } from 'primeng/stepper';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
@@ -40,67 +40,14 @@ export class IkgsStyleConfigurationForm {
     restService = inject(IkgsRest);
     activeStep = signal(0);
     FileUploadType = FileUploadType;
+    route = inject(ActivatedRoute);
+    isEditMode = signal(false);
+    pendingStyleConfigData = signal<any>(null);
+    isAddsOnCatalogLoaded = signal(false);
 
 
 
 
-    embTypeOptions = [
-        { label: 'Flat', value: 'Flat' },
-        { label: '3D Puff', value: '3D Puff' },
-        { label: 'Chain Stitch', value: 'Chain Stitch' },
-    ];
-    washTypeOptions = [
-        { label: 'Enzyme Wash', value: 'Enzyme Wash' },
-        { label: 'Silicon Wash', value: 'Silicon Wash' },
-        { label: 'Garment Dye', value: 'Garment Dye' },
-    ];
-    panelOptions = [
-        { label: 'Front Panel', value: 'Front Panel' },
-        { label: 'Back Panel', value: 'Back Panel' },
-        { label: 'Sleeve', value: 'Sleeve' },
-        { label: 'Collar', value: 'Collar' },
-        { label: 'Rib', value: 'Rib' },
-    ];
-    panelSizeOptions = [
-        { label: 'S', value: 'S' },
-        { label: 'M', value: 'M' },
-        { label: 'L', value: 'L' },
-        { label: 'XL', value: 'XL' },
-    ];
-
-    fabricColorOptions = [
-        { label: 'White', value: 'White' },
-        { label: 'Black', value: 'Black' },
-        { label: 'Melange Grey', value: 'Melange Grey' },
-        { label: 'Navy', value: 'Navy' },
-    ];
-    dyeProcessOptions = [
-        { label: 'Reactive Dye', value: 'Reactive Dye' },
-        { label: 'Disperse Dye', value: 'Disperse Dye' },
-        { label: 'Pigment Dye', value: 'Pigment Dye' },
-    ];
-    specialProcessOptions = [
-        { label: 'Peach Finish', value: 'Peach Finish' },
-        { label: 'Brushed', value: 'Brushed' },
-        { label: 'Anti-Pilling', value: 'Anti-Pilling' },
-    ];
-    printDesignOptions = [
-        { label: 'Stripe', value: 'Stripe' },
-        { label: 'Camo', value: 'Camo' },
-        { label: 'Floral', value: 'Floral' },
-    ];
-
-    fiberOptions = signal([
-        { viewValue: 'Cotton', value: 'Cotton' },
-        { viewValue: 'Polyester', value: 'Polyester' },
-        { viewValue: 'Spandex', value: 'Spandex' },
-        { viewValue: 'Nylon', value: 'Nylon' },
-    ]);
-    consumptionOptions = signal([
-        { viewValue: 'Regular', value: 'Regular' },
-        { viewValue: 'High', value: 'High' },
-        { viewValue: 'Low', value: 'Low' },
-    ]);
     yesNoOptions = [
         { label: 'Yes', value: 'Y' },
         { label: 'No', value: 'N' }
@@ -122,13 +69,6 @@ export class IkgsStyleConfigurationForm {
     panelTypeOptions = [
         { label: 'Main Body', value: 'Y' },
         { label: 'Trim', value: 'N' }
-    ];
-
-
-    // Size Consumption default rows
-    sizeRows = [
-        { size: 'XS' }, { size: 'S' }, { size: 'M' },
-        { size: 'L' }, { size: 'XL' }, { size: 'XXL' }, { size: '3XL' },
     ];
 
     // Forms
@@ -398,9 +338,6 @@ export class IkgsStyleConfigurationForm {
         return this.sizeConsumptionForm.get('sizes') as FormArray;
     }
 
-    populateSizes(sizes: SelectionValueModel[]): void {
-        // No longer auto-populating
-    }
 
     addConsumptionRow(): void {
         this.consumptionRows.push(this.createConsumptionGroup());
@@ -583,6 +520,194 @@ export class IkgsStyleConfigurationForm {
 
     ngOnInit() {
         this.callCatalogApis();
+        this.route.paramMap.subscribe(params => {
+            const styleId = params.get('styleId');
+            if (styleId) {
+                this.isEditMode.set(true);
+                this.getStyleConfigMainByStyleIdAsync(Number(styleId));
+            }
+        });
+    }
+
+    getStyleConfigMainByStyleIdAsync(styleId: number) {
+        let authApiOpts = new ApiOptionsModel<any>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.StyleConfiguration;
+        authApiOpts.ReqQueryParams = [{
+            Key: 'style_Id',
+            Value: styleId,
+            IsDate: false
+        }];
+        authApiOpts.EndPoint = EndPoints.GetStyleConfigMainByStyleIdAsync;
+
+        this.restService.CallApi<any, any>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    if (this.isAddsOnCatalogLoaded()) {
+                        this.populateForm(result.Data);
+                    } else {
+                        this.pendingStyleConfigData.set(result.Data);
+                    }
+                }
+            });
+    }
+
+    populateForm(data: any) {
+        if (data.styleConfigMain) {
+            this.configForm.patchValue({
+                style_Id: data.styleConfigMain.style_Id,
+                customer_Id: data.styleConfigMain.customer_Id?.toString(),
+                config_Type: data.styleConfigMain.config_Type,
+                season_Id: data.styleConfigMain.season_Id?.toString(),
+                gender_Id: data.styleConfigMain.gender_Id?.toString(),
+                product_Type_Id: data.styleConfigMain.product_Type_Id?.toString(),
+                product_Sub_Type_Id: data.styleConfigMain.product_Sub_Type_Id?.toString(),
+                lead_Days: data.styleConfigMain.lead_Days,
+                fabric_Gsm: data.styleConfigMain.fabric_Gsm,
+                garment_Gsm: data.styleConfigMain.garment_Gsm,
+                style_Description: data.styleConfigMain.style_Description,
+            });
+            if (data.styleConfigMain.product_Type_Id && data.styleConfigMain.gender_Id) {
+                this.getAllProductSubTypes();
+            }
+        }
+
+        if (data.styleConfigColorList && data.styleConfigColorList.length > 0) {
+            this.colorsArray.clear();
+            data.styleConfigColorList.forEach((colorData: any) => {
+                const group = this.createColorGroup();
+                group.patchValue({
+                    color_RowId: colorData.color_RowId,
+                    color_Id: colorData.color_Id?.toString(),
+                    hasAddsOn: colorData.addsOnList && colorData.addsOnList.length > 0 ? 'Y' : 'N'
+                });
+
+                if (colorData.addsOnList && colorData.addsOnList.length > 0) {
+                    const groupedData = this.groupedAddsOns();
+                    if (groupedData.length > 0) {
+                        colorData.addsOnList.forEach((addon: any) => {
+                            const catalogAddon = groupedData.find((a: any) => a.id === addon.addson_Type_Id);
+                            if (catalogAddon) {
+                                const addOnGroup = group.get('addsOns')?.get(catalogAddon.name);
+                                if (addOnGroup) {
+                                    addOnGroup.get('enabled')?.setValue('Y', { emitEvent: false });
+                                    const req = catalogAddon.requirements.find((r: any) => {
+                                        if (catalogAddon.name.includes('Embroidery') || catalogAddon.name.includes('Print')) {
+                                            if (r.name === 'Placement' && addon.requirement_Id === 1) return true;
+                                            if (r.name === 'Type' && addon.requirement_Id === 2) return true;
+                                            if (r.name === 'Process' && addon.requirement_Id === 3) return true;
+                                        } else if (catalogAddon.name.includes('Wash')) {
+                                            if (r.name === 'Process' && addon.requirement_Id === 3) return true;
+                                        }
+                                        return false;
+                                    });
+                                    if (req) {
+                                        addOnGroup.get(req.name)?.setValue(addon.requirement?.toString(), { emitEvent: false });
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                this.colorsArray.push(group);
+            });
+        } else {
+            this.colorsArray.clear();
+            this.colorsArray.push(this.createColorGroup());
+        }
+
+        if (data.styleConfigFabricList && data.styleConfigFabricList.length > 0) {
+            this.panelsArray.clear();
+            data.styleConfigFabricList.forEach((fabricData: any) => {
+                const group = this.createPanelGroup();
+                group.patchValue({
+                    style_Id: fabricData.style_Id,
+                    color_RowId: fabricData.color_RowId?.toString(),
+                    fabric_RowId: fabricData.fabric_RowId,
+                    panel_Id: fabricData.panel_Id?.toString(),
+                    size_Id: fabricData.size_Id?.toString(),
+                    fabric_Id: fabricData.fabric_Id?.toString(),
+                    is_Main_Body: fabricData.is_Main_Body,
+                    fabric_Composition_Id: fabricData.fabric_Composition_Id?.toString(),
+                    width_Type: fabricData.width_Type,
+                    gsm: fabricData.gsm,
+                    fab_Color_Id: fabricData.fab_Color_Id?.toString(),
+                    dye_Route_Id: fabricData.dye_Route_Id?.toString(),
+                    is_Rotary: fabricData.is_Rotary,
+                    rotary_Design_Id: fabricData.rotary_Design_Id?.toString(),
+                    rotary_Color_Id: fabricData.rotary_Color_Id?.toString(),
+                });
+                this.panelsArray.push(group);
+            });
+            this.getStyleConfigColorShortByStyleIdForFabric();
+            this.getStyleConfigFabricShortByStyleIdForFiberAsync();
+            this.getStyleConfigColorShortByStyleIdForFiberAsync();
+        }
+
+        if (data.styleConfigFibers && data.styleConfigFibers.length > 0) {
+            this.fibersArray.clear();
+            data.styleConfigFibers.forEach((fiberData: any) => {
+                const masterGroup = this.createFiberMasterGroup();
+                masterGroup.patchValue({
+                    style_Id: fiberData.style_Id,
+                    color_RowId: fiberData.color_RowId?.toString(),
+                    fabric_RowId: fiberData.fabric_RowId?.toString(),
+                    fibers_RowId: fiberData.fibers_RowId,
+                    fiber_Id: fiberData.fiber_Id?.toString(),
+                });
+
+                const detailsArray = masterGroup.get('styleConfigFiberDtls') as FormArray;
+                detailsArray.clear();
+
+                if (fiberData.styleConfigFiberDtls && fiberData.styleConfigFiberDtls.length > 0) {
+                    fiberData.styleConfigFiberDtls.forEach((dtl: any) => {
+                        const dtlGroup = this.createFiberDetailGroup();
+                        dtlGroup.patchValue({
+                            fiber_Id: dtl.fiber_Id?.toString(),
+                            fiber_ratio: dtl.fiber_Ratio,
+                            knit_type: dtl.knit_Type,
+                            is_fiber_dye: dtl.is_Fiber_Dye,
+                            fiber_color_id: dtl.fiber_Color_Id?.toString(),
+                        });
+                        detailsArray.push(dtlGroup);
+                    });
+                }
+                this.fibersArray.push(masterGroup);
+            });
+        }
+
+        if (data.styleConfigSizeConsumptionList && data.styleConfigSizeConsumptionList.length > 0) {
+            this.consumptionRows.clear();
+            data.styleConfigSizeConsumptionList.forEach((sizeData: any) => {
+                const masterGroup = this.createConsumptionGroup();
+                masterGroup.patchValue({
+                    size_RowId: sizeData.size_RowId,
+                    color_RowId: sizeData.color_RowId?.toString(),
+                    fabric_RowId: sizeData.fabric_RowId?.toString(),
+                });
+
+                const detailsArray = masterGroup.get('sizeConsumptionDtls') as FormArray;
+                detailsArray.clear();
+
+                if (sizeData.sizeConsumptionDtls && sizeData.sizeConsumptionDtls.length > 0) {
+                    sizeData.sizeConsumptionDtls.forEach((dtl: any) => {
+                        const sizeObj = this.allPanelSizes().find(s => s.value === dtl.size_Id || s.value?.toString() === dtl.size_Id?.toString());
+                        const sizeName = sizeObj ? sizeObj.viewValue : 'Unknown Size';
+                        detailsArray.push(this.fb.group({
+                            size_RowId: [dtl.size_RowId],
+                            size_Dtl_RowId: [dtl.size_Dtl_RowId],
+                            size_Id: [dtl.size_Id?.toString()],
+                            sizeName: [sizeName],
+                            mtr_Conumpition: [dtl.mtr_Conumpition, Validators.required],
+                            kg_Consumption: [dtl.kg_Consumption, Validators.required],
+                            dye_Wast: [dtl.dye_Wast],
+                            knit_Wast: [dtl.knit_Wast],
+                        }));
+                    });
+                }
+                this.consumptionRows.push(masterGroup);
+            });
+        }
     }
 
 
@@ -944,25 +1069,6 @@ export class IkgsStyleConfigurationForm {
             });
     }
 
-    refreshFiberOptions() {
-        this.fiberOptions.set([
-            { viewValue: 'Cotton', value: 'Cotton' },
-            { viewValue: 'Polyester', value: 'Polyester' },
-            { viewValue: 'Spandex', value: 'Spandex' },
-            { viewValue: 'Nylon', value: 'Nylon' },
-        ]);
-        this.messageService.add({ severity: 'info', summary: 'Refreshed', detail: 'Fiber options refreshed' });
-    }
-
-    refreshConsumptionOptions() {
-        this.consumptionOptions.set([
-            { viewValue: 'Regular', value: 'Regular' },
-            { viewValue: 'High', value: 'High' },
-            { viewValue: 'Low', value: 'Low' },
-        ]);
-        this.messageService.add({ severity: 'info', summary: 'Refreshed', detail: 'Consumption options refreshed' });
-    }
-
     getAllPanelSizes() {
         this.allPanelSizes.set([]);
         let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
@@ -974,7 +1080,19 @@ export class IkgsStyleConfigurationForm {
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
                     this.allPanelSizes.set(result.Data);
-                    this.populateSizes(result.Data);
+                    this.consumptionRows.controls.forEach(masterCtrl => {
+                        const detailsArray = masterCtrl.get('sizeConsumptionDtls') as FormArray;
+                        if (detailsArray) {
+                            detailsArray.controls.forEach(dtlCtrl => {
+                                if (dtlCtrl.get('sizeName')?.value === 'Unknown Size') {
+                                    const matched = result.Data.find((s: any) => s.value?.toString() === dtlCtrl.get('size_Id')?.value?.toString());
+                                    if (matched) {
+                                        dtlCtrl.get('sizeName')?.setValue(matched.viewValue, { emitEvent: false });
+                                    }
+                                }
+                            });
+                        }
+                    });
                 }
             });
     }
@@ -1044,16 +1162,25 @@ export class IkgsStyleConfigurationForm {
 
         this.restService.CallApi<AddsOnCatalogDto[], AddsOnCatalogDto[]>(authApiOpts)
             .subscribe((result: any) => {
+                this.isAddsOnCatalogLoaded.set(true);
                 if (result?.Code === 200 && result.Data) {
                     this.allAddsOnCatalog.set(result.Data);
                     this.prepareAddsOns();
                     const existingCount = this.colorsArray.length;
-                    this.colorDetailsForm.setControl(
-                        'colors',
-                        this.fb.array(
-                            Array(Math.max(existingCount, 1)).fill(null).map(() => this.createColorGroup())
-                        )
-                    );
+                    if (!this.isEditMode()) {
+                        this.colorDetailsForm.setControl(
+                            'colors',
+                            this.fb.array(
+                                Array(Math.max(existingCount, 1)).fill(null).map(() => this.createColorGroup())
+                            )
+                        );
+                    } else if (this.pendingStyleConfigData()) {
+                        this.populateForm(this.pendingStyleConfigData());
+                    }
+                } else {
+                    if (this.isEditMode() && this.pendingStyleConfigData()) {
+                        this.populateForm(this.pendingStyleConfigData());
+                    }
                 }
             });
     }

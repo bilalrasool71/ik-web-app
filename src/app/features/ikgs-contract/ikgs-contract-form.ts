@@ -1,5 +1,5 @@
 import { CommonModule, NgClass } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, WritableSignal } from '@angular/core';
 import {
   ReactiveFormsModule,
   FormBuilder,
@@ -20,6 +20,10 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { CheckboxModule } from 'primeng/checkbox';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { IkgsContract } from '../../models/domain/contract.model';
+import { SelectionValueModel } from '../../models/common/selection-value.model';
+import { IkgsRest } from '../../core/services/ikgs-rest';
+import { RequestType, Repository, EndPoints } from '../../core/enums/api.enum';
+import { ApiOptionsModel } from '../../core/models/api.model';
 
 @Component({
   selector: 'app-ikgs-contract-form',
@@ -39,6 +43,7 @@ import { IkgsContract } from '../../models/domain/contract.model';
 })
 export class IkgsContractForm implements OnInit {
   messageService = inject(MessageService);
+  restService = inject(IkgsRest);
   http = inject(HttpClient);
   loading = signal(false);
   router = inject(Router);
@@ -702,5 +707,23 @@ export class IkgsContractForm implements OnInit {
 
   backArrowBtn(): void {
     this.router.navigate(['/ikgs/contract']);
+  }
+
+
+  allWos: WritableSignal<SelectionValueModel[]> = signal([]);
+
+  getAllWoShortAsync() {
+    this.allWos.set([]);
+    let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+    authApiOpts.RequestType = RequestType.GET;
+    authApiOpts.Repository = Repository.Contract;
+    authApiOpts.EndPoint = EndPoints.GetAllWoShortAsync;
+
+    this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+      .subscribe((result: any) => {
+        if (result?.Code === 200 && result.Data) {
+          this.allWos.set(result.Data);
+        }
+      });
   }
 }

@@ -8,7 +8,7 @@ import { IkgsRest } from '../../core/services/ikgs-rest';
 import { MessageService } from 'primeng/api';
 import { ApiOptionsModel, ApiResponseModel } from '../../core/models/api.model';
 import { EndPoints, Repository, RequestType } from '../../core/enums/api.enum';
-import { AllWorkOrderModel } from '../../models/domain/all_work-order.model';
+import { AllWorkOrderModel } from '../../models/domain/all-work-order.model';
 
 @Component({
   selector: 'app-ikgs-work-order',
