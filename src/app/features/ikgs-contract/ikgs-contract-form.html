@@ -1,759 +1,395 @@
-<form
-  [formGroup]="contractForm"
-  (ngSubmit)="onSubmit()"
-  class="p-6 space-y-8 bg-white rounded-xl shadow-md"
->
-  <!-- WORK ORDER -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div>
-      <label for="WorkOrder" class="text-sm font-semibold text-gray-600 block mb-2"
-        >Work Order</label
+<div>
+  <div class="flex items-center justify-between mb-2">
+    <div class="flex items-center gap-3">
+      <button
+        (click)="backArrowBtn()"
+        class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
       >
-      <p-select
-        [options]="workOrderlist"
-        formControlName="WorkOrder"
-        optionLabel="label"
-        optionValue="value"
-        [editable]="true"
-        [scrollHeight]="'250px'"
-        [filter]="true"
-        filterBy="label"
-        placeholder="Search or Type Work Order"
-        id="WorkOrder"
-        (onFilter)="filterWorkOrder()"
-        (onChange)="patchValues($event)"
-        styleClass="w-full px-2 py-1 text-xs"
-      >
-      </p-select>
-    </div>
-  </div>
-
-  <!-- STAGES -->
-  <div formGroupName="stages" class="flex flex-wrap gap-6 items-center border p-4 rounded-lg">
-    <div class="flex items-center gap-2">
-      <p-checkbox
-        formControlName="YarnProcure"
-        inputId="YarnProcure"
-        binary="true"
-        #yarn
-        (onChange)="onStageChange($event, yarn.value)"
-      >
-      </p-checkbox>
-      <label for="YarnProcure">Yarn Procurement</label>
-    </div>
-
-    <div class="flex items-center gap-2">
-      <p-checkbox
-        formControlName="Knitting"
-        inputId="Knitting"
-        binary="true"
-        #knitt
-        (onChange)="onStageChange($event, knitt.value)"
-      >
-      </p-checkbox>
-      <label for="Knitting">Knitting</label>
-    </div>
-
-    <div class="flex items-center gap-2">
-      <p-checkbox
-        formControlName="Dyeing"
-        inputId="Dyeing"
-        binary="true"
-        #dye
-        (onChange)="onStageChange($event, dye.value)"
-      >
-      </p-checkbox>
-      <label for="Dyeing">Dyeing</label>
-    </div>
-    <div class="flex items-center gap-2">
-      <p-checkbox
-        formControlName="Cutting"
-        inputId="Cutting"
-        #cutt
-        binary="true"
-        (onChange)="onStageChange($event, cutt.value)"
-      >
-      </p-checkbox>
-      <label for="Cutting">Cutting</label>
-    </div>
-  </div>
-
-  <!-- YARN SECTION -->
-  @if (showYarn) {
-    <div formGroupName="Yarn" class="p-4 md:p-6 space-y-4">
+        <i class="pi pi-arrow-left text-sm"></i>
+      </button>
       <div>
-        <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-4">
-          <h3 class="text-lg font-bold text-gray-800">Yarn Procurement</h3>
-          <i
-            [ngClass]="lockedStages['YarnProcurement'] ? 'text-red-500' : ''"
-            class="pi pi-lock text-gray-500 mx-3 !text-2xl"
-            (click)="lockStages('YarnProcurement')"
-          ></i>
-        </div>
-        <div class="border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-sm space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 pt-1">
-            <div class="flex flex-col gap-1">
-              <label for="Party" class="text-sm font-semibold text-gray-600">Party</label>
-              <input
-                [readonly]="lockedStages['YarnProcurement']"
-                pInputText
-                placeholder="Party"
-                formControlName="Party"
-                id="Party"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label for="Qty" class="text-sm font-semibold text-gray-600">Quantity</label>
-              <input
-                [readonly]="lockedStages['YarnProcurement']"
-                pInputText
-                type="number"
-                formControlName="Qty"
-                placeholder="Quantity"
-                id="Qty"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label for="UOM" class="text-sm font-semibold text-gray-600">UOM</label>
-              <input
-                [readonly]="lockedStages['YarnProcurement']"
-                pInputText
-                placeholder="UOM"
-                formControlName="UOM"
-                id="UOM"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label for="FromDate" class="text-sm font-semibold text-gray-600">From Date</label>
-              <p-datepicker
-                [readonlyInput]="lockedStages['YarnProcurement']"
-                [class.pointer-events-none]="lockedStages['YarnProcurement']"
-                formControlName="FromDate"
-                inputId="FromDate"
-                placeholder="mm/dd/yyyy"
-                showIcon
-                [iconDisplay]="'input'"
-                inputStyleClass="px-2 py-1 text-xs w-full"
-                styleClass="w-full"
-              ></p-datepicker>
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label for="ToDate" class="text-sm font-semibold text-gray-600">To Date</label>
-              <p-datepicker
-                [readonlyInput]="lockedStages['YarnProcurement']"
-                [class.pointer-events-none]="lockedStages['YarnProcurement']"
-                formControlName="ToDate"
-                inputId="ToDate"
-                showIcon
-                placeholder="mm/dd/yyyy"
-                [iconDisplay]="'input'"
-                inputStyleClass="px-2 py-1 text-xs w-full"
-                styleClass="w-full"
-              ></p-datepicker>
-            </div>
-          </div>
-
-          <div formArrayName="Requireditems" class="overflow-x-auto pt-2">
-            <p class="text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1">Required Items</p>
-
-            <div class="border border-gray-200 rounded-xl overflow-hidden">
-              <table class="min-w-full text-left bg-white">
-                <thead class="bg-indigo-500 text-white uppercase text-sm font-bold">
-                  <tr>
-                    <th class="px-3 py-2 border-b">Item</th>
-                    <th class="px-3 py-2 border-b w-32 text-right">Qty</th>
-                    <th class="px-3 py-2 border-b w-24 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    *ngFor="let item of requiredItemsYarn.controls; let i = index"
-                    [formGroupName]="i"
-                    class="hover:bg-blue-50/30 transition-colors"
-                  >
-                    <td class="px-2 py-1 border-b border-r">
-                      <input
-                        [readonly]="lockedStages['YarnProcurement']"
-                        formControlName="ItemName"
-                        type="text"
-                        pInputText
-                        class="w-full border-none bg-transparent outline-none rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-400"
-                        placeholder="Enter item..."
-                      />
-                    </td>
-                    <td class="px-2 py-1 border-b border-r">
-                      <input
-                        [readonly]="lockedStages['YarnProcurement']"
-                        formControlName="Qty"
-                        pInputText
-                        type="number"
-                        class="w-full border-none bg-transparent outline-none rounded px-2 py-1 text-xs text-right focus:ring-1 focus:ring-blue-400"
-                        placeholder="0"
-                      />
-                    </td>
-
-                    <td class="px-2 py-1 border-b text-center">
-                      <button
-                        [disabled]="lockedStages['YarnProcurement'] ? true : false"
-                        type="button"
-                        class="text-xs text-red-500 hover:text-red-700 font-semibold"
-                        (click)="removeItemsYarn(i)"
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="mt-3">
-              <button
-                [disabled]="lockedStages['YarnProcurement'] ? true : false"
-                type="button"
-                class="px-4 py-1.5 bg-indigo-500 text-white hover:bg-indigo-600 border rounded-md text-xs font-bold transition-colors"
-                (click)="newItemsFieldYarn()"
-              >
-                Add New Item
-              </button>
-            </div>
-          </div>
-        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+          Create Contract
+        </h1>
       </div>
     </div>
-  }
-
-  <!-- KNITTING -->
-  @if (showKnitting) {
-    <div formArrayName="Knitting" class="p-4 md:p-6 space-y-4">
-      <div class="flex items-center justify-between mb-4 border-b pb-2">
-        <h3 class="text-lg font-bold text-gray-800">Knitting</h3>
-        <div class="flex justify-between items-center">
-          <i
-            [ngClass]="lockedStages['Knitting'] ? 'text-red-500' : ''"
-            class="pi pi-lock text-gray-500 mx-3 !text-2xl cursor-pointer"
-            (click)="lockStages('Knitting')"
-          ></i>
-          <button
-            [disabled]="lockedStages['Knitting'] ? true : false"
-            type="button"
-            (click)="newKnittingGroup()"
-            class="flex items-center justify-center px-5 py-2.5 bg-indigo-500 text-white hover:bg-indigo-600 rounded-xl text-sm font-bold shadow-sm transition-colors"
-          >
-            <i class="pi pi-plus mr-1"></i> Add Stage
-          </button>
-        </div>
-      </div>
-
-      @for (item of Knitting.controls; track item; let i = $index) {
-        <div
-          [formGroupName]="i"
-          class="space-y-6 mb-4 border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-sm"
+  </div>
+  <form
+    [formGroup]="contractForm"
+    (ngSubmit)="onSubmit()"
+    class="p-6 space-y-8 bg-white rounded-xl shadow-md"
+  >
+    <!-- WORK ORDER -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div>
+        <label for="WorkOrder" class="text-sm font-bold text-gray-600 block mb-2">
+          Work Order
+        </label>
+        <p-select
+          [options]="workOrderlist"
+          formControlName="WorkOrder"
+          [editable]="true"
+          [scrollHeight]="'250px'"
+          [filter]="true"
+          placeholder="Search or Type Work Order"
+          id="WorkOrder"
+          (onChange)="patchValues($event.value)"
+          styleClass="w-full px-2 py-1 text-xs"
         >
-          @if (i !== 0) {
-            <div class="flex justify-end mb-6 border-b border-gray-100">
-              <button
-                [disabled]="lockedStages['Knitting'] ? true : false"
-                type="button"
-                (click)="removeKnittingGroup(i)"
-                class="flex items-center justify-center gap-1.5 px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-md text-xs font-bold transition-colors"
-              >
-                <i class="pi pi-trash text-xs"></i> Remove Stage
-              </button>
-            </div>
-          }
-
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 pt-1">
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">Party</label>
-              <input
-                [readonly]="lockedStages['Knitting']"
-                pInputText
-                formControlName="Party"
-                placeholder="Party"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">Quantity</label>
-              <input
-                [readonly]="lockedStages['Knitting']"
-                pInputText
-                type="number"
-                formControlName="Qty"
-                placeholder="Quantity"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">UOM</label>
-              <input
-                [readonly]="lockedStages['Knitting']"
-                pInputText
-                formControlName="UOM"
-                placeholder="UOM"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">From Date</label>
-              <p-datepicker
-                [readonlyInput]="lockedStages['Knitting']"
-                [class.pointer-events-none]="lockedStages['Knitting']"
-                formControlName="FromDate"
-                showIcon
-                placeholder="mm/dd/yyyy"
-                [iconDisplay]="'input'"
-                inputStyleClass="px-2 py-1 text-xs w-full"
-                styleClass="w-full"
-              ></p-datepicker>
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">To Date</label>
-              <p-datepicker
-                [readonlyInput]="lockedStages['Knitting']"
-                [class.pointer-events-none]="lockedStages['Knitting']"
-                formControlName="ToDate"
-                showIcon
-                placeholder="mm/dd/yyyy"
-                [iconDisplay]="'input'"
-                inputStyleClass="px-2 py-1 text-xs w-full"
-                styleClass="w-full"
-              ></p-datepicker>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2 items-start">
-            <div formArrayName="InputItems" class="flex flex-col">
-              <p class="text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1">Master Items</p>
-              <div
-                class="border border-gray-200 rounded-xl overflow-hidden grow max-h-[300px] overflow-y-auto"
-              >
-                <table class="min-w-full text-left bg-white">
-                  <thead class="bg-indigo-500 text-white uppercase text-sm font-bold sticky top-0">
-                    <tr>
-                      <th class="px-3 py-2 border-b">Item Name</th>
-                      <th class="px-3 py-2 border-b w-24 text-right">Qty</th>
-                      <th class="px-3 py-2 border-b w-20 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (
-                      input of $any(item.get('InputItems'))?.controls;
-                      track input;
-                      let ii = $index
-                    ) {
-                      <tr
-                        [formGroupName]="ii"
-                        (click)="selectKnittingRow(i, ii)"
-                        class="hover:bg-blue-50/50 transition-colors cursor-pointer border-b"
-                        [class.bg-indigo-50]="(activeKnittingRow[i] || 0) === ii"
-                      >
-                        <td class="px-2 py-1 border-r">
-                          <input
-                            [readonly]="lockedStages['Knitting']"
-                            [class.pointer-events-none]="lockedStages['Knitting']"
-                            pInputText
-                            formControlName="ItemName"
-                            class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
-                            placeholder="Enter Item..."
-                          />
-                        </td>
-                        <td class="px-2 py-1 border-r">
-                          <input
-                            [readonly]="lockedStages['Knitting']"
-                            pInputText
-                            type="number"
-                            formControlName="Qty"
-                            class="w-full border-none bg-transparent text-right text-xs"
-                            placeholder="0"
-                          />
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <button
-                            [disabled]="lockedStages['Knitting'] ? true : false"
-                            type="button"
-                            class="text-xs text-red-500 hover:text-red-700 font-semibold"
-                            (click)="removeReqItemsKnitting(i, ii); $event.stopPropagation()"
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-              <div class="mt-3">
-                <button
-                  [disabled]="lockedStages['Knitting'] ? true : false"
-                  type="button"
-                  class="px-4 py-1.5 bg-indigo-500 text-white hover:bg-indigo-600 border rounded-md text-xs font-bold transition-colors"
-                  (click)="newReqItemsKnitting(i)"
-                >
-                  + Add Master Item
-                </button>
-              </div>
-            </div>
-
-            <div class="flex flex-col">
-              <p class="text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1">
-                Inputs For Selected Row (Detail)
-              </p>
-              <div
-                class="border border-gray-200 rounded-xl overflow-hidden grow max-h-[300px] overflow-y-auto bg-gray-50"
-              >
-                <table class="min-w-full text-left">
-                  <thead class="bg-indigo-400 text-white uppercase text-sm font-bold sticky top-0">
-                    <tr>
-                      <th class="px-3 py-2 border-b">Item Name</th>
-                      <th class="px-3 py-2 border-b w-24 text-right">Qty</th>
-                      <th class="px-3 py-2 border-b w-20 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @if (
-                      $any(item.get('InputItems'))
-                        ?.at(activeKnittingRow[i] || 0)
-                        ?.get('RequiredInputs');
-                      as activeInputArray
-                    ) {
-                      @for (inp of activeInputArray.controls; track inp; let dIdx = $index) {
-                        <tr [formGroup]="inp" class="hover:bg-white transition-colors border-b">
-                          <td class="px-2 py-1 border-r">
-                            <input
-                              [readonly]="lockedStages['Knitting']"
-                              pInputText
-                              formControlName="ItemName"
-                              class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
-                              placeholder="Detail Item..."
-                            />
-                          </td>
-                          <td class="px-2 py-1 border-r">
-                            <input
-                              [readonly]="lockedStages['Knitting']"
-                              pInputText
-                              type="number"
-                              formControlName="Qty"
-                              class="w-full border-none bg-transparent text-right text-xs"
-                              placeholder="0"
-                            />
-                          </td>
-                          <td class="px-2 py-1 text-center">
-                            <button
-                              [disabled]="lockedStages['Knitting'] ? true : false"
-                              type="button"
-                              class="text-xs text-red-500 hover:text-red-700 font-semibold"
-                              (click)="removeInputItemsKnitting(i, activeKnittingRow[i] || 0, dIdx)"
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      }
-                    }
-                  </tbody>
-                </table>
-              </div>
-              <div class="mt-3">
-                <button
-                  [disabled]="lockedStages['Knitting'] ? true : false"
-                  type="button"
-                  class="px-4 py-1.5 bg-indigo-400 text-white hover:bg-indigo-500 border rounded-md text-xs font-bold transition-colors"
-                  (click)="newInputItemsKnitting(i, activeKnittingRow[i] || 0)"
-                >
-                  + Add Detail Item
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
+        </p-select>
+      </div>
     </div>
-  }
 
-  <!-- dyeing  -->
-
-  @if (showDyeing) {
-    <div formArrayName="Dyeing" class="p-4 md:p-6 space-y-4">
-      <div class="flex items-center justify-between mb-4 border-b pb-2">
-        <h3 class="text-lg font-bold text-gray-800">Dyeing</h3>
-        <div class="flex items-center justify-between">
-          <i
-            [ngClass]="lockedStages['Dyeing'] ? 'text-red-500' : ''"
-            class="pi pi-lock text-gray-500 mx-3 !text-2xl cursor-pointer"
-            (click)="lockStages('Dyeing')"
-          ></i>
-          <button
-            [disabled]="lockedStages['Dyeing'] ? true : false"
-            type="button"
-            (click)="newDyeingGroup()"
-            class="flex items-center justify-center px-5 py-2.5 bg-indigo-500 text-white hover:bg-indigo-600 rounded-xl text-sm font-bold shadow-sm transition-colors"
-          >
-            <i class="pi pi-plus mr-1"></i> Add Stage
-          </button>
-        </div>
+    <!-- STAGES -->
+    <div formGroupName="Stages" class="flex flex-wrap gap-6 items-center border p-4 rounded-lg">
+      <div class="flex items-center gap-2">
+        <p-checkbox
+          formControlName="YarnProcure"
+          inputId="YarnProcure"
+          binary="true"
+          (onChange)="onStageChange($event, 'YarnProcure')"
+        >
+        </p-checkbox>
+        <label for="YarnProcure">Yarn Procurement</label>
       </div>
 
-      @for (item of Dyeing.controls; track item; let i = $index) {
-        <div
-          [formGroupName]="i"
-          class="space-y-6 mb-6 border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-sm"
+      <div class="flex items-center gap-2">
+        <p-checkbox
+          formControlName="Knitting"
+          inputId="Knitting"
+          binary="true"
+          (onChange)="onStageChange($event, 'Knitting')"
         >
-          @if (i !== 0) {
-            <div class="flex justify-end mb-6 border-b border-gray-100">
-              <button
-                [disabled]="lockedStages['Dyeing'] ? true : false"
-                type="button"
-                (click)="removeDyeingGroup(i)"
-                class="flex items-center justify-center gap-1.5 px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl mx-2 text-xs font-bold transition-colors"
-              >
-                <i class="pi pi-trash text-xs"></i> Remove Stage
-              </button>
-            </div>
-          }
+        </p-checkbox>
+        <label for="Knitting">Knitting</label>
+      </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 pt-1">
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">Party</label>
-              <input
-                [readonly]="lockedStages['Dyeing']"
-                pInputText
-                formControlName="Party"
-                placeholder="Party"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">Quantity</label>
-              <input
-                [readonly]="lockedStages['Dyeing']"
-                pInputText
-                type="number"
-                formControlName="Qty"
-                placeholder="Qty"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">UOM</label>
-              <input
-                [readonly]="lockedStages['Dyeing']"
-                pInputText
-                formControlName="UOM"
-                placeholder="UOM"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">From Date</label>
-              <p-datepicker
-                [readonlyInput]="lockedStages['Dyeing']"
-                [class.pointer-events-none]="lockedStages['Dyeing']"
-                formControlName="FromDate"
-                placeholder="mm/dd/yyyy"
-                showIcon
-                [iconDisplay]="'input'"
-                inputStyleClass="px-2 py-1 text-xs w-full"
-                styleClass="w-full"
-              ></p-datepicker>
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">To Date</label>
-              <p-datepicker
-                [readonlyInput]="lockedStages['Dyeing']"
-                [class.pointer-events-none]="lockedStages['Dyeing']"
-                formControlName="ToDate"
-                placeholder="mm/dd/yyyy"
-                showIcon
-                [iconDisplay]="'input'"
-                inputStyleClass="px-2 py-1 text-xs w-full"
-                styleClass="w-full"
-              ></p-datepicker>
-            </div>
+      <div class="flex items-center gap-2">
+        <p-checkbox
+          formControlName="Dyeing"
+          inputId="Dyeing"
+          binary="true"
+          (onChange)="onStageChange($event, 'Dyeing')"
+        >
+        </p-checkbox>
+        <label for="Dyeing">Dyeing</label>
+      </div>
+      <div class="flex items-center gap-2">
+        <p-checkbox
+          formControlName="Cutting"
+          inputId="Cutting"
+          binary="true"
+          (onChange)="onStageChange($event, 'Cutting')"
+        >
+        </p-checkbox>
+        <label for="Cutting">Cutting</label>
+      </div>
+    </div>
+
+    <!-- YARN SECTION -->
+    @if (showYarn) {
+      <div formGroupName="Yarn" class="p-4 md:p-6 space-y-4">
+        <div>
+          <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-4">
+            <h3 class="text-xl font-bold text-gray-800">Yarn Procurement</h3>
+
+            <i
+              [ngClass]="
+                isLocked('YarnProcurement')
+                  ? 'text-red-500 cursor-not-allowed opacity-50'
+                  : 'cursor-pointer hover:text-indigo-500 text-gray-500'
+              "
+              class="pi pi-lock mx-3 !text-2xl"
+              (click)="!isLocked('YarnProcurement') && lockStages('YarnProcurement')"
+              title="Lock Yarn Procurement"
+            ></i>
           </div>
+          <div class="border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-sm space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 pt-1">
+              <div class="flex flex-col gap-1">
+                <label for="Party" class="text-sm font-bold text-gray-600">Party</label>
+                <input
+                  [readonly]="isLocked('YarnProcurement')"
+                  pInputText
+                  placeholder="Party"
+                  formControlName="Party"
+                  id="Party"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2 items-start">
-            <div class="flex flex-col">
-              <p class="text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1">Master Items</p>
+              <div class="flex flex-col gap-1">
+                <label for="Qty" class="text-sm font-bold text-gray-600">Quantity</label>
+                <input
+                  [readonly]="isLocked('YarnProcurement')"
+                  pInputText
+                  type="number"
+                  formControlName="Qty"
+                  placeholder="Quantity"
+                  id="Qty"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
 
-              <div
-                class="border border-gray-200 rounded-xl overflow-hidden grow max-h-[300px] overflow-y-auto bg-white"
-                formArrayName="ColorInputs"
-              >
+              <div class="flex flex-col gap-1">
+                <label for="UOM" class="text-sm font-bold text-gray-600">UOM</label>
+                <input
+                  [readonly]="isLocked('YarnProcurement')"
+                  pInputText
+                  placeholder="UOM"
+                  formControlName="UOM"
+                  id="UOM"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label for="FromDate" class="text-sm font-bold text-gray-600">From Date</label>
+                <p-datepicker
+                  [readonlyInput]="isLocked('YarnProcurement')"
+                  [class.pointer-events-none]="isLocked('YarnProcurement')"
+                  formControlName="FromDate"
+                  inputId="FromDate"
+                  placeholder="mm/dd/yyyy"
+                  showIcon
+                  [iconDisplay]="'input'"
+                  inputStyleClass="px-2 py-1 text-xs w-full"
+                  styleClass="w-full"
+                ></p-datepicker>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label for="ToDate" class="text-sm font-bold text-gray-600">To Date</label>
+                <p-datepicker
+                  [readonlyInput]="isLocked('YarnProcurement')"
+                  [class.pointer-events-none]="isLocked('YarnProcurement')"
+                  formControlName="ToDate"
+                  inputId="ToDate"
+                  showIcon
+                  placeholder="mm/dd/yyyy"
+                  [iconDisplay]="'input'"
+                  inputStyleClass="px-2 py-1 text-xs w-full"
+                  styleClass="w-full"
+                ></p-datepicker>
+              </div>
+            </div>
+
+            <div formArrayName="Requireditems" class="overflow-x-auto pt-2">
+              <p class="text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1">Required Items</p>
+
+              <div class="border border-gray-200 rounded-xl overflow-hidden">
                 <table class="min-w-full text-left bg-white">
-                  <thead
-                    class="bg-indigo-500 text-white uppercase text-sm font-bold sticky top-0 z-10"
-                  >
+                  <thead class="bg-indigo-500 text-white uppercase text-sm font-bold">
                     <tr>
-                      <th class="px-3 py-2 border-b w-32">Color</th>
-                      <th class="px-3 py-2 border-b">Item Name</th>
-                      <th class="px-3 py-2 border-b w-20 text-right">Qty</th>
+                      <th class="px-3 py-2 border-b">Item</th>
+                      <th class="px-3 py-2 border-b w-32 text-right">Qty</th>
                       <th class="px-3 py-2 border-b w-24 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    @for (
-                      colorGroup of $any(item.get('ColorInputs'))?.controls;
-                      track colorGroup;
-                      let cIdx = $index
-                    ) {
-                      <ng-container [formGroupName]="cIdx">
-                        <ng-container formArrayName="ItemInputs">
-                          @for (
-                            subItem of $any(colorGroup.get('ItemInputs'))?.controls;
-                            track subItem;
-                            let rIdx = $index
-                          ) {
-                            <tr
-                              [formGroupName]="rIdx"
-                              (click)="selectDyeingRow(i, cIdx, rIdx)"
-                              class="hover:bg-blue-50/50 transition-colors cursor-pointer border-b"
-                              [class.bg-indigo-50]="
-                                (activeDyeingRow[i]?.cIdx || 0) === cIdx &&
-                                (activeDyeingRow[i]?.rIdx || 0) === rIdx
-                              "
-                            >
-                              <td
-                                class="px-2 py-1 border-r border-gray-100"
-                                [formGroup]="colorGroup"
-                              >
-                                @if (rIdx === 0) {
-                                  <input
-                                    [readonly]="lockedStages['Dyeing']"
-                                    pInputText
-                                    formControlName="Color"
-                                    class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs font-bold text-indigo-700"
-                                    placeholder="Enter Color..."
-                                  />
-                                }
-                              </td>
+                    <tr
+                      *ngFor="let item of requiredItemsYarn.controls; let i = index"
+                      [formGroupName]="i"
+                      class="hover:bg-blue-50/30 transition-colors"
+                    >
+                      <td class="px-2 py-1 border-b border-r">
+                        <input
+                          [readonly]="isLocked('YarnProcurement')"
+                          formControlName="ItemName"
+                          type="text"
+                          pInputText
+                          class="w-full border-none bg-transparent outline-none rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-400"
+                          placeholder="Enter item..."
+                        />
+                      </td>
+                      <td class="px-2 py-1 border-b border-r">
+                        <input
+                          [readonly]="isLocked('YarnProcurement')"
+                          formControlName="Qty"
+                          pInputText
+                          type="number"
+                          class="w-full border-none bg-transparent outline-none rounded px-2 py-1 text-xs text-right focus:ring-1 focus:ring-blue-400"
+                          placeholder="0"
+                        />
+                      </td>
 
-                              <td class="px-2 py-1 border-r border-gray-100">
-                                <input
-                                  [readonly]="lockedStages['Dyeing']"
-                                  [class.pointer-events-none]="lockedStages['Dyeing']"
-                                  pInputText
-                                  formControlName="ItemName"
-                                  class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
-                                  placeholder="Enter Item..."
-                                />
-                              </td>
-
-                              <td class="px-2 py-1 border-r border-gray-100">
-                                <input
-                                  [readonly]="lockedStages['Dyeing']"
-                                  pInputText
-                                  type="number"
-                                  formControlName="Qty"
-                                  class="w-full border-none bg-transparent text-right text-xs"
-                                  placeholder="0"
-                                />
-                              </td>
-
-                              <td
-                                class="px-2 py-1 text-center flex flex-col gap-1 items-center justify-center"
-                              >
-                                <button
-                                  [disabled]="lockedStages['Dyeing'] ? true : false"
-                                  type="button"
-                                  class="text-[10px] text-red-500 hover:text-red-700 font-semibold"
-                                  (click)="
-                                    removeItemInputDyeing(i, cIdx, rIdx); $event.stopPropagation()
-                                  "
-                                >
-                                  Rem Item
-                                </button>
-                                @if (rIdx === 0) {
-                                  <button
-                                    [disabled]="lockedStages['Dyeing'] ? true : false"
-                                    type="button"
-                                    class="text-[10px] text-red-700 hover:text-red-900 font-bold"
-                                    (click)="
-                                      removeColorInputsDyeing(i, cIdx); $event.stopPropagation()
-                                    "
-                                  >
-                                    Rem Color
-                                  </button>
-                                }
-                              </td>
-                            </tr>
-                          }
-                        </ng-container>
-                      </ng-container>
-                    }
+                      <td class="px-2 py-1 border-b text-center">
+                        <button
+                          [disabled]="isLocked('YarnProcurement')"
+                          type="button"
+                          class="text-xs text-red-500 hover:text-red-700 font-bold"
+                          (click)="removeItemsYarn(i)"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
 
-              <div class="mt-3 flex gap-2">
+              <div class="mt-3">
                 <button
-                  [disabled]="lockedStages['Dyeing'] ? true : false"
+                  [disabled]="isLocked('YarnProcurement')"
                   type="button"
-                  class="px-4 py-1.5 bg-indigo-500 text-white hover:bg-indigo-600 border rounded-md text-xs font-bold transition-colors w-full"
-                  (click)="newColorInputsDyeing(i)"
+                  class="px-4 py-1.5 bg-indigo-500 text-white hover:bg-indigo-600 border rounded-md text-xs font-bold transition-colors"
+                  (click)="newItemsFieldYarn()"
                 >
-                  + Add New Color
-                </button>
-                <button
-                  [disabled]="lockedStages['Dyeing'] ? true : false"
-                  type="button"
-                  class="px-4 py-1.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-200 rounded-md text-xs font-bold transition-colors w-full"
-                  (click)="newItemInputDyeing(i, activeDyeingRow[i]?.cIdx || 0)"
-                >
-                  + Add Item to Color
+                  Add New Item
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    }
 
-            <div class="flex flex-col">
-              <p class="text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1">
-                Details For Selected Row
-              </p>
+    <!-- KNITTING -->
+    @if (showKnitting) {
+      <div formArrayName="Knitting" class="p-4 md:p-6 space-y-4">
+        <div class="flex items-center justify-between mb-4 border-b pb-2">
+          <h3 class="text-xl font-bold text-gray-800">Knitting</h3>
+          <div class="flex justify-between items-center">
+            <button
+              type="button"
+              (click)="newKnittingGroup()"
+              class="flex items-center justify-center px-5 py-2.5 bg-indigo-500 text-white hover:bg-indigo-600 rounded-xl text-sm font-bold shadow-sm transition-colors"
+            >
+              <i class="pi pi-plus mr-1"></i> Add Stage
+            </button>
+          </div>
+        </div>
 
-              <div
-                class="border border-gray-200 rounded-xl overflow-hidden grow max-h-[300px] overflow-y-auto bg-gray-50"
-              >
-                <table class="min-w-full text-left">
-                  <thead
-                    class="bg-indigo-400 text-white uppercase text-sm font-bold sticky top-0 z-10"
-                  >
-                    <tr>
-                      <th class="px-3 py-2 border-b">Detail Item Name</th>
-                      <th class="px-3 py-2 border-b w-24 text-right">Qty</th>
-                      <th class="px-3 py-2 border-b w-20 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @if (
-                      $any(item.get('ColorInputs'))
-                        ?.at(activeDyeingRow[i]?.cIdx || 0)
-                        ?.get('ItemInputs')
-                        ?.at(activeDyeingRow[i]?.rIdx || 0)
-                        ?.get('RequiredInputs');
-                      as activeDetailArray
-                    ) {
-                      @for (req of activeDetailArray?.controls; track req; let reqIdx = $index) {
-                        <tr [formGroup]="req" class="hover:bg-white transition-colors border-b">
-                          <td class="px-2 py-1 border-r border-gray-200">
+        @for (item of Knitting.controls; track item; let i = $index) {
+          <div
+            [formGroupName]="i"
+            class="space-y-6 mb-4 border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-sm relative"
+          >
+            <div class="flex justify-end mb-6 border-b border-gray-100 pb-2 items-center gap-4">
+              <i
+                [ngClass]="
+                  isLocked('Knitting', i)
+                    ? 'text-red-500 cursor-not-allowed opacity-50'
+                    : 'cursor-pointer hover:text-indigo-500 text-gray-500'
+                "
+                class="pi pi-lock !text-2xl"
+                (click)="!isLocked('Knitting', i) && lockStages('Knitting', i)"
+                title="Lock this specific stage"
+              ></i>
+
+              @if (i !== 0) {
+                <button
+                  [disabled]="isLocked('Knitting', i)"
+                  type="button"
+                  (click)="removeKnittingGroup(i)"
+                  class="flex items-center justify-center gap-1.5 px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-md text-xs font-bold transition-colors"
+                >
+                  <i class="pi pi-trash text-xs"></i> Remove Stage
+                </button>
+              }
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 pt-1">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">Party</label>
+                <input
+                  [readonly]="isLocked('Knitting', i)"
+                  pInputText
+                  formControlName="Party"
+                  placeholder="Party"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">Quantity</label>
+                <input
+                  [readonly]="isLocked('Knitting', i)"
+                  pInputText
+                  type="number"
+                  formControlName="Qty"
+                  placeholder="Quantity"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">UOM</label>
+                <input
+                  [readonly]="isLocked('Knitting', i)"
+                  pInputText
+                  formControlName="UOM"
+                  placeholder="UOM"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">From Date</label>
+                <p-datepicker
+                  [readonlyInput]="isLocked('Knitting', i)"
+                  [class.pointer-events-none]="isLocked('Knitting', i)"
+                  formControlName="FromDate"
+                  showIcon
+                  placeholder="mm/dd/yyyy"
+                  [iconDisplay]="'input'"
+                  inputStyleClass="px-2 py-1 text-xs w-full"
+                  styleClass="w-full"
+                ></p-datepicker>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">To Date</label>
+                <p-datepicker
+                  [readonlyInput]="isLocked('Knitting', i)"
+                  [class.pointer-events-none]="isLocked('Knitting', i)"
+                  formControlName="ToDate"
+                  showIcon
+                  placeholder="mm/dd/yyyy"
+                  [iconDisplay]="'input'"
+                  inputStyleClass="px-2 py-1 text-xs w-full"
+                  styleClass="w-full"
+                ></p-datepicker>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2 items-start">
+              <div formArrayName="InputItems" class="flex flex-col">
+                <p class="text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1">Master Items</p>
+                <div
+                  class="border border-gray-200 rounded-xl overflow-hidden grow max-h-[300px] overflow-y-auto"
+                >
+                  <table class="min-w-full text-left bg-white">
+                    <thead
+                      class="bg-indigo-500 text-white uppercase text-sm font-bold sticky top-0"
+                    >
+                      <tr>
+                        <th class="px-3 py-2 border-b">Item</th>
+                        <th class="px-3 py-2 border-b w-24 text-right">Qty</th>
+                        <th class="px-3 py-2 border-b w-20 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (
+                        input of $any(item.get('InputItems'))?.controls;
+                        track input;
+                        let ii = $index
+                      ) {
+                        <tr
+                          [formGroupName]="ii"
+                          (click)="selectKnittingRow(i, ii)"
+                          class="hover:bg-blue-50/50 transition-colors cursor-pointer border-b"
+                          [class.bg-indigo-50]="(activeKnittingRow[i] || 0) === ii"
+                        >
+                          <td class="px-2 py-1 border-r">
                             <input
-                              [readonly]="lockedStages['Dyeing']"
+                              [readonly]="isLocked('Knitting', i)"
+                              [class.pointer-events-none]="isLocked('Knitting', i)"
                               pInputText
                               formControlName="ItemName"
                               class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
-                              placeholder="Detail Item..."
+                              placeholder="Enter Item..."
                             />
                           </td>
-                          <td class="px-2 py-1 border-r border-gray-200">
+                          <td class="px-2 py-1 border-r">
                             <input
-                              [readonly]="lockedStages['Dyeing']"
+                              [readonly]="isLocked('Knitting', i)"
                               pInputText
                               type="number"
                               formControlName="Qty"
@@ -763,460 +399,818 @@
                           </td>
                           <td class="px-2 py-1 text-center">
                             <button
-                              [disabled]="lockedStages['Dyeing'] ? true : false"
+                              [disabled]="isLocked('Knitting', i)"
                               type="button"
-                              class="text-xs text-red-500 hover:text-red-700 font-semibold"
-                              (click)="
-                                removeRequiredInputDyeing(
-                                  i,
-                                  activeDyeingRow[i]?.cIdx || 0,
-                                  activeDyeingRow[i]?.rIdx || 0,
-                                  reqIdx
-                                )
-                              "
+                              class="text-xs text-red-500 hover:text-red-700 font-bold"
+                              (click)="removeReqItemsKnitting(i, ii); $event.stopPropagation()"
                             >
                               Remove
                             </button>
                           </td>
                         </tr>
                       }
-                    }
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="mt-3">
-                <button
-                  [disabled]="lockedStages['Dyeing'] ? true : false"
-                  type="button"
-                  class="px-4 py-1.5 bg-indigo-400 text-white hover:bg-indigo-500 border rounded-md text-xs font-bold transition-colors w-full"
-                  (click)="
-                    newRequiredInputDyeing(
-                      i,
-                      activeDyeingRow[i]?.cIdx || 0,
-                      activeDyeingRow[i]?.rIdx || 0
-                    )
-                  "
-                >
-                  + Add Detail Item
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
-    </div>
-  }
-
-  @if (showcutting) {
-    <div formArrayName="Cutting" class="p-4 md:p-6 space-y-4">
-      <div class="flex items-center justify-between mb-4 border-b pb-2">
-        <h3 class="text-lg font-bold text-gray-800">Cutting</h3>
-        <div class="flex items-center justify-between">
-          <i
-            [ngClass]="lockedStages['Cutting'] ? 'text-red-500' : ''"
-            class="pi pi-lock text-gray-500 mx-3 !text-2xl cursor-pointer"
-            (click)="lockStages('Cutting')"
-          ></i>
-          <button
-            [disabled]="lockedStages['Cutting'] ? true : false"
-            type="button"
-            (click)="newCuttingGroup()"
-            class="flex items-center justify-center px-5 py-2.5 bg-indigo-500 text-white hover:bg-indigo-600 rounded-xl text-sm font-bold shadow-sm transition-colors"
-          >
-            <i class="pi pi-plus mr-1"></i> Add Stage
-          </button>
-        </div>
-      </div>
-
-      @for (item of Cutting.controls; track item; let i = $index) {
-        <div
-          [formGroupName]="i"
-          class="space-y-6 mb-6 border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-sm"
-        >
-          @if (i !== 0) {
-            <div class="flex justify-end mb-6 border-b border-gray-100">
-              <button
-                [disabled]="lockedStages['Cutting'] ? true : false"
-                type="button"
-                (click)="removeCuttingGroup(i)"
-                class="flex items-center justify-center gap-1.5 px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl mx-2 text-xs font-bold transition-colors"
-              >
-                <i class="pi pi-trash text-xs"></i> Remove Stage
-              </button>
-            </div>
-          }
-
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 pt-1">
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">Party</label>
-              <input
-                [readonly]="lockedStages['Cutting']"
-                pInputText
-                formControlName="Party"
-                placeholder="Party"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">Quantity</label>
-              <input
-                [readonly]="lockedStages['Cutting']"
-                pInputText
-                type="number"
-                formControlName="Qty"
-                placeholder="Qty"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">UOM</label>
-              <input
-                [readonly]="lockedStages['Cutting']"
-                pInputText
-                formControlName="UOM"
-                placeholder="UOM"
-                class="w-full px-2 py-1 text-xs"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">From Date</label>
-              <p-datepicker
-                [readonlyInput]="lockedStages['Cutting']"
-                [class.pointer-events-none]="lockedStages['Cutting']"
-                formControlName="FromDate"
-                placeholder="mm/dd/yyyy"
-                showIcon
-                [iconDisplay]="'input'"
-                inputStyleClass="px-2 py-1 text-xs w-full"
-                styleClass="w-full"
-              ></p-datepicker>
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm font-semibold text-gray-600">To Date</label>
-              <p-datepicker
-                [readonlyInput]="lockedStages['Cutting']"
-                [class.pointer-events-none]="lockedStages['Cutting']"
-                formControlName="ToDate"
-                placeholder="mm/dd/yyyy"
-                showIcon
-                [iconDisplay]="'input'"
-                inputStyleClass="px-2 py-1 text-xs w-full"
-                styleClass="w-full"
-              ></p-datepicker>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 pt-4 items-start">
-            <div
-              class="flex flex-col border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden"
-              formArrayName="ColorsGroup"
-            >
-              <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
-                <table class="min-w-full text-left bg-white text-xs border-collapse">
-                  <thead
-                    class="bg-indigo-50 text-white bg-indigo-500 uppercase text-[10px] font-bold sticky top-0 z-10 shadow-sm"
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mt-3">
+                  <button
+                    [disabled]="isLocked('Knitting', i)"
+                    type="button"
+                    class="px-4 py-1.5 bg-indigo-500 text-white hover:bg-indigo-600 border rounded-md text-xs font-bold transition-colors"
+                    (click)="newReqItemsKnitting(i)"
                   >
-                    <tr>
-                      <th class="px-2 py-2 border-b w-24">Color</th>
-                      <th class="px-2 py-2 border-b w-20">Size</th>
-                      <th class="px-2 py-2 border-b">Item Name</th>
-                      <th class="px-2 py-2 border-b w-16 text-right">Qty</th>
-                      <th class="px-2 py-2 border-b w-16 text-center">Act</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (
-                      colorGroup of $any(item.get('ColorsGroup'))?.controls;
-                      track colorGroup;
-                      let cIdx = $index
-                    ) {
-                      <ng-container [formGroupName]="cIdx">
-                        <ng-container formArrayName="ColorData">
-                          @for (
-                            dataItem of $any(colorGroup.get('ColorData'))?.controls;
-                            track dataItem;
-                            let rIdx = $index
-                          ) {
-                            <tr
-                              [formGroupName]="rIdx"
-                              (click)="selectCuttingRow(i, cIdx, rIdx)"
-                              class="border-b border-gray-100 hover:bg-blue-50/50 cursor-pointer transition-colors"
-                              [class.bg-indigo-50]="
-                                (activeCuttingRow[i]?.cIdx || 0) === cIdx &&
-                                (activeCuttingRow[i]?.rIdx || 0) === rIdx
-                              "
-                            >
-                              <td
-                                class="px-2 py-1 border-r border-gray-200"
-                                [formGroup]="colorGroup"
+                    + Add Master Item
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex flex-col">
+                <p class="text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1">
+                  Inputs For Selected Row (Detail)
+                </p>
+                <div
+                  class="border border-gray-200 rounded-xl overflow-hidden grow max-h-[300px] overflow-y-auto bg-gray-50"
+                >
+                  <table class="min-w-full text-left">
+                    <thead
+                      class="bg-indigo-500 text-white uppercase text-sm font-bold sticky top-0"
+                    >
+                      <tr>
+                        <th class="px-3 py-2 border-b">Item</th>
+                        <th class="px-3 py-2 border-b w-24 text-right">Qty</th>
+                        <th class="px-3 py-2 border-b w-20 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @if (
+                        $any(item.get('InputItems'))
+                          ?.at(activeKnittingRow[i] || 0)
+                          ?.get('RequiredInputs');
+                        as activeInputArray
+                      ) {
+                        @for (inp of activeInputArray.controls; track inp; let dIdx = $index) {
+                          <tr [formGroup]="inp" class="hover:bg-white transition-colors border-b">
+                            <td class="px-2 py-1 border-r">
+                              <input
+                                [readonly]="isLocked('Knitting', i)"
+                                pInputText
+                                formControlName="ItemName"
+                                class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
+                                placeholder="Detail Item..."
+                              />
+                            </td>
+                            <td class="px-2 py-1 border-r">
+                              <input
+                                [readonly]="isLocked('Knitting', i)"
+                                pInputText
+                                type="number"
+                                formControlName="Qty"
+                                class="w-full border-none bg-transparent text-right text-xs"
+                                placeholder="0"
+                              />
+                            </td>
+                            <td class="px-2 py-1 text-center">
+                              <button
+                                [disabled]="isLocked('Knitting', i)"
+                                type="button"
+                                class="text-xs text-red-500 hover:text-red-700 font-bold"
+                                (click)="
+                                  removeInputItemsKnitting(i, activeKnittingRow[i] || 0, dIdx)
+                                "
                               >
-                                @if (rIdx === 0) {
-                                  <input
-                                    [readonly]="lockedStages['Cutting']"
-                                    pInputText
-                                    formControlName="Color"
-                                    class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 font-bold text-indigo-700"
-                                    placeholder="Color..."
-                                  />
-                                }
-                              </td>
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mt-3">
+                  <button
+                    [disabled]="isLocked('Knitting', i)"
+                    type="button"
+                    class="px-4 py-1.5 bg-indigo-400 text-white hover:bg-indigo-500 border rounded-md text-xs font-bold transition-colors"
+                    (click)="newInputItemsKnitting(i, activeKnittingRow[i] || 0)"
+                  >
+                    + Add Detail Item
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
 
-                              <td class="px-2 py-1 border-r border-gray-200">
-                                <input
-                                  [readonly]="lockedStages['Cutting']"
-                                  [class.pointer-events-none]="lockedStages['Cutting']"
-                                  pInputText
-                                  formControlName="Size"
-                                  class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400"
-                                  placeholder="Size..."
-                                />
-                              </td>
+    <!-- dyeing  -->
 
-                              <td class="px-2 py-1 border-r border-gray-200">
-                                <input
-                                  [readonly]="lockedStages['Cutting']"
-                                  [class.pointer-events-none]="lockedStages['Cutting']"
-                                  pInputText
-                                  formControlName="ItemName"
-                                  class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400"
-                                  placeholder="Item Name..."
-                                />
-                              </td>
+    @if (showDyeing) {
+      <div formArrayName="Dyeing" class="p-4 md:p-6 space-y-4">
+        <div class="flex items-center justify-between mb-4 border-b pb-2">
+          <h3 class="text-xl font-bold text-gray-800">Dyeing</h3>
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="newDyeingGroup()"
+              class="flex items-center justify-center px-5 py-2.5 bg-indigo-500 text-white hover:bg-indigo-600 rounded-xl text-sm font-bold shadow-sm transition-colors"
+            >
+              <i class="pi pi-plus mr-1"></i> Add Stage
+            </button>
+          </div>
+        </div>
 
-                              <td class="px-2 py-1 border-r border-gray-200">
-                                <input
-                                  [readonly]="lockedStages['Cutting']"
-                                  pInputText
-                                  type="number"
-                                  formControlName="Qty"
-                                  class="w-full border-none bg-transparent text-right"
-                                  placeholder="0"
-                                />
-                              </td>
+        @for (item of Dyeing.controls; track item; let i = $index) {
+          <div
+            [formGroupName]="i"
+            class="space-y-6 mb-6 border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-sm relative"
+          >
+            <div class="flex justify-end mb-6 border-b border-gray-100 pb-2 items-center gap-4">
+              <i
+                [ngClass]="
+                  isLocked('Dyeing', i)
+                    ? 'text-red-500 cursor-not-allowed opacity-50'
+                    : 'cursor-pointer hover:text-indigo-500 text-gray-500'
+                "
+                class="pi pi-lock !text-2xl"
+                (click)="!isLocked('Dyeing', i) && lockStages('Dyeing', i)"
+                title="Lock this specific stage"
+              ></i>
 
-                              <td class="px-1 py-1 text-center">
-                                <button
-                                  [disabled]="lockedStages['Cutting'] ? true : false"
-                                  type="button"
-                                  class="text-[10px] text-red-500 hover:text-red-700 block w-full"
-                                  (click)="
-                                    removeColorDataCutting(i, cIdx, rIdx); $event.stopPropagation()
-                                  "
+              @if (i !== 0) {
+                <button
+                  [disabled]="isLocked('Dyeing', i)"
+                  type="button"
+                  (click)="removeDyeingGroup(i)"
+                  class="flex items-center justify-center gap-1.5 px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl text-xs font-bold transition-colors"
+                >
+                  <i class="pi pi-trash text-xs"></i> Remove Stage
+                </button>
+              }
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 pt-1">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">Party</label>
+                <input
+                  [readonly]="isLocked('Dyeing', i)"
+                  pInputText
+                  formControlName="Party"
+                  placeholder="Party"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">Quantity</label>
+                <input
+                  [readonly]="isLocked('Dyeing', i)"
+                  pInputText
+                  type="number"
+                  formControlName="Qty"
+                  placeholder="Qty"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">UOM</label>
+                <input
+                  [readonly]="isLocked('Dyeing', i)"
+                  pInputText
+                  formControlName="UOM"
+                  placeholder="UOM"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">From Date</label>
+                <p-datepicker
+                  [readonlyInput]="isLocked('Dyeing', i)"
+                  [class.pointer-events-none]="isLocked('Dyeing', i)"
+                  formControlName="FromDate"
+                  placeholder="mm/dd/yyyy"
+                  showIcon
+                  [iconDisplay]="'input'"
+                  inputStyleClass="px-2 py-1 text-xs w-full"
+                  styleClass="w-full"
+                ></p-datepicker>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">To Date</label>
+                <p-datepicker
+                  [readonlyInput]="isLocked('Dyeing', i)"
+                  [class.pointer-events-none]="isLocked('Dyeing', i)"
+                  formControlName="ToDate"
+                  placeholder="mm/dd/yyyy"
+                  showIcon
+                  [iconDisplay]="'input'"
+                  inputStyleClass="px-2 py-1 text-xs w-full"
+                  styleClass="w-full"
+                ></p-datepicker>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2 items-start">
+              <div
+                class="flex flex-col border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden"
+              >
+                <div
+                  class="overflow-x-auto max-h-[300px] overflow-y-auto bg-white"
+                  formArrayName="ColorInputs"
+                >
+                  <table class="min-w-full text-left bg-white">
+                    <thead
+                      class="bg-indigo-500 text-white uppercase text-sm font-bold sticky top-0 z-10"
+                    >
+                      <tr>
+                        <th class="px-3 py-2 border-b w-32">Color</th>
+                        <th class="px-3 py-2 border-b">Item</th>
+                        <th class="px-3 py-2 border-b w-20 text-right">Qty</th>
+                        <th class="px-3 py-2 border-b w-24 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (
+                        colorGroup of $any(item.get('ColorInputs'))?.controls;
+                        track colorGroup;
+                        let cIdx = $index
+                      ) {
+                        <ng-container [formGroupName]="cIdx">
+                          <ng-container formArrayName="ItemInputs">
+                            @for (
+                              subItem of $any(colorGroup.get('ItemInputs'))?.controls;
+                              track subItem;
+                              let rIdx = $index
+                            ) {
+                              <tr
+                                [formGroupName]="rIdx"
+                                (click)="selectDyeingRow(i, cIdx, rIdx)"
+                                class="hover:bg-blue-50/50 transition-colors cursor-pointer border-b"
+                                [class.bg-indigo-50]="
+                                  (activeDyeingRow[i]?.cIdx || 0) === cIdx &&
+                                  (activeDyeingRow[i]?.rIdx || 0) === rIdx
+                                "
+                              >
+                                <td
+                                  class="px-2 py-1 border-r border-gray-100"
+                                  [formGroup]="colorGroup"
                                 >
-                                  Rem Itm
-                                </button>
-                                @if (rIdx === 0) {
+                                  @if (rIdx === 0) {
+                                    <input
+                                      [readonly]="isLocked('Dyeing', i)"
+                                      pInputText
+                                      formControlName="Color"
+                                      class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs font-bold text-indigo-700"
+                                      placeholder="Enter Color..."
+                                    />
+                                  }
+                                </td>
+
+                                <td class="px-2 py-1 border-r border-gray-100">
+                                  <input
+                                    [readonly]="isLocked('Dyeing', i)"
+                                    [class.pointer-events-none]="isLocked('Dyeing', i)"
+                                    pInputText
+                                    formControlName="ItemName"
+                                    class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
+                                    placeholder="Enter Item..."
+                                  />
+                                </td>
+
+                                <td class="px-2 py-1 border-r border-gray-100">
+                                  <input
+                                    [readonly]="isLocked('Dyeing', i)"
+                                    pInputText
+                                    type="number"
+                                    formControlName="Qty"
+                                    class="w-full border-none bg-transparent text-right text-xs"
+                                    placeholder="0"
+                                  />
+                                </td>
+
+                                <td
+                                  class="px-2 py-1 text-center flex flex-col gap-1 items-center justify-center"
+                                >
                                   <button
-                                    [disabled]="lockedStages['Cutting'] ? true : false"
+                                    [disabled]="isLocked('Dyeing', i)"
                                     type="button"
-                                    class="text-[10px] text-red-800 font-bold block w-full mt-1"
+                                    class="text-[10px] text-red-500 hover:text-red-700 font-bold"
                                     (click)="
-                                      removeColorsGroupCutting(i, cIdx); $event.stopPropagation()
+                                      removeItemInputDyeing(i, cIdx, rIdx); $event.stopPropagation()
                                     "
                                   >
-                                    Rem Col
+                                    Rem Item
                                   </button>
-                                }
-                              </td>
-                            </tr>
-                          }
-                        </ng-container>
+                                  @if (rIdx === 0) {
+                                    <button
+                                      [disabled]="isLocked('Dyeing', i)"
+                                      type="button"
+                                      class="text-[10px] text-red-700 hover:text-red-900 font-bold"
+                                      (click)="
+                                        removeColorInputsDyeing(i, cIdx); $event.stopPropagation()
+                                      "
+                                    >
+                                      Rem Color
+                                    </button>
+                                  }
+                                </td>
+                              </tr>
+                            }
+                          </ng-container>
 
-                        <tr class="bg-gray-50/80">
-                          <td class="border-r border-gray-200"></td>
-                          <td colspan="4" class="px-2 py-1 border-b-[2px] border-gray-200">
-                            <button
-                              [disabled]="lockedStages['Cutting'] ? true : false"
-                              type="button"
-                              class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase"
-                              (click)="newColorDataCutting(i, cIdx)"
-                            >
-                              + Add Size/Item to Color
-                            </button>
-                          </td>
-                        </tr>
-                      </ng-container>
-                    }
-                  </tbody>
-                </table>
+                          <tr class="bg-gray-50/80 border-b-2 border-gray-200">
+                            <td class="border-r border-gray-200"></td>
+                            <td colspan="3" class="px-2 py-1.5">
+                              <button
+                                [disabled]="isLocked('Dyeing', i)"
+                                type="button"
+                                class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase"
+                                (click)="newItemInputDyeing(i, cIdx)"
+                              >
+                                + Add Item to Active Color
+                              </button>
+                            </td>
+                          </tr>
+                        </ng-container>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="p-2 border-t border-gray-200 bg-white">
+                  <button
+                    [disabled]="isLocked('Dyeing', i)"
+                    type="button"
+                    class="px-4 py-1.5 bg-indigo-500 text-white hover:bg-indigo-600 rounded-md text-xs font-bold transition-colors w-full"
+                    (click)="newColorInputsDyeing(i)"
+                  >
+                    + Add New Color Group
+                  </button>
+                </div>
               </div>
-              <div class="p-2 border-t border-gray-200 bg-white">
-                <button
-                  [disabled]="lockedStages['Cutting'] ? true : false"
-                  type="button"
-                  class="w-full py-1.5 bg-indigo-500 text-white rounded text-xs font-bold hover:bg-indigo-600 transition-colors"
-                  (click)="newColorsGroupCutting(i)"
+
+              <div class="flex flex-col">
+                <div class="flex flex-col gap-1 mb-2 ml-1">
+                  <p class="text-[11px] font-bold text-gray-500 uppercase">
+                    Details For Selected Row
+                  </p>
+                </div>
+
+                <div
+                  class="border border-gray-200 rounded-xl overflow-hidden grow max-h-[300px] overflow-y-auto bg-gray-50"
                 >
-                  + Add New Color Group
+                  <table class="min-w-full text-left">
+                    <thead
+                      class="bg-indigo-500 text-white uppercase text-sm font-bold sticky top-0 z-10"
+                    >
+                      <tr>
+                        <th class="px-3 py-2 border-b">Item</th>
+                        <th class="px-3 py-2 border-b w-24 text-right">Qty</th>
+                        <th class="px-3 py-2 border-b w-20 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @if (
+                        $any(item.get('ColorInputs'))
+                          ?.at(activeDyeingRow[i]?.cIdx || 0)
+                          ?.get('ItemInputs')
+                          ?.at(activeDyeingRow[i]?.rIdx || 0)
+                          ?.get('RequiredInputs');
+                        as activeDetailArray
+                      ) {
+                        @for (req of activeDetailArray?.controls; track req; let reqIdx = $index) {
+                          <tr [formGroup]="req" class="hover:bg-white transition-colors border-b">
+                            <td class="px-2 py-1 border-r border-gray-200">
+                              <input
+                                [readonly]="isLocked('Dyeing', i)"
+                                pInputText
+                                formControlName="ItemName"
+                                class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
+                                placeholder="Detail Item..."
+                              />
+                            </td>
+                            <td class="px-2 py-1 border-r border-gray-200">
+                              <input
+                                [readonly]="isLocked('Dyeing', i)"
+                                pInputText
+                                type="number"
+                                formControlName="Qty"
+                                class="w-full border-none bg-transparent text-right text-xs"
+                                placeholder="0"
+                              />
+                            </td>
+                            <td class="px-2 py-1 text-center">
+                              <button
+                                [disabled]="isLocked('Dyeing', i)"
+                                type="button"
+                                class="text-[10px] text-red-500 hover:text-red-700 font-bold"
+                                (click)="
+                                  removeRequiredInputDyeing(
+                                    i,
+                                    activeDyeingRow[i]?.cIdx || 0,
+                                    activeDyeingRow[i]?.rIdx || 0,
+                                    reqIdx
+                                  )
+                                "
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      }
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="mt-3">
+                  <button
+                    [disabled]="isLocked('Dyeing', i)"
+                    type="button"
+                    class="px-4 py-1.5 bg-indigo-400 text-white hover:bg-indigo-500 border rounded-md text-xs font-bold transition-colors w-full"
+                    (click)="
+                      newRequiredInputDyeing(
+                        i,
+                        activeDyeingRow[i]?.cIdx || 0,
+                        activeDyeingRow[i]?.rIdx || 0
+                      )
+                    "
+                  >
+                    + Add Detail Item
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- cutting  -->
+    @if (showcutting) {
+      <div formArrayName="Cutting" class="p-4 md:p-6 space-y-4">
+        <div class="flex items-center justify-between mb-4 border-b pb-2">
+          <h3 class="text-xl font-bold text-gray-800">Cutting</h3>
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="newCuttingGroup()"
+              class="flex items-center justify-center px-5 py-2.5 bg-indigo-500 text-white hover:bg-indigo-600 rounded-xl text-sm font-bold shadow-sm transition-colors"
+            >
+              <i class="pi pi-plus mr-1"></i> Add Stage
+            </button>
+          </div>
+        </div>
+
+        @for (item of Cutting.controls; track item; let i = $index) {
+          <div
+            [formGroupName]="i"
+            class="space-y-6 mb-6 border border-gray-200 rounded-xl p-4 md:p-6 bg-white shadow-sm relative"
+          >
+            <div class="flex justify-end mb-6 border-b border-gray-100 pb-2 items-center gap-4">
+              <i
+                [ngClass]="
+                  isLocked('Cutting', i)
+                    ? 'text-red-500 cursor-not-allowed opacity-50'
+                    : 'cursor-pointer hover:text-indigo-500 text-gray-500'
+                "
+                class="pi pi-lock !text-2xl"
+                (click)="!isLocked('Cutting', i) && lockStages('Cutting', i)"
+                title="Lock this specific stage"
+              ></i>
+
+              @if (i !== 0) {
+                <button
+                  [disabled]="isLocked('Cutting', i)"
+                  type="button"
+                  (click)="removeCuttingGroup(i)"
+                  class="flex items-center justify-center gap-1.5 px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl mx-2 text-xs font-bold transition-colors"
+                >
+                  <i class="pi pi-trash text-xs"></i> Remove Stage
                 </button>
+              }
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 pt-1">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">Party</label>
+                <input
+                  [readonly]="isLocked('Cutting', i)"
+                  pInputText
+                  formControlName="Party"
+                  placeholder="Party"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">Quantity</label>
+                <input
+                  [readonly]="isLocked('Cutting', i)"
+                  pInputText
+                  type="number"
+                  formControlName="Qty"
+                  placeholder="Qty"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">UOM</label>
+                <input
+                  [readonly]="isLocked('Cutting', i)"
+                  pInputText
+                  formControlName="UOM"
+                  placeholder="UOM"
+                  class="w-full px-2 py-1 text-xs"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">From Date</label>
+                <p-datepicker
+                  [readonlyInput]="isLocked('Cutting', i)"
+                  [class.pointer-events-none]="isLocked('Cutting', i)"
+                  formControlName="FromDate"
+                  placeholder="mm/dd/yyyy"
+                  showIcon
+                  [iconDisplay]="'input'"
+                  inputStyleClass="px-2 py-1 text-xs w-full"
+                  styleClass="w-full"
+                ></p-datepicker>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-bold text-gray-600">To Date</label>
+                <p-datepicker
+                  [readonlyInput]="isLocked('Cutting', i)"
+                  [class.pointer-events-none]="isLocked('Cutting', i)"
+                  formControlName="ToDate"
+                  placeholder="mm/dd/yyyy"
+                  showIcon
+                  [iconDisplay]="'input'"
+                  inputStyleClass="px-2 py-1 text-xs w-full"
+                  styleClass="w-full"
+                ></p-datepicker>
               </div>
             </div>
 
-            <div class="flex flex-col">
-              @if (
-                $any(item.get('ColorsGroup'))?.at(activeCuttingRow[i]?.cIdx || 0);
-                as activeColorGrp
-              ) {
-                @if (
-                  activeColorGrp.get('ColorData')?.at(activeCuttingRow[i]?.rIdx || 0);
-                  as activeDataGrp
-                ) {
-                  <div class="flex flex-col gap-1 mb-2 ml-1">
-                    <p class="text-[11px] font-bold text-gray-500 uppercase">
-                      Input Details For Output Color:
-                      <span class="text-indigo-600">{{
-                        activeColorGrp.get('Color')?.value || '...'
-                      }}</span>
-                    </p>
-                    <p class="text-[10px] font-semibold text-gray-400">
-                      <span class="mr-3"
-                        >Size:
-                        <span class="text-gray-700">{{
-                          activeDataGrp.get('Size')?.value || '...'
-                        }}</span></span
-                      >
-                      <span
-                        >Item:
-                        <span class="text-gray-700">{{
-                          activeDataGrp.get('ItemName')?.value || '...'
-                        }}</span></span
-                      >
-                    </p>
-                  </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2 items-start">
+              <div class="flex flex-col">
+                <p class="text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1">Master Items</p>
 
-                  <div
-                    class="flex flex-col border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden"
+                <div
+                  class="border border-gray-200 rounded-xl overflow-hidden grow max-h-[300px] overflow-y-auto bg-white"
+                  formArrayName="ColorsGroup"
+                >
+                  <table class="min-w-full text-left bg-white">
+                    <thead
+                      class="bg-indigo-500 text-white uppercase text-sm font-bold sticky top-0 z-10"
+                    >
+                      <tr>
+                        <th class="px-3 py-2 border-b w-24">Color</th>
+                        <th class="px-3 py-2 border-b w-24">Size</th>
+                        <th class="px-3 py-2 border-b">Item</th>
+                        <th class="px-3 py-2 border-b w-20 text-right">Qty</th>
+                        <th class="px-3 py-2 border-b w-24 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (
+                        colorGroup of $any(item.get('ColorsGroup'))?.controls;
+                        track colorGroup;
+                        let cIdx = $index
+                      ) {
+                        <ng-container [formGroupName]="cIdx">
+                          <ng-container formArrayName="ColorData">
+                            @for (
+                              dataItem of $any(colorGroup.get('ColorData'))?.controls;
+                              track dataItem;
+                              let rIdx = $index
+                            ) {
+                              <tr
+                                [formGroupName]="rIdx"
+                                (click)="selectCuttingRow(i, cIdx, rIdx)"
+                                class="hover:bg-blue-50/50 transition-colors cursor-pointer border-b"
+                                [class.bg-indigo-50]="
+                                  (activeCuttingRow[i]?.cIdx || 0) === cIdx &&
+                                  (activeCuttingRow[i]?.rIdx || 0) === rIdx
+                                "
+                              >
+                                <td
+                                  class="px-2 py-1 border-r border-gray-100"
+                                  [formGroup]="colorGroup"
+                                >
+                                  @if (rIdx === 0) {
+                                    <input
+                                      [readonly]="isLocked('Cutting', i)"
+                                      pInputText
+                                      #cuttingColor
+                                      formControlName="Color"
+                                      class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs font-bold text-indigo-700"
+                                      placeholder="Enter Color..."
+                                    />
+                                  }
+                                </td>
+
+                                <td class="px-2 py-1 border-r border-gray-100">
+                                  <input
+                                    [readonly]="isLocked('Cutting', i)"
+                                    [class.pointer-events-none]="isLocked('Cutting', i)"
+                                    pInputText
+                                    formControlName="Size"
+                                    class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
+                                    placeholder="Enter Size..."
+                                  />
+                                </td>
+
+                                <td class="px-2 py-1 border-r border-gray-100">
+                                  <input
+                                    [readonly]="isLocked('Cutting', i)"
+                                    [class.pointer-events-none]="isLocked('Cutting', i)"
+                                    pInputText
+                                    formControlName="ItemName"
+                                    class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
+                                    placeholder="Enter Item..."
+                                  />
+                                </td>
+
+                                <td class="px-2 py-1 border-r border-gray-100">
+                                  <input
+                                    [readonly]="isLocked('Cutting', i)"
+                                    pInputText
+                                    type="number"
+                                    formControlName="Qty"
+                                    class="w-full border-none bg-transparent text-right text-xs"
+                                    placeholder="0"
+                                  />
+                                </td>
+
+                                <td
+                                  class="px-2 py-1 text-center flex flex-col gap-1 items-center justify-center"
+                                >
+                                  <button
+                                    [disabled]="isLocked('Cutting', i)"
+                                    type="button"
+                                    class="text-[10px] text-red-500 hover:text-red-700 font-bold"
+                                    (click)="
+                                      removeColorDataCutting(i, cIdx, rIdx);
+                                      $event.stopPropagation()
+                                    "
+                                  >
+                                    Rem Item
+                                  </button>
+                                  @if (rIdx === 0) {
+                                    <button
+                                      [disabled]="isLocked('Cutting', i)"
+                                      type="button"
+                                      class="text-[10px] text-red-700 hover:text-red-900 font-bold"
+                                      (click)="
+                                        removeColorsGroupCutting(i, cIdx); $event.stopPropagation()
+                                      "
+                                    >
+                                      Rem Color
+                                    </button>
+                                  }
+                                </td>
+                              </tr>
+                            }
+                          </ng-container>
+
+                          <tr class="bg-gray-50/80 border-b-2 border-gray-200">
+                            <td class="border-r border-gray-200"></td>
+                            <td colspan="4" class="px-2 py-1.5">
+                              <button
+                                [disabled]="isLocked('Cutting', i)"
+                                type="button"
+                                class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase"
+                                (click)="newColorDataCutting(i, cIdx)"
+                              >
+                                + Add Item to Active Color
+                              </button>
+                            </td>
+                          </tr>
+                        </ng-container>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="mt-3 flex gap-2">
+                  <button
+                    [disabled]="isLocked('Cutting', i)"
+                    type="button"
+                    class="px-4 py-1.5 bg-indigo-500 text-white hover:bg-indigo-600 border rounded-md text-xs font-bold transition-colors w-full"
+                    (click)="newColorsGroupCutting(i)"
                   >
-                    <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
-                      <table class="min-w-full text-left bg-white text-xs border-collapse">
+                    + Add New Color Group
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex flex-col">
+                @if (
+                  $any(item.get('ColorsGroup'))?.at(activeCuttingRow[i]?.cIdx || 0);
+                  as activeColorGrp
+                ) {
+                  @if (
+                    activeColorGrp.get('ColorData')?.at(activeCuttingRow[i]?.rIdx || 0);
+                    as activeDataGrp
+                  ) {
+                    <div class="flex flex-col gap-1 mb-2 ml-1">
+                      <p class="text-[11px] font-bold text-gray-500 uppercase">
+                        Details For Selected Row
+                      </p>
+                    </div>
+
+                    <div
+                      class="border border-gray-200 rounded-xl overflow-hidden grow max-h-[300px] overflow-y-auto bg-gray-50"
+                    >
+                      <table class="min-w-full text-left">
                         <thead
-                          class="bg-indigo-500 text-white uppercase text-[10px] font-bold sticky top-0 z-10 shadow-sm"
+                          class="bg-indigo-500 text-white uppercase text-sm font-bold sticky top-0 z-10"
                         >
                           <tr>
-                            <th class="px-2 py-2 border-b w-24">Color</th>
-                            <th class="px-2 py-2 border-b">Item</th>
-                            <th class="px-2 py-2 border-b w-16 text-right">Qty</th>
-                            <th class="px-2 py-2 border-b w-16 text-center">Act</th>
+                            <th class="px-3 py-2 border-b w-32">Color</th>
+                            <th class="px-3 py-2 border-b">Item</th>
+                            <th class="px-3 py-2 border-b w-24 text-right">Qty</th>
+                            <th class="px-3 py-2 border-b w-20 text-center">Action</th>
                           </tr>
                         </thead>
                         <tbody>
-                          @for (
-                            req of $any(activeDataGrp.get('RequiredInputs'))?.controls;
-                            track req;
-                            let reqIdx = $index
-                          ) {
-                            <ng-container [formGroup]="req">
-                              <ng-container formArrayName="InputItems">
-                                @for (
-                                  inp of $any(req.get('InputItems'))?.controls;
-                                  track inp;
-                                  let iIdx = $index
-                                ) {
-                                  <tr
-                                    [formGroupName]="iIdx"
-                                    class="border-b border-gray-100 hover:bg-blue-50/50 transition-colors"
-                                  >
-                                    <td class="px-2 py-1 border-r border-gray-200">
-                                      <input
-                                        [readonly]="lockedStages['Cutting']"
-                                        pInputText
-                                        formControlName="Color"
-                                        class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400"
-                                        placeholder="Color..."
-                                      />
-                                    </td>
+                          @if ($any(activeDataGrp.get('RequiredInputs')); as activeDetailArray) {
+                            @for (
+                              req of activeDetailArray?.controls;
+                              track req;
+                              let reqIdx = $index
+                            ) {
+                              <tr
+                                [formGroup]="req"
+                                class="hover:bg-white transition-colors border-b"
+                              >
+                                <td class="px-2 py-1 border-r border-gray-200">
+                                  @if (reqIdx === 0) {
+                                    <input
+                                      readonly
+                                      pInputText
+                                      [formControl]="
+                                        $any(item.get('ColorsGroup'))
+                                          .at(activeCuttingRow[i]?.cIdx || 0)
+                                          .get('Color')
+                                      "
+                                      class="w-full border-none bg-transparent font-bold text-indigo-700 pointer-events-none focus:outline-none text-xs"
+                                      placeholder="Color..."
+                                    />
+                                  }
+                                </td>
 
-                                    <td class="px-2 py-1 border-r border-gray-200">
-                                      <input
-                                        [readonly]="lockedStages['Cutting']"
-                                        pInputText
-                                        formControlName="ItemName"
-                                        class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400"
-                                        placeholder="Item..."
-                                      />
-                                    </td>
+                                <td class="px-2 py-1 border-r border-gray-200">
+                                  <input
+                                    [readonly]="isLocked('Cutting', i)"
+                                    pInputText
+                                    formControlName="ItemName"
+                                    class="w-full border-none bg-transparent focus:ring-1 focus:ring-blue-400 text-xs"
+                                    placeholder="Detail Item..."
+                                  />
+                                </td>
 
-                                    <td class="px-2 py-1 border-r border-gray-200">
-                                      <input
-                                        [readonly]="lockedStages['Cutting']"
-                                        pInputText
-                                        type="number"
-                                        formControlName="Qty"
-                                        class="w-full border-none bg-transparent text-right"
-                                        placeholder="0"
-                                      />
-                                    </td>
+                                <td class="px-2 py-1 border-r border-gray-200">
+                                  <input
+                                    [readonly]="isLocked('Cutting', i)"
+                                    pInputText
+                                    type="number"
+                                    formControlName="Qty"
+                                    class="w-full border-none bg-transparent text-right text-xs"
+                                    placeholder="0"
+                                  />
+                                </td>
 
-                                    <td class="px-1 py-1 text-center">
-                                      <button
-                                        [disabled]="lockedStages['Cutting'] ? true : false"
-                                        type="button"
-                                        class="text-[10px] text-red-500 hover:text-red-700 block w-full"
-                                        (click)="
-                                          removeInputItemCutting(
-                                            i,
-                                            activeCuttingRow[i]?.cIdx || 0,
-                                            activeCuttingRow[i]?.rIdx || 0,
-                                            reqIdx,
-                                            iIdx
-                                          )
-                                        "
-                                      >
-                                        Rem Itm
-                                      </button>
-                                      @if (iIdx === 0) {
-                                        <button
-                                          [disabled]="lockedStages['Cutting'] ? true : false"
-                                          type="button"
-                                          class="text-[10px] text-red-800 font-bold block w-full mt-1"
-                                          (click)="
-                                            removeRequiredInputCutting(
-                                              i,
-                                              activeCuttingRow[i]?.cIdx || 0,
-                                              activeCuttingRow[i]?.rIdx || 0,
-                                              reqIdx
-                                            )
-                                          "
-                                        >
-                                          Rem Cat
-                                        </button>
-                                      }
-                                    </td>
-                                  </tr>
-                                }
-                              </ng-container>
-
-                              <tr class="bg-gray-50/80">
-                                <td class="border-r border-gray-200"></td>
-                                <td colspan="4" class="px-2 py-1 border-b-[2px] border-gray-200">
+                                <td class="px-2 py-1 text-center">
                                   <button
-                                    [disabled]="lockedStages['Cutting'] ? true : false"
+                                    [disabled]="isLocked('Cutting', i)"
                                     type="button"
-                                    class="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase"
+                                    class="text-[10px] text-red-500 hover:text-red-700 font-bold"
                                     (click)="
-                                      newInputItemCutting(
+                                      removeRequiredInputCutting(
                                         i,
                                         activeCuttingRow[i]?.cIdx || 0,
                                         activeCuttingRow[i]?.rIdx || 0,
                                         reqIdx
-                                      )
+                                      );
+                                      $event.stopPropagation()
                                     "
                                   >
-                                    + Add Item to Category
+                                    Remove
                                   </button>
                                 </td>
                               </tr>
-                            </ng-container>
+                            }
                           }
                         </tbody>
                       </table>
                     </div>
-                    <div class="p-2 border-t border-gray-200 bg-white">
+
+                    <div class="mt-3">
                       <button
-                        [disabled]="lockedStages['Cutting'] ? true : false"
+                        [disabled]="isLocked('Cutting', i)"
                         type="button"
-                        class="w-full py-1.5 bg-indigo-500 text-white rounded text-xs font-bold hover:bg-indigo-600 transition-colors"
+                        class="px-4 py-1.5 bg-indigo-400 text-white hover:bg-indigo-500 border rounded-md text-xs font-bold transition-colors w-full"
                         (click)="
                           newRequiredInputCutting(
                             i,
@@ -1225,28 +1219,28 @@
                           )
                         "
                       >
-                        + Add New Category
+                        + Add Detail Item
                       </button>
                     </div>
-                  </div>
+                  }
                 }
-              }
+              </div>
             </div>
           </div>
-        </div>
+        }
+      </div>
+    }
+    <div class="flex justify-end">
+      @if (step() === 3) {
+        <button
+          pButton
+          [disabled]="contractForm.invalid"
+          class="disabled:opacity-40 cursor-pointer"
+          type="submit"
+          label="Save Contract"
+          class="px-6"
+        ></button>
       }
     </div>
-  }
-  <div class="flex justify-end">
-    @if (step() === 3) {
-      <button
-        pButton
-        [disabled]="contractForm.invalid"
-        class="disabled:opacity-40 cursor-pointer"
-        type="submit"
-        label="Save Contract"
-        class="px-6"
-      ></button>
-    }
-  </div>
-</form>
+  </form>
+</div>
