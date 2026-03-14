@@ -514,115 +514,169 @@
             </div>
 
             <form [formGroup]="fibersForm" class="space-y-5">
-                <!-- Selectors -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                    <div class="space-y-1.5">
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
-                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
-                            formControlName="color" [options]="allColors()" optionLabel="viewValue" optionValue="value"
-                            [showClear]="true" placeholder="Select Color" class="w-full" />
-                    </div>
-                    <div class="space-y-1.5">
-                        <div class="flex items-center justify-between">
-                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
-                            <button type="button" (click)="getAllFabrics()" title="Refresh Fabrics"
-                                class="text-slate-400 hover:text-indigo-600 transition-colors">
-                                <i class="pi pi-refresh text-[10px]"></i>
-                            </button>
-                        </div>
-                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
-                            formControlName="fabric" [options]="allFabrics()" optionLabel="viewValue"
-                            optionValue="value" [showClear]="true" placeholder="Select Fabric" class="w-full">
+                <!-- Fiber Master-Detail Rows -->
+                <div class="space-y-8" formArrayName="fibers">
+                    @for(fiberGroup of fibersArray.controls; track fiberGroup; let fi = $index) {
+                    <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all group"
+                        [formGroupName]="fi">
 
-                        </p-select>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
-                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
-                            formControlName="panel" [options]="panelOptions" optionLabel="viewValue" optionValue="value"
-                            [showClear]="true" placeholder="Select Panel" class="w-full" />
-                    </div>
-                </div>
-
-                <!-- Add/Remove buttons -->
-                <div class="flex items-center justify-end gap-2">
-                    <button (click)="removeFiber(fibersArray.length - 1)" type="button"
-                        class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-all"
-                        [disabled]="fibersArray.length <= 1">
-                        <i class="pi pi-minus text-xs"></i>
-                    </button>
-                    <button (click)="addFiber()" type="button"
-                        class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-all">
-                        <i class="pi pi-plus text-xs"></i>
-                    </button>
-                </div>
-
-                <!-- Fiber Rows -->
-                <div class="space-y-4" formArrayName="fibers">
-                    @for(fiberCtrl of fibersArray.controls; track fiberCtrl; let fi = $index) {
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" [formGroupName]="fi">
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fiber</label>
-                                <button type="button" (click)="getAllFibers()" title="Refresh Fibers"
-                                    class="text-slate-400 hover:text-indigo-600 transition-colors">
-                                    <i class="pi pi-refresh text-[10px]"></i>
+                        <!-- MASTER PORTION (Header/Context) -->
+                        <div class="bg-slate-50/80 p-6 border-b border-slate-200/60">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-xs font-bold shadow-lg shadow-indigo-100">
+                                        {{ fi + 1 }}
+                                    </div>
+                                    <div>
+                                        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Fiber
+                                            Composition</h3>
+                                        <p class="text-[10px] text-slate-500 font-medium">Define Color, Fabric and Panel
+                                            context</p>
+                                    </div>
+                                </div>
+                                <button (click)="removeFiberGroup(fi)" type="button" title="Remove entire group"
+                                    class="w-9 h-9 flex items-center justify-center bg-white text-red-500 rounded-xl border border-slate-200 hover:bg-red-50 hover:border-red-100 hover:text-red-600 transition-all shadow-sm"
+                                    [disabled]="fibersArray.length <= 1">
+                                    <i class="pi pi-trash text-xs"></i>
                                 </button>
                             </div>
-                            <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
-                                formControlName="fiber_Id" [options]="allFibers()" optionLabel="viewValue"
-                                optionValue="value" [showClear]="true" placeholder="Select" class="w-full">
-                            </p-select>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="space-y-1.5">
+                                    <label
+                                        class="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Color</label>
+                                    <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                        virtualScrollItemSize="30" formControlName="color_RowId"
+                                        [options]="allColorsForFiber()" optionLabel="viewValue" optionValue="value"
+                                        [showClear]="true" placeholder="Select Color"
+                                        class="w-full custom-thick-select" />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between">
+                                        <label
+                                            class="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Fabric</label>
+                                        <button type="button"
+                                            (click)="getStyleConfigFabricShortByStyleIdForFiberAsync()" title="Refresh"
+                                            class="text-slate-400 hover:text-indigo-600 transition-colors mr-1">
+                                            <i class="pi pi-refresh text-[8px]"></i>
+                                        </button>
+                                    </div>
+                                    <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                        virtualScrollItemSize="30" formControlName="fabric_RowId"
+                                        [options]="allFabricsForFiber()" optionLabel="viewValue" optionValue="value"
+                                        [showClear]="true" placeholder="Select Fabric"
+                                        class="w-full custom-thick-select" />
+                                </div>
+                                <!-- <div class="space-y-1.5">
+                                    <label
+                                        class="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Panel</label>
+                                    <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                        virtualScrollItemSize="30" formControlName="panel_Id" [options]="panelOptions"
+                                        optionLabel="label" optionValue="value" [showClear]="true"
+                                        placeholder="Select Panel" class="w-full custom-thick-select" />
+                                </div> -->
+                            </div>
                         </div>
-                        <!-- <div class="space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <label
-                                    class="text-xs font-bold text-slate-600 uppercase tracking-wider">Consumption</label>
-                                <button type="button" (click)="getAllFiberConsumptions()" title="Refresh"
-                                    class="text-slate-400 hover:text-indigo-600 transition-colors">
-                                    <i class="pi pi-refresh text-[10px]"></i>
+
+                        <!-- DETAIL PORTION (Nested Fibers) -->
+                        <div class="p-6 bg-white">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2.5 py-1 rounded-lg">Composition
+                                        Details</span>
+                                    <span class="text-[10px] text-slate-400 font-medium italic">Define fiber percentages
+                                        and properties</span>
+                                </div>
+                                <button (click)="addFiberDetail(fi)" type="button"
+                                    class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 transition-colors">
+                                    <i class="pi pi-plus text-[10px]"></i>
+                                    Add Fiber Component
                                 </button>
                             </div>
-                            <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
-                                formControlName="consumption" [options]="allFiberConsumptions()" optionLabel="viewValue"
-                                optionValue="value" [showClear]="true" placeholder="Select" class="w-full">
-                            </p-select>
-                        </div> -->
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Ratio</label>
-                            <input pInputText type="number" formControlName="fiber_Ratio" placeholder="Ratio"
-                                class="w-full" />
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Knit Type</label>
-                            <div class="h-10.5 flex items-center">
-                                <p-selectbutton [options]="knitTypeOptions" formControlName="knit_Type"
-                                    optionLabel="label" optionValue="value" class="custom-toggle"></p-selectbutton>
+
+                            <div class="space-y-3" formArrayName="styleConfigFiberDtls">
+                                @for(detailCtrl of getFiberDetailsArray(fi).controls; track detailCtrl; let di = $index)
+                                {
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5 p-5 rounded-2xl border border-slate-100 bg-slate-50/30 relative group/detail hover:border-indigo-100 hover:bg-indigo-50/10 transition-all"
+                                    [formGroupName]="di">
+
+                                    <div class="space-y-1.5">
+                                        <label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Fiber</label>
+                                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                            virtualScrollItemSize="30" formControlName="fiber_Id"
+                                            [options]="allFibers()" optionLabel="viewValue" optionValue="value"
+                                            [showClear]="true" placeholder="Select" class="w-full compact-select" />
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Ratio
+                                            (%)</label>
+                                        <input pInputText type="number" formControlName="fiber_ratio" placeholder="%"
+                                            class="w-full h-10 border-slate-200 compact-input" />
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Knit
+                                            Type</label>
+                                        <div class="h-10 flex items-center">
+                                            <p-selectbutton [options]="knitTypeOptions" formControlName="knit_type"
+                                                optionLabel="label" optionValue="value"
+                                                class="custom-toggle miniature"></p-selectbutton>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Yarn
+                                            Dye</label>
+                                        <div class="h-10 flex items-center">
+                                            <p-selectbutton [options]="yesNoOptions" formControlName="is_fiber_dye"
+                                                optionLabel="label" optionValue="value"
+                                                class="custom-toggle miniature"></p-selectbutton>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Fiber
+                                            Color</label>
+                                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                            virtualScrollItemSize="30" formControlName="fiber_color_id"
+                                            [options]="allFiberColors()" optionLabel="viewValue" optionValue="value"
+                                            [showClear]="true" placeholder="Select" class="w-full compact-select" />
+                                    </div>
+                                    <!-- <div class="space-y-1.5">
+                                        <label
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Consumption</label>
+                                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                            virtualScrollItemSize="30" formControlName="fiber_consumption_id"
+                                            [options]="allFiberConsumptions()" optionLabel="viewValue"
+                                            optionValue="value" [showClear]="true" placeholder="Select"
+                                            class="w-full compact-select" />
+                                    </div> -->
+
+                                    <!-- Remove Detail Button -->
+                                    <button (click)="removeFiberDetail(fi, di)" type="button"
+                                        class="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center bg-white text-red-500 rounded-lg border border-slate-200 opacity-0 group-hover/detail:opacity-100 hover:bg-red-50 hover:border-red-100 transition-all shadow-sm"
+                                        [disabled]="getFiberDetailsArray(fi).length <= 1">
+                                        <i class="pi pi-times text-[8px]"></i>
+                                    </button>
+                                </div>
+                                }
                             </div>
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Yarn Dye</label>
-                            <div class="h-10.5 flex items-center">
-                                <p-selectbutton [options]="yesNoOptions" formControlName="is_Fiber_Dye"
-                                    optionLabel="label" optionValue="value" class="custom-toggle"></p-selectbutton>
-                            </div>
-                        </div>
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fiber
-                                    Color</label>
-                                <button type="button" (click)="getAllFiberColors()" title="Refresh Colors"
-                                    class="text-slate-400 hover:text-indigo-600 transition-colors">
-                                    <i class="pi pi-refresh text-[10px]"></i>
-                                </button>
-                            </div>
-                            <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
-                                formControlName="fiber_Color_Id" [options]="allFiberColors()" optionLabel="viewValue"
-                                optionValue="value" [showClear]="true" placeholder="Select" class="w-full">
-                            </p-select>
                         </div>
                     </div>
                     }
+                </div>
+
+                <!-- Add Group Button -->
+                <div class="flex justify-center pt-8">
+                    <button (click)="addFiberGroup()" type="button"
+                        class="px-10 py-4 bg-indigo-600 text-white text-sm font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center gap-3">
+                        <i class="pi pi-plus text-xs"></i>
+                        Add New Composition Group
+                    </button>
                 </div>
             </form>
         </div>
@@ -630,75 +684,130 @@
 
         <!-- ==================== STEP 5: Size Wise Consumption ==================== -->
         @if(activeStep() === 4) {
-        <div class="space-y-6">
+        <div class="space-y-6" [formGroup]="sizeConsumptionForm">
             <div class="flex items-center justify-between mb-2">
                 <h2 class="text-lg font-bold text-slate-900">Size Wise Consumption</h2>
+                <button type="button" (click)="addConsumptionRow()"
+                    class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all font-bold text-xs border border-indigo-100 flex items-center gap-2">
+                    <i class="pi pi-plus"></i> Add Another Context
+                </button>
             </div>
 
-            <form [formGroup]="sizeConsumptionForm" class="space-y-5">
-                <!-- Selectors -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                    <div class="space-y-1.5">
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color</label>
-                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
-                            formControlName="color" [options]="allColors()" optionLabel="viewValue" optionValue="value"
-                            [showClear]="true" placeholder="Select Color" class="w-full" />
-                    </div>
-                    <div class="space-y-1.5">
-                        <div class="flex items-center justify-between">
-                            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric</label>
-                            <button type="button" (click)="getAllFabrics()" title="Refresh Fabrics"
-                                class="text-slate-400 hover:text-indigo-600 transition-colors">
-                                <i class="pi pi-refresh text-[10px]"></i>
-                            </button>
-                        </div>
-                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
-                            formControlName="fabric" [options]="allFabrics()" optionLabel="viewValue"
-                            optionValue="value" [showClear]="true" placeholder="Select Fabric" class="w-full">
-                        </p-select>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Panel</label>
-                        <p-select appendTo="body" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30"
-                            formControlName="panel" [options]="panelOptions" optionLabel="viewValue" optionValue="value"
-                            [showClear]="true" placeholder="Select Panel" class="w-full" />
-                    </div>
-                </div>
+            <div formArrayName="consumptions" class="space-y-8">
+                @for(masterCtrl of consumptionRows.controls; track masterCtrl; let mi = $index) {
+                <div [formGroupName]="mi"
+                    class="p-6 rounded-3xl border border-slate-200 bg-white shadow-sm relative group/master transition-all hover:border-indigo-200">
+                    <!-- Remove Master Row Button -->
+                    @if(consumptionRows.length > 1) {
+                    <button (click)="removeConsumptionRow(mi)" type="button"
+                        class="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 rounded-full shadow-md border border-slate-100 opacity-0 group-hover/master:opacity-100 transition-all">
+                        <i class="pi pi-times text-xs"></i>
+                    </button>
+                    }
 
-                <!-- Size Table -->
-                <div class="rounded-2xl border border-slate-200 overflow-hidden">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="bg-indigo-500 text-white">
-                                <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider">Size</th>
-                                <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider">Consumption
-                                    (Mtrs)</th>
-                                <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider">Consumption
-                                    (Kgs)</th>
-                            </tr>
-                        </thead>
-                        <tbody formArrayName="sizes">
-                            @for(sizeCtrl of sizesArray.controls; track sizeCtrl; let si = $index) {
-                            <tr class="border-t border-slate-100 hover:bg-slate-50/50 transition-colors"
-                                [formGroupName]="si">
-                                <td class="px-5 py-3">
-                                    <span class="text-sm font-semibold text-slate-700">{{ sizeCtrl.get('size')?.value
-                                        }}</span>
-                                </td>
-                                <td class="px-5 py-2">
-                                    <input pInputText type="number" formControlName="consumptionMtrs" placeholder="0.00"
-                                        class="w-full" />
-                                </td>
-                                <td class="px-5 py-2">
-                                    <input pInputText type="number" formControlName="consumptionKgs" placeholder="0.00"
-                                        class="w-full" />
-                                </td>
-                            </tr>
-                            }
-                        </tbody>
-                    </table>
+                    <div class="space-y-6">
+                        <!-- Selectors -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Color
+                                    Context</label>
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    virtualScrollItemSize="30" formControlName="color_RowId"
+                                    [options]="allColorsForFiber()" optionLabel="viewValue" optionValue="value"
+                                    [showClear]="true" placeholder="Select Color" class="w-full" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Fabric
+                                        Context</label>
+                                    <!-- <button type="button" (click)="getStyleConfigFabricShortByStyleIdForFiber()"
+                                        title="Refresh Fabrics"
+                                        class="text-slate-400 hover:text-indigo-600 transition-colors">
+                                        <i class="pi pi-refresh text-[10px]"></i>
+                                    </button> -->
+                                </div>
+                                <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                    virtualScrollItemSize="30" formControlName="fabric_RowId"
+                                    [options]="allFabricsForFiber()" optionLabel="viewValue" optionValue="value"
+                                    [showClear]="true" placeholder="Select Fabric" class="w-full">
+                                </p-select>
+                            </div>
+                            <div class="space-y-1.5 border-l border-slate-100 pl-5">
+                                <label class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Add Size to
+                                    List</label>
+                                <div class="flex gap-2">
+                                    <p-select appendTo="body" [filter]="true" [virtualScroll]="true"
+                                        virtualScrollItemSize="30" formControlName="selectedSizeId"
+                                        [options]="allPanelSizes()" optionLabel="viewValue" optionValue="value"
+                                        [showClear]="true" placeholder="Pick Size" class="flex-1" />
+                                    <button (click)="addSizeRow(mi)" type="button"
+                                        class="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95">
+                                        <i class="pi pi-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Size Table -->
+                        <div class="rounded-2xl border border-slate-100 overflow-hidden">
+                            <table class="w-full border-collapse">
+                                <thead class="bg-indigo-50/50">
+                                    <tr>
+                                        <th
+                                            class="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                            Size</th>
+                                        <th
+                                            class="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                            Mtr Consumption</th>
+                                        <th
+                                            class="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                            Kg Consumption</th>
+                                        <th
+                                            class="px-5 py-3 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider w-20">
+                                            Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody formArrayName="sizeConsumptionDtls">
+                                    @for(detailCtrl of getSizesArray(mi).controls; track detailCtrl; let si = $index) {
+                                    <tr class="border-t border-slate-50 bg-white" [formGroupName]="si">
+                                        <td class="px-5 py-3">
+                                            <span
+                                                class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold border border-slate-200">
+                                                {{ detailCtrl.get('sizeName')?.value }}
+                                            </span>
+                                        </td>
+                                        <td class="px-5 py-3">
+                                            <input pInputText type="number" formControlName="mtr_Conumpition"
+                                                placeholder="0.00"
+                                                class="w-full h-10 text-sm rounded-lg bg-slate-50 border-slate-100 hover:border-indigo-300 transition-all" />
+                                        </td>
+                                        <td class="px-5 py-3">
+                                            <input pInputText type="number" formControlName="kg_Consumption"
+                                                placeholder="0.00"
+                                                class="w-full h-10 text-sm rounded-lg bg-slate-50 border-slate-100 hover:border-indigo-300 transition-all" />
+                                        </td>
+                                        <td class="px-5 py-3 text-center">
+                                            <button (click)="removeSizeRow(mi, si)" type="button"
+                                                class="text-slate-400 hover:text-red-500 transition-colors">
+                                                <i class="pi pi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    }
+                                    @if(getSizesArray(mi).length === 0) {
+                                    <tr>
+                                        <td colspan="4" class="px-5 py-8 text-center text-slate-400 text-xs italic">
+                                            No sizes added for this context.
+                                        </td>
+                                    </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </form>
+                }
+            </div>
         </div>
         }
 

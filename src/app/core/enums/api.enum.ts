@@ -11,8 +11,8 @@ export enum Repository {
     Auth = "Auth/",
     Catalog = "Catalog/",
     StyleConfiguration = "StyleConfiguration/",
-
-    Order = "Order/"  //Work Order
+    Order = "Order/",
+    Contract = "Contract/"
 }
 
 export enum EndPoints {
@@ -57,7 +57,7 @@ export enum EndPoints {
     GetStyleConfigColorShortByStyleIdForFabric = "GetStyleConfigColorShortByStyleIdForFabric",
     AddUpdateStyleConfigFabricAsync = "AddUpdateStyleConfigFabricAsync",
     GetStyleConfigColorShortByStyleIdForFiberAsync = "GetStyleConfigColorShortByStyleIdForFiberAsync",
-    GetStyleConfigFabricShortByStyleIdForFiber = "GetStyleConfigFabricShortByStyleIdForFiber",
+    GetStyleConfigFabricShortByStyleIdForFiberAsync = "GetStyleConfigFabricShortByStyleIdForFiberAsync",
     GetStyleConfigPanelShortByStyleIdForFiberAsync = "GetStyleConfigPanelShortByStyleIdForFiberAsync",
     AddUpdateStyleConfigFiberAsync = "AddUpdateStyleConfigFiberAsync",
     AddUpdateStyleConfigSizeConsumptionAsync = "AddUpdateStyleConfigSizeConsumptionAsync",
@@ -66,9 +66,16 @@ export enum EndPoints {
     //#endregion
 
 
-    //#region Order == WorkOrder
+    //#region Order
     AddUpdateWorkOrder = "AddUpdateWorkOrder",
     GetAllWorkOrder = "GetAllWorkOrder",
-    GetSingleWorkOrder = "GetSingleWorkOrder"
+    GetSingleWorkOrder = "GetSingleWorkOrder",
+    //#endregion
+
+    //#region Contract
+    GetAllWoShortAsync = "GetAllWoShortAsync",
+    GetStageItems = "GetStageItems",
+    GetOrderStagesShortAsync = "GetOrderStagesShortAsync",
+    GetAllPartiesByStageId = "GetAllPartiesByStageId"
     //#endregion
 }

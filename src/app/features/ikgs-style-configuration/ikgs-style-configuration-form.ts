@@ -20,6 +20,7 @@ import { StyleConfigMainDto } from '../../models/domain/style-configuration.mode
 import { AddsOnCatalogDto } from '../../models/domain/addson-catalog.model';
 import { StyleConfigColorDto } from '../../models/domain/style-config-color.model';
 import { FileUploadComponent } from '../../shared/components/file-upload/file-upload';
+import { StyleConfigFibersDto, StyleConfigFiberDtlDto } from '../../models/domain/style-config-fiber.model';
 import { FileUploadType } from '../../core/enums/file-upload-type.enum';
 
 
@@ -165,23 +166,28 @@ export class IkgsStyleConfigurationForm {
 
         // Step 4
         this.fibersForm = this.fb.group({
-            color: [null],
-            fabric: [null],
-            panel: [null],
-            fibers: this.fb.array([this.createFiberRow(), this.createFiberRow(), this.createFiberRow()])
+            fibers: this.fb.array([this.createFiberMasterGroup()])
         });
 
         // Step 5
         this.sizeConsumptionForm = this.fb.group({
-            color: [null],
-            fabric: [null],
-            panel: [null],
-            sizes: this.fb.array(this.sizeRows.map(s => this.fb.group({
-                size: [s.size],
-                consumptionMtrs: [null],
-                consumptionKgs: [null],
-            })))
+            consumptions: this.fb.array([this.createConsumptionGroup()])
         });
+    }
+
+    createConsumptionGroup() {
+        return this.fb.group({
+            size_RowId: [0],
+            color_RowId: [null, Validators.required],
+            fabric_RowId: [null, Validators.required],
+            panel_id: [null],
+            selectedSizeId: [null], // Helper for adding sizes to this row
+            sizeConsumptionDtls: this.fb.array([])
+        });
+    }
+
+    get consumptionRows() {
+        return this.sizeConsumptionForm.get('consumptions') as FormArray;
     }
 
     groupedAddsOns = signal<any[]>([]);
@@ -328,17 +334,31 @@ export class IkgsStyleConfigurationForm {
     }
 
     // Fibers helpers
-    createFiberRow(): FormGroup {
+    createFiberMasterGroup(): FormGroup {
         return this.fb.group({
             style_Id: [this.configForm.value.style_Id],
-            color_RowId: [0],
-            fabric_RowId: [0],
+            color_RowId: [null, Validators.required],
+            fabric_RowId: [null, Validators.required],
+            panel_Id: [null],
+            fibers_RowId: [0],
+            fiber_Id: [null], // Primary fiber if needed
+            is_active: ['Y'],
+            eby: [1],
+            edate: [new Date()],
+            styleConfigFiberDtls: this.fb.array([this.createFiberDetailGroup()])
+        });
+    }
+
+    createFiberDetailGroup(): FormGroup {
+        return this.fb.group({
+            fibers_dtl_rowid: [0],
             fiber_Id: [null, Validators.required],
-            knit_Type: ['K'],
-            fiber_Ratio: [null],
-            is_Fiber_Dye: ['N'],
-            fiber_Color_Id: [null],
-            is_Active: ['Y'],
+            fiber_consumption_id: [null],
+            fiber_ratio: [null, Validators.required],
+            knit_type: ['K'],
+            is_fiber_dye: ['N'],
+            fiber_color_id: [null],
+            is_active: ['Y'],
             eby: [1],
             edate: [new Date()],
         });
@@ -348,13 +368,28 @@ export class IkgsStyleConfigurationForm {
         return this.fibersForm.get('fibers') as FormArray;
     }
 
-    addFiber(): void {
-        this.fibersArray.push(this.createFiberRow());
+    addFiberGroup(): void {
+        this.fibersArray.push(this.createFiberMasterGroup());
     }
 
-    removeFiber(index: number): void {
+    removeFiberGroup(index: number): void {
         if (this.fibersArray.length > 1) {
             this.fibersArray.removeAt(index);
+        }
+    }
+
+    getFiberDetailsArray(index: number): FormArray {
+        return this.fibersArray.at(index).get('styleConfigFiberDtls') as FormArray;
+    }
+
+    addFiberDetail(index: number): void {
+        this.getFiberDetailsArray(index).push(this.createFiberDetailGroup());
+    }
+
+    removeFiberDetail(groupIndex: number, detailIndex: number): void {
+        const details = this.getFiberDetailsArray(groupIndex);
+        if (details.length > 1) {
+            details.removeAt(detailIndex);
         }
     }
 
@@ -362,6 +397,63 @@ export class IkgsStyleConfigurationForm {
     get sizesArray(): FormArray {
         return this.sizeConsumptionForm.get('sizes') as FormArray;
     }
+
+    populateSizes(sizes: SelectionValueModel[]): void {
+        // No longer auto-populating
+    }
+
+    addConsumptionRow(): void {
+        this.consumptionRows.push(this.createConsumptionGroup());
+    }
+
+    removeConsumptionRow(index: number): void {
+        this.consumptionRows.removeAt(index);
+    }
+
+    addSizeRow(masterIndex: number): void {
+        const masterGroup = this.consumptionRows.at(masterIndex) as FormGroup;
+        const sizeId = masterGroup.get('selectedSizeId')?.value;
+        const detailsArray = masterGroup.get('sizeConsumptionDtls') as FormArray;
+
+        if (!sizeId) {
+            this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please select a size.' });
+            return;
+        }
+
+        // Check if already added
+        const exists = detailsArray.controls.some(ctrl => ctrl.get('size_Id')?.value === sizeId);
+        if (exists) {
+            this.messageService.add({ severity: 'info', summary: 'Info', detail: 'This size is already in the list.' });
+            return;
+        }
+
+        const sizeObj = this.allPanelSizes().find(s => s.value === sizeId);
+        if (sizeObj) {
+            detailsArray.push(this.fb.group({
+                size_RowId: [0],
+                size_Dtl_RowId: [0],
+                size_Id: [sizeObj.value],
+                sizeName: [sizeObj.viewValue],
+                mtr_Conumpition: [null, Validators.required],
+                kg_Consumption: [null, Validators.required],
+                dye_Wast: [0],
+                knit_Wast: [0],
+            }));
+            masterGroup.get('selectedSizeId')?.reset();
+        }
+    }
+
+    getSizesArray(masterIndex: number): FormArray {
+        return this.consumptionRows.at(masterIndex).get('sizeConsumptionDtls') as FormArray;
+    }
+
+    removeSizeRow(masterIndex: number, detailIndex: number): void {
+        this.getSizesArray(masterIndex).removeAt(detailIndex);
+    }
+
+    // removeSizeRow(index: number): void {
+    //     this.sizesArray.removeAt(index);
+    // }
 
     // Navigation
     goToStep(step: number): void {
@@ -418,6 +510,21 @@ export class IkgsStyleConfigurationForm {
             return;
         }
 
+        if (this.activeStep() === 3) {
+            if (this.fibersForm.invalid) {
+                this.fibersForm.markAllAsTouched();
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Validation',
+                    detail: 'Please fill all required fields.'
+                });
+                return;
+            }
+
+            this.addUpdateStyleConfigFiber();
+            return;
+        }
+
         if (this.activeStep() < 4) {
             this.activeStep.set(this.activeStep() + 1);
         }
@@ -430,7 +537,16 @@ export class IkgsStyleConfigurationForm {
     }
 
     save(): void {
-        this.router.navigate(['/ikgs/style-configuration']);
+        if (this.sizeConsumptionForm.invalid) {
+            this.sizeConsumptionForm.markAllAsTouched();
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Validation',
+                detail: 'Please fill all required fields.'
+            });
+            return;
+        }
+        this.addUpdateStyleConfigSizeConsumption();
     }
 
     cancel(): void {
@@ -858,6 +974,7 @@ export class IkgsStyleConfigurationForm {
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
                     this.allPanelSizes.set(result.Data);
+                    this.populateSizes(result.Data);
                 }
             });
     }
@@ -1043,6 +1160,49 @@ export class IkgsStyleConfigurationForm {
             });
     }
 
+    addUpdateStyleConfigFiber() {
+        if (this.fibersForm.invalid) {
+            this.fibersForm.markAllAsTouched();
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Validation',
+                detail: 'Please fill all required fields.'
+            });
+            return;
+        }
+
+        const styleId = this.configForm.value.style_Id;
+        const fiberGroups: StyleConfigFibersDto[] = this.fibersForm.value.fibers.map((f: any) => ({
+            ...f,
+            style_Id: styleId
+        }));
+
+        let authApiOpts = new ApiOptionsModel<StyleConfigFibersDto[]>();
+        authApiOpts.RequestType = RequestType.POST;
+        authApiOpts.Repository = Repository.StyleConfiguration;
+        authApiOpts.EndPoint = EndPoints.AddUpdateStyleConfigFiberAsync;
+        authApiOpts.ParamObj = fiberGroups;
+
+        this.restService
+            .CallApi<StyleConfigFibersDto[], any>(authApiOpts)
+            .subscribe((result: ApiResponseModel<any>) => {
+                if (result?.Code === 200) {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        detail: 'Fiber configuration saved successfully.'
+                    });
+                    this.activeStep.set(4);
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: result?.Message || 'Failed to save fiber configuration.'
+                    });
+                }
+            });
+    }
+
     addUpdateStyleConfigFabric() {
         const styleId = this.configForm.value.style_Id;
         const panelList = this.panelsArray.value.map((p: any) => ({
@@ -1073,7 +1233,8 @@ export class IkgsStyleConfigurationForm {
                     }
 
                     this.activeStep.set(3);
-                    this.getStyleConfigFabricShortByStyleIdForFiber();
+                    this.getStyleConfigFabricShortByStyleIdForFiberAsync();
+                    this.getStyleConfigColorShortByStyleIdForFiberAsync();
                     this.messageService.add({
                         severity: 'success',
                         summary: 'Success',
@@ -1083,9 +1244,9 @@ export class IkgsStyleConfigurationForm {
             }
         );
     }
-
-    getStyleConfigFabricShortByStyleIdForFiber() {
-        this.allFabrics.set([]); // Or some other signal for fiber dropdown
+    allFabricsForFiber = signal<SelectionValueModel[]>([]);
+    getStyleConfigFabricShortByStyleIdForFiberAsync() {
+        this.allFabricsForFiber.set([]); // Or some other signal for fiber dropdown
         let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
         authApiOpts.RequestType = RequestType.GET;
         authApiOpts.Repository = Repository.StyleConfiguration;
@@ -1094,12 +1255,86 @@ export class IkgsStyleConfigurationForm {
             Value: this.configForm.value.style_Id,
             IsDate: false
         }]
-        authApiOpts.EndPoint = EndPoints.GetStyleConfigFabricShortByStyleIdForFiber;
+        authApiOpts.EndPoint = EndPoints.GetStyleConfigFabricShortByStyleIdForFiberAsync;
         this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
-                    this.allFabrics.set(result.Data); // Assuming this signal is used in fibers step
+                    this.allFabricsForFiber.set(result.Data); // Assuming this signal is used in fibers step
                 }
             });
+    }
+
+
+    allColorsForFiber = signal<SelectionValueModel[]>([]);
+    getStyleConfigColorShortByStyleIdForFiberAsync() {
+        this.allColorsForFiber.set([]); // Or some other signal for fiber dropdown
+        let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+        authApiOpts.RequestType = RequestType.GET;
+        authApiOpts.Repository = Repository.StyleConfiguration;
+        authApiOpts.ReqQueryParams = [{
+            Key: 'style_Id',
+            Value: this.configForm.value.style_Id,
+            IsDate: false
+        }]
+        authApiOpts.EndPoint = EndPoints.GetStyleConfigColorShortByStyleIdForFiberAsync;
+        this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+            .subscribe((result: any) => {
+                if (result?.Code === 200 && result.Data) {
+                    this.allColorsForFiber.set(result.Data); // Assuming this signal is used in fibers step
+                }
+            });
+    }
+
+    addUpdateStyleConfigSizeConsumption() {
+        const formValues = this.sizeConsumptionForm.getRawValue();
+        const styleId = this.configForm.value.style_Id;
+
+        // Map form to Master-Detail structure (List of StyleConfigSizeConsumptionDto)
+        const request: any[] = formValues.consumptions.map((master: any) => ({
+            style_Id: styleId,
+            size_RowId: master.size_RowId || 0,
+            color_RowId: master.color_RowId,
+            fabric_RowId: master.fabric_RowId,
+            is_Active: 'Y',
+            eby: 1,
+            edate: new Date(),
+            sizeConsumptionDtls: master.sizeConsumptionDtls.map((detail: any) => ({
+                size_RowId: detail.size_RowId,
+                size_Dtl_RowId: detail.size_Dtl_RowId,
+                size_Id: detail.size_Id,
+                mtr_Conumpition: detail.mtr_Conumpition,
+                kg_Consumption: detail.kg_Consumption,
+                dye_Wast: detail.dye_Wast,
+                knit_Wast: detail.knit_Wast,
+                is_Active: 'Y',
+                eby: 1,
+                edate: new Date()
+            }))
+        }));
+
+        let apiOpts = new ApiOptionsModel<any[]>();
+        apiOpts.RequestType = RequestType.POST;
+        apiOpts.Repository = Repository.StyleConfiguration;
+        apiOpts.EndPoint = EndPoints.AddUpdateStyleConfigSizeConsumptionAsync;
+        apiOpts.ParamObj = request;
+
+        this.restService.CallApi<any[], any>(apiOpts).subscribe(
+            (result: ApiResponseModel<any>) => {
+                if (result?.Code === 200) {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        detail: 'Size consumption saved successfully.'
+                    });
+                    this.router.navigate(['/ikgs/style-configuration']);
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: result?.Message || 'Failed to save size consumption.'
+                    });
+                }
+            }
+        );
     }
 }

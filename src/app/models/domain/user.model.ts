@@ -9,4 +9,4 @@ export class UserLoginResponseDto {
     userId!: number;
     fullName!: string;
     userImg!: string;
-}
+}   
