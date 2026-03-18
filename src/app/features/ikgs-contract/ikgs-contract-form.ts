@@ -18,6 +18,8 @@ import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { CheckboxModule } from 'primeng/checkbox';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { IkgsContract } from '../../models/domain/contract.model';
 import { SelectionValueModel } from '../../models/common/selection-value.model';
@@ -32,6 +34,8 @@ import { ApiOptionsModel } from '../../core/models/api.model';
     CommonModule,
     ReactiveFormsModule,
     SelectModule,
+    SelectButtonModule,
+    MultiSelectModule,
     CheckboxModule,
     InputTextModule,
     ButtonModule,
@@ -58,16 +62,31 @@ export class IkgsContractForm implements OnInit {
     Knitting: {},
     Dyeing: {},
     Cutting: {},
+    Sewing: {},
+    Laundry: {},
+    GarmentPrinting: {},
+    GarmentEmbroidery: {},
+    PannelEmbroidery: {},
+    GarmentFinishing: {},
+    GarmentPacking: {},
+    Shipment: {},
   };
 
   workOrderlist: string[] = [];
-  showYarn: boolean = true;
-  showKnitting: boolean = false;
-  showDyeing: boolean = false;
-  showcutting: boolean = false;
+
   activeKnittingRow: Record<number, number> = {};
   activeDyeingRow: Record<number, { cIdx: number; rIdx: number }> = {};
   activeCuttingRow: Record<number, { cIdx: number; rIdx: number }> = {};
+  activeSewingRow: Record<number, { cIdx: number; rIdx: number }> = {};
+  activeLaundryRow: Record<number, { cIdx: number; rIdx: number }> = {};
+  activeGarmentPrintingRow: Record<number, { cIdx: number; rIdx: number }> = {};
+  activeGarmentEmbroideryRow: Record<number, { cIdx: number; rIdx: number }> = {};
+  activePannelEmbroideryRow: Record<number, { cIdx: number; rIdx: number }> = {};
+  activeGarmentFinishingRow: Record<number, { cIdx: number; rIdx: number }> = {};
+  activeGarmentPackingRow: Record<number, { cIdx: number; rIdx: number }> = {};
+  activeShipmentRow: Record<number, { cIdx: number; rIdx: number }> = {};
+
+  previousSelectedStages: string[] = [];
 
   selectKnittingRow(knittingIndex: number, requiredItemIndex: number) {
     this.activeKnittingRow[knittingIndex] = requiredItemIndex;
@@ -78,11 +97,20 @@ export class IkgsContractForm implements OnInit {
   selectCuttingRow(cutIndex: number, colorIndex: number, dataIndex: number) {
     this.activeCuttingRow[cutIndex] = { cIdx: colorIndex, rIdx: dataIndex };
   }
+  selectSewingRow(idx: number, cIdx: number, rIdx: number) { this.activeSewingRow[idx] = { cIdx, rIdx }; }
+  selectLaundryRow(idx: number, cIdx: number, rIdx: number) { this.activeLaundryRow[idx] = { cIdx, rIdx }; }
+  selectGarmentPrintingRow(idx: number, cIdx: number, rIdx: number) { this.activeGarmentPrintingRow[idx] = { cIdx, rIdx }; }
+  selectGarmentEmbroideryRow(idx: number, cIdx: number, rIdx: number) { this.activeGarmentEmbroideryRow[idx] = { cIdx, rIdx }; }
+  selectPannelEmbroideryRow(idx: number, cIdx: number, rIdx: number) { this.activePannelEmbroideryRow[idx] = { cIdx, rIdx }; }
+  selectGarmentFinishingRow(idx: number, cIdx: number, rIdx: number) { this.activeGarmentFinishingRow[idx] = { cIdx, rIdx }; }
+  selectGarmentPackingRow(idx: number, cIdx: number, rIdx: number) { this.activeGarmentPackingRow[idx] = { cIdx, rIdx }; }
+  selectShipmentRow(idx: number, cIdx: number, rIdx: number) { this.activeShipmentRow[idx] = { cIdx, rIdx }; }
 
   ngOnInit(): void {
     this.forminit();
     this.step.set(0);
-    this.getWorkOrdersList();
+    this.getAllWoShortAsync();
+    this.getOrderStagesShortAsync();
     this.contractForm.get('Yarn.Qty')?.valueChanges.subscribe(() => {
       this.contractForm.get('Knitting')?.updateValueAndValidity({ emitEvent: false });
       this.contractForm.get('Dyeing')?.updateValueAndValidity({ emitEvent: false });
@@ -93,12 +121,7 @@ export class IkgsContractForm implements OnInit {
   forminit() {
     this.contractForm = this.fb.group({
       WorkOrder: [null, Validators.required],
-      Stages: this.fb.group({
-        YarnProcure: [true],
-        Knitting: [false],
-        Dyeing: [false],
-        Cutting: [false],
-      }),
+      Stages: [[]],
       Yarn: this.CreateYarnformGroup(),
       Knitting: this.fb.array([this.createKnittingGroup()], {
         validators: this.maxArrayQtyValidator(() => this.maxKnittingQty),
@@ -109,6 +132,14 @@ export class IkgsContractForm implements OnInit {
       Cutting: this.fb.array([this.createCuttingFormGroup()], {
         validators: this.maxArrayQtyValidator(() => this.maxCuttingQty),
       }),
+      Sewing: this.fb.array([this.createCuttingFormGroup()]),
+      Laundry: this.fb.array([this.createCuttingFormGroup()]),
+      GarmentPrinting: this.fb.array([this.createCuttingFormGroup()]),
+      GarmentEmbroidery: this.fb.array([this.createCuttingFormGroup()]),
+      PannelEmbroidery: this.fb.array([this.createCuttingFormGroup()]),
+      GarmentFinishing: this.fb.array([this.createCuttingFormGroup()]),
+      GarmentPacking: this.fb.array([this.createCuttingFormGroup()]),
+      Shipment: this.fb.array([this.createCuttingFormGroup()]),
     });
   }
 
@@ -133,7 +164,8 @@ export class IkgsContractForm implements OnInit {
       }
 
       if (this.contractForm) {
-        const yarnProcureActive = this.contractForm.get('Stages.YarnProcure')?.value;
+        const selectedStages = this.contractForm.get('Stages')?.value || [];
+        const yarnProcureActive = selectedStages.includes('0');
         const yarnQty = Number(this.contractForm.get('Yarn.Qty')?.value || 0);
 
         if (yarnProcureActive && currentTotal > yarnQty) {
@@ -166,17 +198,42 @@ export class IkgsContractForm implements OnInit {
     this.Dyeing.removeAt(index);
   }
 
-  get Cutting(): FormArray {
-    return this.contractForm.get('Cutting') as FormArray;
-  }
+  get Cutting(): FormArray { return this.contractForm.get('Cutting') as FormArray; }
+  get Sewing(): FormArray { return this.contractForm.get('Sewing') as FormArray; }
+  get Laundry(): FormArray { return this.contractForm.get('Laundry') as FormArray; }
+  get GarmentPrinting(): FormArray { return this.contractForm.get('GarmentPrinting') as FormArray; }
+  get GarmentEmbroidery(): FormArray { return this.contractForm.get('GarmentEmbroidery') as FormArray; }
+  get PannelEmbroidery(): FormArray { return this.contractForm.get('PannelEmbroidery') as FormArray; }
+  get GarmentFinishing(): FormArray { return this.contractForm.get('GarmentFinishing') as FormArray; }
+  get GarmentPacking(): FormArray { return this.contractForm.get('GarmentPacking') as FormArray; }
+  get Shipment(): FormArray { return this.contractForm.get('Shipment') as FormArray; }
 
-  newCuttingGroup() {
-    this.Cutting.push(this.createCuttingFormGroup());
-  }
+  newCuttingGroup() { this.Cutting.push(this.createCuttingFormGroup()); }
+  removeCuttingGroup(index: number) { this.Cutting.removeAt(index); }
 
-  removeCuttingGroup(index: number) {
-    this.Cutting.removeAt(index);
-  }
+  newSewingGroup() { this.Sewing.push(this.createCuttingFormGroup()); }
+  removeSewingGroup(index: number) { this.Sewing.removeAt(index); }
+
+  newLaundryGroup() { this.Laundry.push(this.createCuttingFormGroup()); }
+  removeLaundryGroup(index: number) { this.Laundry.removeAt(index); }
+
+  newGarmentPrintingGroup() { this.GarmentPrinting.push(this.createCuttingFormGroup()); }
+  removeGarmentPrintingGroup(index: number) { this.GarmentPrinting.removeAt(index); }
+
+  newGarmentEmbroideryGroup() { this.GarmentEmbroidery.push(this.createCuttingFormGroup()); }
+  removeGarmentEmbroideryGroup(index: number) { this.GarmentEmbroidery.removeAt(index); }
+
+  newPannelEmbroideryGroup() { this.PannelEmbroidery.push(this.createCuttingFormGroup()); }
+  removePannelEmbroideryGroup(index: number) { this.PannelEmbroidery.removeAt(index); }
+
+  newGarmentFinishingGroup() { this.GarmentFinishing.push(this.createCuttingFormGroup()); }
+  removeGarmentFinishingGroup(index: number) { this.GarmentFinishing.removeAt(index); }
+
+  newGarmentPackingGroup() { this.GarmentPacking.push(this.createCuttingFormGroup()); }
+  removeGarmentPackingGroup(index: number) { this.GarmentPacking.removeAt(index); }
+
+  newShipmentGroup() { this.Shipment.push(this.createCuttingFormGroup()); }
+  removeShipmentGroup(index: number) { this.Shipment.removeAt(index); }
 
   createKnittingGroup(): FormGroup {
     return this.fb.group({
@@ -355,163 +412,182 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
-  getColorsGroupCutting(cutIndex: number): FormArray {
-    return this.Cutting.at(cutIndex).get('ColorsGroup') as FormArray;
+  // Generic section for template-based stages (Cutting to Shipment)
+
+  getColorsGroup(stageName: string, stageIdx: number): FormArray {
+    return (this.contractForm.get(stageName) as FormArray).at(stageIdx).get('ColorsGroup') as FormArray;
   }
-  newColorsGroupCutting(cutIndex: number) {
-    this.getColorsGroupCutting(cutIndex).push(this.createCuttingColorGroup());
+  newColorsGroup(stageName: string, stageIdx: number) {
+    this.getColorsGroup(stageName, stageIdx).push(this.createCuttingColorGroup());
   }
-  removeColorsGroupCutting(cutIndex: number, colorIndex: number) {
-    this.getColorsGroupCutting(cutIndex).removeAt(colorIndex);
+  removeColorsGroup(stageName: string, stageIdx: number, colorIndex: number) {
+    this.getColorsGroup(stageName, stageIdx).removeAt(colorIndex);
   }
 
-  getColorDataCutting(cutIndex: number, colorIndex: number): FormArray {
-    return this.getColorsGroupCutting(cutIndex).at(colorIndex).get('ColorData') as FormArray;
+  getColorData(stageName: string, stageIdx: number, colorIndex: number): FormArray {
+    return this.getColorsGroup(stageName, stageIdx).at(colorIndex).get('ColorData') as FormArray;
   }
-  newColorDataCutting(cutIndex: number, colorIndex: number) {
-    this.getColorDataCutting(cutIndex, colorIndex).push(this.cuttingSizeColorQtyGroup());
+  newColorData(stageName: string, stageIdx: number, colorIndex: number) {
+    this.getColorData(stageName, stageIdx, colorIndex).push(this.cuttingSizeColorQtyGroup());
   }
-  removeColorDataCutting(cutIndex: number, colorIndex: number, dataIndex: number) {
-    this.getColorDataCutting(cutIndex, colorIndex).removeAt(dataIndex);
+  removeColorData(stageName: string, stageIdx: number, colorIndex: number, dataIndex: number) {
+    this.getColorData(stageName, stageIdx, colorIndex).removeAt(dataIndex);
   }
 
-  getRequiredInputsCutting(cutIndex: number, colorIndex: number, dataIndex: number): FormArray {
-    return this.getColorDataCutting(cutIndex, colorIndex)
+  getRequiredInputs(stageName: string, stageIdx: number, colorIndex: number, dataIndex: number): FormArray {
+    return this.getColorData(stageName, stageIdx, colorIndex)
       .at(dataIndex)
       .get('RequiredInputs') as FormArray;
   }
-  newRequiredInputCutting(cutIndex: number, colorIndex: number, dataIndex: number) {
-    this.getRequiredInputsCutting(cutIndex, colorIndex, dataIndex).push(this.createItemQtyGroup());
+  newRequiredInput(stageName: string, stageIdx: number, colorIndex: number, dataIndex: number) {
+    this.getRequiredInputs(stageName, stageIdx, colorIndex, dataIndex).push(this.createItemQtyGroup());
   }
-  removeRequiredInputCutting(
-    cutIndex: number,
+  removeRequiredInput(
+    stageName: string,
+    stageIdx: number,
     colorIndex: number,
     dataIndex: number,
     reqIndex: number,
   ) {
-    this.getRequiredInputsCutting(cutIndex, colorIndex, dataIndex).removeAt(reqIndex);
+    this.getRequiredInputs(stageName, stageIdx, colorIndex, dataIndex).removeAt(reqIndex);
   }
 
-  getInputItemsCutting(
-    cutIndex: number,
+  getInputItems(
+    stageName: string,
+    stageIdx: number,
     colorIndex: number,
     dataIndex: number,
     reqIndex: number,
   ): FormArray {
-    return this.getRequiredInputsCutting(cutIndex, colorIndex, dataIndex)
+    return this.getRequiredInputs(stageName, stageIdx, colorIndex, dataIndex)
       .at(reqIndex)
       .get('InputItems') as FormArray;
   }
-  newInputItemCutting(cutIndex: number, colorIndex: number, dataIndex: number, reqIndex: number) {
-    this.getInputItemsCutting(cutIndex, colorIndex, dataIndex, reqIndex).push(
+  newInputItem(stageName: string, stageIdx: number, colorIndex: number, dataIndex: number, reqIndex: number) {
+    this.getInputItems(stageName, stageIdx, colorIndex, dataIndex, reqIndex).push(
       this.createItemQtyGroup(),
     );
   }
-  removeInputItemCutting(
-    cutIndex: number,
+  removeInputItem(
+    stageName: string,
+    stageIdx: number,
     colorIndex: number,
     dataIndex: number,
     reqIndex: number,
     itemIndex: number,
   ) {
-    this.getInputItemsCutting(cutIndex, colorIndex, dataIndex, reqIndex).removeAt(itemIndex);
+    this.getInputItems(stageName, stageIdx, colorIndex, dataIndex, reqIndex).removeAt(itemIndex);
   }
 
   // ==========================================
   // 2. SKIPPABLE NAVIGATION & DATA CLEARING
   // ==========================================
 
-  updateVisibleStages() {
-    const s = this.contractForm.value.Stages;
-    this.showYarn = s.YarnProcure;
-    this.showKnitting = s.Knitting;
-    this.showDyeing = s.Dyeing;
-    this.showcutting = s.Cutting;
-  }
 
-  // Triggered when the user clicks a stage checkbox
-  onStageChange(event: any, stageName: string) {
-    if (event.checked) {
-      this.updateVisibleStages();
-    } else {
-      this.updateVisibleStages();
+  // Triggered when the user changes stage selection
+  onStageChange(selectedStages: string[]) {
+    // Detect which stages were removed
+    const removed = this.previousSelectedStages.filter(s => !selectedStages.includes(s));
+    removed.forEach(stageId => this.clearStageData(stageId));
 
-      this.clearStageData(stageName);
+    this.previousSelectedStages = [...selectedStages];
 
-      const currentStep = this.step();
-      const stageIndex = ['YarnProcure', 'Knitting', 'Dyeing', 'Cutting'].indexOf(stageName);
-
-      if (currentStep === stageIndex) {
-        this.stepToNearestActive();
-      }
+    // Check if the current step is still valid after removals
+    const activeStepLabels = this.getActiveStepLabels();
+    if (!activeStepLabels.some(s => s.index === this.step())) {
+      this.stepToNearestActive();
     }
   }
 
   // Wipes form arrays back to their default state when a section is deselected
-  clearStageData(stageName: string) {
-    if (stageName === 'YarnProcure') {
-      this.contractForm.setControl('Yarn', this.CreateYarnformGroup());
-      this.lockedStages['YarnProcurement'] = {};
-    } else if (stageName === 'Knitting') {
-      this.Knitting.clear();
-      this.newKnittingGroup();
-      this.lockedStages['Knitting'] = {};
-    } else if (stageName === 'Dyeing') {
-      this.Dyeing.clear();
-      this.newDyeingGroup();
-      this.lockedStages['Dyeing'] = {};
-    } else if (stageName === 'Cutting') {
-      this.Cutting.clear();
-      this.newCuttingGroup();
-      this.lockedStages['Cutting'] = {};
+  clearStageData(stageId: string) {
+    const config: Record<string, { control: string; lockKey: string; isArray: boolean; factory: () => any }> = {
+      '0': { control: 'Yarn', lockKey: 'YarnProcurement', isArray: false, factory: () => this.CreateYarnformGroup() },
+      '1': { control: 'Knitting', lockKey: 'Knitting', isArray: true, factory: () => this.createKnittingGroup() },
+      '2': { control: 'Dyeing', lockKey: 'Dyeing', isArray: true, factory: () => this.createDyeingFormGroup() },
+      '3': { control: 'Cutting', lockKey: 'Cutting', isArray: true, factory: () => this.createCuttingFormGroup() },
+      '4': { control: 'Sewing', lockKey: 'Sewing', isArray: true, factory: () => this.createCuttingFormGroup() },
+      '5': { control: 'Laundry', lockKey: 'Laundry', isArray: true, factory: () => this.createCuttingFormGroup() },
+      '6': { control: 'GarmentPrinting', lockKey: 'GarmentPrinting', isArray: true, factory: () => this.createCuttingFormGroup() },
+      '7': { control: 'GarmentEmbroidery', lockKey: 'GarmentEmbroidery', isArray: true, factory: () => this.createCuttingFormGroup() },
+      '8': { control: 'PannelEmbroidery', lockKey: 'PannelEmbroidery', isArray: true, factory: () => this.createCuttingFormGroup() },
+      '9': { control: 'GarmentFinishing', lockKey: 'GarmentFinishing', isArray: true, factory: () => this.createCuttingFormGroup() },
+      '10': { control: 'GarmentPacking', lockKey: 'GarmentPacking', isArray: true, factory: () => this.createCuttingFormGroup() },
+      '11': { control: 'Shipment', lockKey: 'Shipment', isArray: true, factory: () => this.createCuttingFormGroup() },
+    };
+
+    const stage = config[stageId];
+    if (!stage) return;
+
+    if (stage.isArray) {
+      const array = this.contractForm.get(stage.control) as FormArray;
+      array.clear();
+      array.push(stage.factory());
+    } else {
+      this.contractForm.setControl(stage.control, stage.factory());
+    }
+
+    if (this.lockedStages[stage.lockKey]) {
+      this.lockedStages[stage.lockKey] = {};
     }
   }
 
   stepPlus() {
     const currentStep = this.step();
-    const s = this.contractForm.value.Stages;
-    const isStageActive = [s.YarnProcure, s.Knitting, s.Dyeing, s.Cutting];
+    const activeLabels = this.getActiveStepLabels();
+    const currentIdx = activeLabels.findIndex(s => s.index === currentStep);
 
-    for (let i = currentStep + 1; i <= 3; i++) {
-      if (isStageActive[i]) {
-        this.step.set(i);
-        return;
-      }
+    if (currentIdx !== -1 && currentIdx < activeLabels.length - 1) {
+      this.step.set(activeLabels[currentIdx + 1].index);
     }
   }
 
   // Looks for the previous available active stage when navigating backward
   stepMinus() {
     const currentStep = this.step();
-    const s = this.contractForm.value.Stages;
-    const isStageActive = [s.YarnProcure, s.Knitting, s.Dyeing, s.Cutting];
+    const activeLabels = this.getActiveStepLabels();
+    const currentIdx = activeLabels.findIndex(s => s.index === currentStep);
 
-    for (let i = currentStep - 1; i >= 0; i--) {
-      if (isStageActive[i]) {
-        this.step.set(i);
-        return;
-      }
+    if (currentIdx > 0) {
+      this.step.set(activeLabels[currentIdx - 1].index);
     }
   }
 
   stepToNearestActive() {
-    const s = this.contractForm.value.Stages;
-    const isStageActive = [s.YarnProcure, s.Knitting, s.Dyeing, s.Cutting];
+    const activeLabels = this.getActiveStepLabels();
+    if (activeLabels.length > 0) {
+      // Find nearest active step (prefer previous, then first)
+      const nearest = activeLabels.reverse().find(s => s.index < this.step()) || activeLabels[0];
+      this.step.set(nearest.index);
+    } else {
+      this.step.set(0);
+    }
+  }
 
-    for (let i = this.step() - 1; i >= 0; i--) {
-      if (isStageActive[i]) {
-        this.step.set(i);
-        return;
-      }
-    }
-    // If no previous stages are active, try to fall forward
-    for (let i = this.step() + 1; i <= 3; i++) {
-      if (isStageActive[i]) {
-        this.step.set(i);
-        return;
-      }
-    }
-    this.step.set(0);
+  /** Returns the list of active step objects for the stepper indicator */
+  getActiveStepLabels(): { index: number; label: string }[] {
+    const selected = this.contractForm?.get('Stages')?.value || [];
+    const allStages = this.allContarctStages() || [];
+
+    return allStages
+      .filter(s => selected.includes(s.value))
+      .map(s => ({
+        index: Number(s.value),
+        label: s.viewValue
+      }))
+      .sort((a, b) => a.index - b.index);
+  }
+
+  /** Check if current step is the last active step */
+  isLastActiveStep(): boolean {
+    const active = this.getActiveStepLabels();
+    return active.length === 0 || active[active.length - 1].index === this.step();
+  }
+
+  /** Check if current step is the first active step */
+  isFirstActiveStep(): boolean {
+    const active = this.getActiveStepLabels();
+    return active.length === 0 || active[0].index === this.step();
   }
 
   lockStages(stageName: string, index: number = 0) {
@@ -525,16 +601,7 @@ export class IkgsContractForm implements OnInit {
     return !!this.lockedStages[stageName]?.[index];
   }
 
-  getWorkOrdersList() {
-    this.http.get<string[]>(`https://localhost:3000/workorder/list`).subscribe({
-      next: (res) => {
-        this.workOrderlist = res;
-      },
-      error: (err) => {
-        console.error('Error fetching work orders:', err);
-      },
-    });
-  }
+
 
   patchValues(query: string) {
     if (!query) return;
@@ -558,11 +625,13 @@ export class IkgsContractForm implements OnInit {
             res.Cutting.reduce((sum: number, item: any) => sum + Number(item.Qty || 0), 0) || 0;
 
           // 2. Patch Root Info & Active Stages
+          let patchedStages = res.Stages || [];
+
           this.contractForm.patchValue({
             WorkOrder: res.WorkOrder,
-            Stages: res.Stages,
+            Stages: patchedStages
           });
-          this.updateVisibleStages();
+          this.previousSelectedStages = [...patchedStages];
 
           // 3. PATCH YARN (1 Level Deep)
           if (res.Yarn) {
@@ -650,30 +719,24 @@ export class IkgsContractForm implements OnInit {
 
             res.Cutting.forEach((cStage: any) => {
               const group = this.createCuttingFormGroup();
-
               const colorsGroupArray = group.get('ColorsGroup') as FormArray;
               colorsGroupArray.clear();
-
               cStage.ColorsGroup?.forEach((colorGroup: any) => {
                 const cGroup = this.createCuttingColorGroup();
                 const colorDataArray = cGroup.get('ColorData') as FormArray;
                 colorDataArray.clear();
-
                 colorGroup.ColorData?.forEach((colorData: any) => {
                   const dGroup = this.cuttingSizeColorQtyGroup();
                   const reqInputsArray = dGroup.get('RequiredInputs') as FormArray;
                   reqInputsArray.clear();
-
                   colorData.RequiredInputs?.forEach((reqInput: any) => {
                     const rGroup = this.createItemQtyGroup();
                     rGroup.patchValue(reqInput);
                     reqInputsArray.push(rGroup);
                   });
-
                   dGroup.patchValue(colorData);
                   colorDataArray.push(dGroup);
                 });
-
                 cGroup.patchValue(colorGroup);
                 colorsGroupArray.push(cGroup);
               });
@@ -682,6 +745,51 @@ export class IkgsContractForm implements OnInit {
             });
             this.contractForm.get('Cutting')?.updateValueAndValidity();
           }
+
+          // 7-14. PATCH STAGES 4-11 (Generic Template Pattern)
+          const stagesToPatch = [
+            { name: 'Sewing', data: res.Sewing, array: this.Sewing },
+            { name: 'Laundry', data: res.Laundry, array: this.Laundry },
+            { name: 'GarmentPrinting', data: res.GarmentPrinting, array: this.GarmentPrinting },
+            { name: 'GarmentEmbroidery', data: res.GarmentEmbroidery, array: this.GarmentEmbroidery },
+            { name: 'PannelEmbroidery', data: res.PannelEmbroidery, array: this.PannelEmbroidery },
+            { name: 'GarmentFinishing', data: res.GarmentFinishing, array: this.GarmentFinishing },
+            { name: 'GarmentPacking', data: res.GarmentPacking, array: this.GarmentPacking },
+            { name: 'Shipment', data: res.Shipment, array: this.Shipment },
+          ];
+
+          stagesToPatch.forEach(stage => {
+            if (stage.data && Array.isArray(stage.data)) {
+              stage.array.clear();
+              stage.data.forEach((sData: any) => {
+                const group = this.createCuttingFormGroup();
+                const colorsGroupArray = group.get('ColorsGroup') as FormArray;
+                colorsGroupArray.clear();
+                sData.ColorsGroup?.forEach((cg: any) => {
+                  const cGroup = this.createCuttingColorGroup();
+                  const colorDataArray = cGroup.get('ColorData') as FormArray;
+                  colorDataArray.clear();
+                  cg.ColorData?.forEach((cd: any) => {
+                    const dGroup = this.cuttingSizeColorQtyGroup();
+                    const reqInputs = dGroup.get('RequiredInputs') as FormArray;
+                    reqInputs.clear();
+                    cd.RequiredInputs?.forEach((ri: any) => {
+                      const rGroup = this.createItemQtyGroup();
+                      rGroup.patchValue(ri);
+                      reqInputs.push(rGroup);
+                    });
+                    dGroup.patchValue(cd);
+                    colorDataArray.push(dGroup);
+                  });
+                  cGroup.patchValue(cg);
+                  colorsGroupArray.push(cGroup);
+                });
+                group.patchValue(sData);
+                stage.array.push(group);
+              });
+              this.contractForm.get(stage.name)?.updateValueAndValidity();
+            }
+          });
         },
         error: (err) => {
           console.error('Error fetching contract data:', err.error || err);
@@ -710,7 +818,9 @@ export class IkgsContractForm implements OnInit {
   }
 
 
+  allContarctStages: WritableSignal<SelectionValueModel[]> = signal([]);
   allWos: WritableSignal<SelectionValueModel[]> = signal([]);
+  allParties: WritableSignal<SelectionValueModel[]> = signal([]);
 
   getAllWoShortAsync() {
     this.allWos.set([]);
@@ -718,11 +828,39 @@ export class IkgsContractForm implements OnInit {
     authApiOpts.RequestType = RequestType.GET;
     authApiOpts.Repository = Repository.Contract;
     authApiOpts.EndPoint = EndPoints.GetAllWoShortAsync;
-
     this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
       .subscribe((result: any) => {
         if (result?.Code === 200 && result.Data) {
           this.allWos.set(result.Data);
+        }
+      });
+  }
+
+  getOrderStagesShortAsync() {
+    this.allContarctStages.set([]);
+    let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+    authApiOpts.RequestType = RequestType.GET;
+    authApiOpts.Repository = Repository.Contract;
+    authApiOpts.EndPoint = EndPoints.GetOrderStagesShortAsync;
+    this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+      .subscribe((result: any) => {
+        if (result?.Code === 200 && result.Data) {
+          console.log(result.Data)
+          this.allContarctStages.set(result.Data);
+        }
+      });
+  }
+
+  getAllPartiesByStageIdAsync() {
+    this.allParties.set([]);
+    let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+    authApiOpts.RequestType = RequestType.GET;
+    authApiOpts.Repository = Repository.Contract;
+    authApiOpts.EndPoint = EndPoints.GetAllPartiesByStageIdAsync;
+    this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
+      .subscribe((result: any) => {
+        if (result?.Code === 200 && result.Data) {
+          this.allParties.set(result.Data);
         }
       });
   }

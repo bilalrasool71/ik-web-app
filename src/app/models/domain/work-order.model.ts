@@ -31,7 +31,7 @@ export class WorkOrderDto {
 }
 
 export class WorkOrderColorDto {
-    wo!: number ;
+    wo!: number;
     customer_Po!: number;
     color_RowId!: number;
     color_Id!: number;
@@ -49,30 +49,36 @@ export class WorkOrderColorDto {
 }
 
 export class WorkOrderColorSizeDto {
-    wo!: number ;
-    color_RowId!: number ;
+    wo!: number;
+    color_RowId!: number;
     size_RowId!: number;
-    size_Id!: number ;
-    qty!: number ;
-    excess_Qty!: number ;
-    uom!: number ;
-    edate!: string ;
-    eby!: number ;
-    eip!: string ;
-    mby!: number ;
-    mip!: string ;
-    mdate!: string ;
-    is_Active!: string ;
+    size_Id!: number;
+    qty!: number;
+    excess_Qty!: number;
+    uom!: number;
+    edate!: string;
+    eby!: number;
+    eip!: string;
+    mby!: number;
+    mip!: string;
+    mdate!: string;
+    is_Active!: string;
 
 
     wastagesList!: WorkOrderColorSizeWastageDto[];
 }
 
 export class WorkOrderColorSizeWastageDto {
-    wo!: number ;
-    color_RowId!: number ;
-    size_RowId!: number ;
-    wastage_Type!: number ;
-    wastage!: number ;
+    wo!: number;
+    color_RowId!: number;
+    size_RowId!: number;
+    wastage_Type!: number;
+    wastage!: number;
     wast_RowId!: number;
+}
+
+export class WorkOrderStageItemDto {
+    item_Id!: number;
+    item_Name!: string;
+    qty!: number;
 }
