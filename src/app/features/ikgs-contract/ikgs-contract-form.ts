@@ -143,6 +143,8 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
+
+
   //  VALIDATOR
   // ==========================================
   maxArrayQtyValidator(getMaxQty: () => number): ValidatorFn {
@@ -851,12 +853,19 @@ export class IkgsContractForm implements OnInit {
       });
   }
 
-  getAllPartiesByStageIdAsync() {
+  getAllPartiesByStageIdAsync(stageId:number) {
     this.allParties.set([]);
     let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
     authApiOpts.RequestType = RequestType.GET;
-    authApiOpts.Repository = Repository.Contract;
+    authApiOpts.Repository = Repository.Catalog;
     authApiOpts.EndPoint = EndPoints.GetAllPartiesByStageIdAsync;
+    authApiOpts.ReqQueryParams = [
+      {
+        Key: 'stageId',
+        Value: stageId,
+        IsDate: false
+      }
+    ]
     this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
       .subscribe((result: any) => {
         if (result?.Code === 200 && result.Data) {

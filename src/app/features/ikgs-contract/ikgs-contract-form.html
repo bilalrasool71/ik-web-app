@@ -90,9 +90,11 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
             <div class="space-y-1.5">
-              <label class="text-xs font-bold text-slate-600 uppercase tracking-wider block">Party</label>
-              <input [readonly]="isLocked('YarnProcurement')" pInputText formControlName="Party"
-                placeholder="Enter Party" class="w-full text-sm h-10.5" />
+              <label class="text-xs font-bold text-slate-600 uppercase tracking-wider block">Party</label>              
+              <p-select appendTo="body" formControlName="Party" [options]="getAllPartiesByStageIdAsync()" filter="true"
+                optionLabel="viewValue" optionValue="value" [emptyFilterMessage]="'No Customer Found'"
+                placeholder="Select Party" class="w-full">
+              </p-select>
             </div>
             <div class="space-y-1.5">
               <label class="text-xs font-bold text-slate-600 uppercase tracking-wider block">Quantity</label>
