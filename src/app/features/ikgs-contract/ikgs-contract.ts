@@ -6,14 +6,14 @@ import { TableModule } from "primeng/table";
 import { TagModule } from "primeng/tag";
 
 @Component({
-  selector: 'app-ikgs-contract',
-  imports: [CommonModule, RouterLink, TableModule, ButtonModule, TagModule],
-  templateUrl: './ikgs-contract.html',
-  styleUrl: './ikgs-contract.scss',
+    selector: 'app-ikgs-contract',
+    imports: [CommonModule, RouterLink, TableModule, ButtonModule, TagModule],
+    templateUrl: './ikgs-contract.html',
+    styleUrl: './ikgs-contract.scss',
 })
 export class IkgsContract {
 
-   contracts = [
+    contracts = [
         { id: 1, customer: 'Nike', styleType: 'Garment', season: 'Spring 2026', gender: 'Men', productType: 'T-Shirt', status: 'Draft' },
         { id: 2, customer: 'Adidas', styleType: 'Garment', season: 'Fall 2026', gender: 'Women', productType: 'Polo Shirt', status: 'Completed' },
         { id: 3, customer: 'Puma', styleType: 'Fabric', season: 'Summer 2026', gender: 'Kids', productType: 'Shorts', status: 'In Progress' },

@@ -51,7 +51,7 @@ export interface DyeingStage {
   ColorInputs: DyeingColorGroup[];
 }
 
-// cutting
+// cutting and generic stages
 export interface CuttingColorData {
   Size: string;
   ItemName: string;
@@ -73,20 +73,20 @@ export interface CuttingStage {
   ColorsGroup: CuttingColorGroup[];
 }
 
-// stages
-export interface ContractStages {
-  YarnProcure: boolean;
-  Knitting: boolean;
-  Dyeing: boolean;
-  Cutting: boolean;
-}
-
 // root contract
 export interface IkgsContract {
   WorkOrder: string;
-  Stages: ContractStages;
+  Stages: string[];
   Yarn: YarnProcurement;
   Knitting: KnittingStage[];
   Dyeing: DyeingStage[];
   Cutting: CuttingStage[];
+  Sewing: CuttingStage[];
+  Laundry: CuttingStage[];
+  GarmentPrinting: CuttingStage[];
+  GarmentEmbroidery: CuttingStage[];
+  PannelEmbroidery: CuttingStage[];
+  GarmentFinishing: CuttingStage[];
+  GarmentPacking: CuttingStage[];
+  Shipment: CuttingStage[];
 }
