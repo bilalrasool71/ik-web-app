@@ -1421,6 +1421,32 @@ export class IkgsStyleConfigurationForm {
             });
     }
 
+    /** When user picks a fabric in the Fiber Composition master row,
+     *  auto-populate color_RowId from the selected fabric item's targetValue (color rowId).
+     *  We keep optionValue="value" so fabric_RowId stores only the fabric ID.
+     *  The full SelectionValueModel item is retrieved from allFabricsForFiber() to read targetValue. */
+    onFiberFabricChange(event: any, fiberIndex: number): void {
+        const fabricRowId = event.value; // fabric rowId (string/number) — or null when cleared
+        const masterGroup = this.fibersArray.at(fiberIndex) as FormGroup;
+
+        if (!fabricRowId) {
+            // User cleared the selection — also clear color
+            masterGroup.get('color_RowId')?.setValue(null, { emitEvent: false });
+            return;
+        }
+
+        // The item object: { value: fabricRowId, targetValue: colorRowId, ... }
+        const item = this.allFabricsForFiber().find(
+            f => f.value?.toString() === fabricRowId?.toString()
+        );
+
+        // Directly set color_RowId from item.targetValue (no extra API call needed)
+        masterGroup.get('color_RowId')?.setValue(
+            item?.targetValue?.toString() ?? null,
+            { emitEvent: false }
+        );
+    }
+
 
     allColorsForFiber = signal<SelectionValueModel[]>([]);
     getStyleConfigColorShortByStyleIdForFiberAsync() {
