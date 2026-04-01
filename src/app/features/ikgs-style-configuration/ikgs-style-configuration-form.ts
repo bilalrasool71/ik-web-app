@@ -20,7 +20,7 @@ import { StyleConfigMainDto } from '../../models/domain/style-configuration.mode
 import { AddsOnCatalogDto } from '../../models/domain/addson-catalog.model';
 import { StyleConfigColorDto } from '../../models/domain/style-config-color.model';
 import { FileUploadComponent } from '../../shared/components/file-upload/file-upload';
-import { StyleConfigFibersDto, StyleConfigFiberDtlDto } from '../../models/domain/style-config-fiber.model';
+import { StyleConfigFibersDto } from '../../models/domain/style-config-fiber.model';
 import { FileUploadType } from '../../core/enums/file-upload-type.enum';
 
 
@@ -44,10 +44,6 @@ export class IkgsStyleConfigurationForm {
     isEditMode = signal(false);
     pendingStyleConfigData = signal<any>(null);
     isAddsOnCatalogLoaded = signal(false);
-
-
-
-
     yesNoOptions = [
         { label: 'Yes', value: 'Y' },
         { label: 'No', value: 'N' }
@@ -340,6 +336,19 @@ export class IkgsStyleConfigurationForm {
 
 
     addConsumptionRow(): void {
+        // Ensure the last row has at least one size before allowing a new row
+        if (this.consumptionRows.length > 0) {
+            const lastRow = this.consumptionRows.at(this.consumptionRows.length - 1);
+            const lastSizes = lastRow.get('sizeConsumptionDtls') as FormArray;
+            if (lastSizes.length === 0) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Warning',
+                    detail: 'Please add at least one size to the current row before adding a new one.'
+                });
+                return;
+            }
+        }
         this.consumptionRows.push(this.createConsumptionGroup());
     }
 
@@ -474,6 +483,19 @@ export class IkgsStyleConfigurationForm {
     }
 
     save(): void {
+        // Check every consumption row has at least one size added
+        const hasEmptySizeRow = this.consumptionRows.controls.some(ctrl => {
+            const sizes = ctrl.get('sizeConsumptionDtls') as FormArray;
+            return sizes.length === 0;
+        });
+        if (hasEmptySizeRow) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Validation',
+                detail: 'Please add at least one size to every consumption row before saving.'
+            });
+            return;
+        }
         if (this.sizeConsumptionForm.invalid) {
             this.sizeConsumptionForm.markAllAsTouched();
             this.messageService.add({
@@ -543,6 +565,7 @@ export class IkgsStyleConfigurationForm {
         this.restService.CallApi<any, any>(authApiOpts)
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
+                    console.log('Style Config Main Data:', result.Data);
                     if (this.isAddsOnCatalogLoaded()) {
                         this.populateForm(result.Data);
                     } else {
@@ -691,6 +714,10 @@ export class IkgsStyleConfigurationForm {
 
                 if (sizeData.sizeConsumptionDtls && sizeData.sizeConsumptionDtls.length > 0) {
                     sizeData.sizeConsumptionDtls.forEach((dtl: any) => {
+                        // Skip rows with no valid size_Id — don't add "Unknown Size" placeholders
+                        if (!dtl.size_Id || dtl.size_Id === 0) {
+                            return;
+                        }
                         const sizeObj = this.allPanelSizes().find(s => s.value === dtl.size_Id || s.value?.toString() === dtl.size_Id?.toString());
                         const sizeName = sizeObj ? sizeObj.viewValue : 'Unknown Size';
                         detailsArray.push(this.fb.group({
@@ -1386,9 +1413,38 @@ export class IkgsStyleConfigurationForm {
         this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
-                    this.allFabricsForFiber.set(result.Data); // Assuming this signal is used in fibers step
+                    this.allFabricsForFiber.set(result.Data);
+                    this.allFabricsForFiber().forEach((item) => {
+                        item.combinedValue = `${item.viewValue} - ${item.targetViewValue}`;
+                    });
                 }
             });
+    }
+
+    /** When user picks a fabric in the Fiber Composition master row,
+     *  auto-populate color_RowId from the selected fabric item's targetValue (color rowId).
+     *  We keep optionValue="value" so fabric_RowId stores only the fabric ID.
+     *  The full SelectionValueModel item is retrieved from allFabricsForFiber() to read targetValue. */
+    onFiberFabricChange(event: any, fiberIndex: number): void {
+        const fabricRowId = event.value; // fabric rowId (string/number) — or null when cleared
+        const masterGroup = this.fibersArray.at(fiberIndex) as FormGroup;
+
+        if (!fabricRowId) {
+            // User cleared the selection — also clear color
+            masterGroup.get('color_RowId')?.setValue(null, { emitEvent: false });
+            return;
+        }
+
+        // The item object: { value: fabricRowId, targetValue: colorRowId, ... }
+        const item = this.allFabricsForFiber().find(
+            f => f.value?.toString() === fabricRowId?.toString()
+        );
+
+        // Directly set color_RowId from item.targetValue (no extra API call needed)
+        masterGroup.get('color_RowId')?.setValue(
+            item?.targetValue?.toString() ?? null,
+            { emitEvent: false }
+        );
     }
 
 
@@ -1407,7 +1463,7 @@ export class IkgsStyleConfigurationForm {
         this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {
-                    this.allColorsForFiber.set(result.Data); // Assuming this signal is used in fibers step
+                    this.allColorsForFiber.set(result.Data);
                 }
             });
     }
