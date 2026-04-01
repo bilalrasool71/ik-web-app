@@ -486,15 +486,22 @@ export class IkgsContractForm implements OnInit {
   // ==========================================
 
 
-  // Triggered when the user changes stage selection
-  onStageChange(selectedStages: string[]) {
-    // Detect which stages were removed
-    const removed = this.previousSelectedStages.filter(s => !selectedStages.includes(s));
-    removed.forEach(stageId => this.clearStageData(stageId));
+  // Make sure previousSelectedStages is typed consistently
 
-    this.previousSelectedStages = [...selectedStages];
+  partiesByStage: Record<string, any[]> = {}; // explicitly typed object keyed by stageId
 
-    // Check if the current step is still valid after removals
+  onStageChange(selectedStages: string[]) {    
+     this.allParties.set([]);
+    const removedStages = this.previousSelectedStages.filter(s => !selectedStages.includes(s));
+    removedStages.forEach(stageId => {
+      this.clearStageData(stageId);
+      delete this.partiesByStage[stageId];
+    });    
+    const addedStages = selectedStages.filter(s => !this.previousSelectedStages.includes(s));
+    addedStages.forEach(stageId => {
+      this.getAllPartiesByStageIdAsync(stageId);        
+    });    
+    this.previousSelectedStages = [...selectedStages];    
     const activeStepLabels = this.getActiveStepLabels();
     if (!activeStepLabels.some(s => s.index === this.step())) {
       this.stepToNearestActive();
@@ -853,11 +860,10 @@ export class IkgsContractForm implements OnInit {
       });
   }
 
-  getAllPartiesByStageIdAsync(stageId:number) {
-    this.allParties.set([]);
+  getAllPartiesByStageIdAsync(stageId: string) {    
     let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
     authApiOpts.RequestType = RequestType.GET;
-    authApiOpts.Repository = Repository.Catalog;
+    authApiOpts.Repository = Repository.Contract;
     authApiOpts.EndPoint = EndPoints.GetAllPartiesByStageIdAsync;
     authApiOpts.ReqQueryParams = [
       {
