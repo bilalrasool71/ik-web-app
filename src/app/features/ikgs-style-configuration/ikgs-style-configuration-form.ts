@@ -352,9 +352,49 @@ export class IkgsStyleConfigurationForm {
         this.consumptionRows.push(this.createConsumptionGroup());
     }
 
-    removeConsumptionRow(index: number): void {
-        this.consumptionRows.removeAt(index);
+
+
+    removeConsumptionRow(masterIndex: number, detailIndex: number, param: string): void {
+        const isConfirmed = window.confirm('Are you sure you want to delete this Record?');
+        if (!isConfirmed) {
+            return;
+        }
+
+        let _value = 0;
+        if (param == 'size_RowId') {
+            let cons = this.consumptionRows.at(masterIndex).value;
+            _value = cons.size_RowId;
+        }
+        else if (param == 'size_dtl_RowId') {
+            let sizeArray = this.getSizesArray(masterIndex);
+            let sisssdetail = sizeArray.at(detailIndex).value;
+            _value = sisssdetail.size_Dtl_RowId;
+        }
+        if (_value > 0) {
+            let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+            authApiOpts.RequestType = RequestType.GET;
+            authApiOpts.Repository = Repository.StyleConfiguration;
+            authApiOpts.EndPoint = param == 'size_RowId' ? EndPoints.RemoveStyleConfigSizeConsumptionAsync : EndPoints.RemoveStyleConfigSizeConsumptionDtlAsync;
+            authApiOpts.ReqQueryParams = [{
+                Key: param,
+                Value: _value,
+                IsDate: false
+            }];
+            this.restService.CallApi<any, any>(authApiOpts)
+                .subscribe((result: any) => {
+                    if (result?.Code === 200 && result.Data) {
+                        if (result.Data == true)
+                            if (param == 'size_RowId') {
+                                this.consumptionRows.removeAt(masterIndex);
+                            }
+                            else if (param == 'size_dtl_RowId') {
+                                this.getSizesArray(masterIndex).removeAt(detailIndex);
+                            }
+                    }
+                });
+        }
     }
+
 
     addSizeRow(masterIndex: number): void {
         const masterGroup = this.consumptionRows.at(masterIndex) as FormGroup;
@@ -393,13 +433,11 @@ export class IkgsStyleConfigurationForm {
         return this.consumptionRows.at(masterIndex).get('sizeConsumptionDtls') as FormArray;
     }
 
-    removeSizeRow(masterIndex: number, detailIndex: number): void {
-        this.getSizesArray(masterIndex).removeAt(detailIndex);
-    }
-
-    // removeSizeRow(index: number): void {
-    //     this.sizesArray.removeAt(index);
+    // removeSizeRow(masterIndex: number, detailIndex: number): void {
+    //     this.getSizesArray(masterIndex).removeAt(detailIndex);
     // }
+
+
 
     // Navigation
     goToStep(step: number): void {

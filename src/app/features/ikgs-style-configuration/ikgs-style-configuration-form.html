@@ -700,7 +700,7 @@
                     class="p-6 rounded-3xl border border-slate-200 bg-white shadow-sm relative group/master transition-all hover:border-indigo-200">
                     <!-- Remove Master Row Button -->
                     @if(consumptionRows.length > 1) {
-                    <button (click)="removeConsumptionRow(mi)" type="button"
+                    <button (click)="removeConsumptionRow(mi, 0,'size_RowId')" type="button"
                         class="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 rounded-full shadow-md border border-slate-100 opacity-0 group-hover/master:opacity-100 transition-all">
                         <i class="pi pi-times text-xs"></i>
                     </button>
@@ -788,7 +788,8 @@
                                                 class="w-full h-10 text-sm rounded-lg bg-slate-50 border-slate-100 hover:border-indigo-300 transition-all" />
                                         </td>
                                         <td class="px-5 py-3 text-center">
-                                            <button (click)="removeSizeRow(mi, si)" type="button"
+                                            <button (click)="removeConsumptionRow(mi, si,'size_dtl_RowId')"
+                                                type="button"
                                                 class="text-slate-400 hover:text-red-500 transition-colors">
                                                 <i class="pi pi-trash"></i>
                                             </button>
