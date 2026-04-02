@@ -37,11 +37,12 @@ export class IkgsContractForm implements OnInit {
   // LOV Signals
   allContarctStages: WritableSignal<SelectionValueModel[]> = signal([]);
   allWos: WritableSignal<SelectionValueModel[]> = signal([]);
-  allParties: WritableSignal<SelectionValueModel[]> = signal([]);
-  allMaterials: WritableSignal<SelectionValueModel[]> = signal([]);
+
   allColors: WritableSignal<SelectionValueModel[]> = signal([]);
   allSizes: WritableSignal<SelectionValueModel[]> = signal([]);
   allUoms: WritableSignal<SelectionValueModel[]> = signal([]);
+  allPartiesByStage = signal<Record<number, SelectionValueModel[]>>({});
+  allMaterialsByStage = signal<Record<number, GetWoItemsDto[]>>({});
 
   ngOnInit(): void {
     this.contractForm = this.fb.group({
@@ -57,43 +58,101 @@ export class IkgsContractForm implements OnInit {
       cuttingStage: this.fb.array([this.createCuttingEntry()]),
     });
 
+    this.contractForm.get('WorkOrder')?.valueChanges.subscribe(wo => {
+      if (!wo) return;
+      this.handleWorkOrderChange(wo);
+    });
     this.getAllWoShortAsync();
     this.getOrderStagesShortAsync();
     this.getAllUOMAsync();
   }
 
+  handleWorkOrderChange(wo: number) {
+    this.allPartiesByStage.set({});
+    this.allMaterialsByStage.set({});
+    this.resetStageForms();
+    const stages = this.contractForm.get('Stages')?.value || [];
+    stages.forEach((stageId: number) => {
+      this.loadStageData(stageId, wo);
+    });
+  }
+
+  resetStageForms() {
+    this.contractForm.patchValue({
+      yarnStage: this.createYarnEntry(),
+    });
+
+    this.contractForm.setControl('knittingStage', this.fb.array([this.createKnittingEntry()]));
+    this.contractForm.setControl('dyeingStage', this.fb.array([this.createDyeingEntry()]));
+    this.contractForm.setControl('cuttingStage', this.fb.array([this.createCuttingEntry()]));
+  }
+
+  loadStageData(stageId: number, wo: number) {
+    if (!this.allMaterialsByStage()[stageId]) {
+      this.getAllItemsByStageIdAsync(wo, stageId);
+    }
+
+    if (!this.allPartiesByStage()[stageId]) {
+      this.getAllPartiesByStageIdAsync(stageId);
+    }
+  }
+
+
   // ── Stepper ────────────────────────────────────────────────
   onStageChange(selectedStages: string[]) {
-    // 🆕 1. Find newly selected stages
+    const wo = this.contractForm.get('WorkOrder')?.value;
     const newStages = selectedStages.filter(
       s => !this.previousSelectedStages.includes(s)
     );
+    newStages.forEach(stageId => {
+      if (wo) {
+        this.loadStageData(+stageId, wo);
+      }
+    });
+    const removedStages = this.previousSelectedStages.filter(
+      s => !selectedStages.includes(s)
+    );
 
-    // 🆕 2. Call API for new stage(s)
-    if (newStages.length > 0) {
-      newStages.forEach(stageId => {
-        this.getAllPartiesByStageIdAsync(+stageId); // convert to number
-      });
+    if (removedStages.length > 0) {
+      this.removeStageData(removedStages.map(s => +s));
     }
-
-    // 🔁 3. Update previous selection
     this.previousSelectedStages = [...selectedStages];
-
-    // 📌 4. Get active steps
+    
     const active = this.getActiveStepLabels();
-
     const currentStepIndex = this.step();
     const isStillSelected = active.some(s => s.index === currentStepIndex);
 
-    // ✅ 5. Keep current step if still valid
-    if (isStillSelected) {
-      return;
-    }
-
-    // ❌ 6. Otherwise switch to first available
-    if (active.length > 0) {
+    if (!isStillSelected && active.length > 0) {
       this.step.set(active[0].index);
     }
+  }
+
+  onMaterialChange(materialId: number, index: number) {
+  const materials = this.getMaterialItemsByStage(this.step());
+
+  const selected = materials.find(m => m.fiber_Id === materialId);
+
+  if (!selected) return;
+  
+  const row = this.yarnItems.at(index);  
+  row.patchValue({
+    qty: selected.qty || 0
+  });
+}
+
+  removeStageData(stageIds: number[]) {
+
+    this.allMaterialsByStage.update(prev => {
+      const updated = { ...prev };
+      stageIds.forEach(id => delete updated[id]);
+      return updated;
+    });
+
+    this.allPartiesByStage.update(prev => {
+      const updated = { ...prev };
+      stageIds.forEach(id => delete updated[id]);
+      return updated;
+    });
   }
 
   getActiveStepLabels(): { index: number; label: string }[] {
@@ -263,14 +322,24 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
+  getPartiesByStage(stageId: number): SelectionValueModel[] {
+    return this.allPartiesByStage()[stageId] || [];
+  }
+
   getAllPartiesByStageIdAsync(stage_Id: number) {
     const opts = new ApiOptionsModel<SelectionValueModel[]>();
     opts.RequestType = RequestType.GET;
     opts.Repository = Repository.Contract;
     opts.EndPoint = EndPoints.GetAllPartiesByStageIdAsync;
     opts.ReqQueryParams = [{ Key: 'stageId', Value: stage_Id, IsDate: false }];
-    this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(opts).subscribe((res: any) => {
-      if (res?.Code === 200 && res.Data) this.allParties.set(res.Data);
+
+    this.restService.CallApi(opts).subscribe((res: any) => {
+      if (res?.Code === 200 && res.Data) {
+        this.allPartiesByStage.update(prev => ({
+          ...prev,
+          [stage_Id]: res.Data
+        }));
+      }
     });
   }
 
@@ -285,6 +354,10 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
+  getMaterialItemsByStage(stageId: number): GetWoItemsDto[] {
+    return this.allMaterialsByStage()[stageId] || [];
+  }
+
   getAllItemsByStageIdAsync(wo: number, stage_Id: number) {
     const opts = new ApiOptionsModel<GetWoItemsDto[]>();
     opts.RequestType = RequestType.GET;
@@ -295,7 +368,13 @@ export class IkgsContractForm implements OnInit {
       { Key: 'stageId', Value: stage_Id, IsDate: false }
     ];
     this.restService.CallApi<GetWoItemsDto[], GetWoItemsDto[]>(opts).subscribe((res: any) => {
-      // if (res?.Code === 200 && res.Data) this.yarnItems.set(res.Data);
+
+      if (res?.Code === 200 && res.Data) {
+        this.allMaterialsByStage.update(prev => ({
+          ...prev,
+          [stage_Id]: res.Data
+        }));
+      }
     });
   }
 

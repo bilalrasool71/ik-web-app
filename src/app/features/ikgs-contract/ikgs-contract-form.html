@@ -80,13 +80,12 @@
         ═══════════════════════════════════════════════════════════ -->
         @if (step() === 0) {
         <div class="space-y-5" formGroupName="yarnStage">
-
-          <!-- Header: Party / Qty / UOM / Dates -->
+          
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-5 bg-indigo-50/30 rounded-2xl border border-indigo-100/60">
             <div class="space-y-1.5">
               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Party</label>
-              <p-select appendTo="body"  [options]="allParties()"  optionLabel="viewValue"  optionValue="value"
-                formControlName="party_Id" placeholder="Select Party" [filter]="true" [virtualScroll]="true" [emptyFilterMessage]="'No Party Found'"  virtualScrollItemSize="30" 
+              <p-select appendTo="body"  [options]="getPartiesByStage(step())"  optionLabel="viewValue"  optionValue="value"
+                formControlName="party_Id" placeholder="Select Party" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30" [emptyFilterMessage]="'No Party Found'"   
                 class="w-full" />
 
          
@@ -131,9 +130,9 @@
                 @for (item of yarnItems.controls; track item; let ii = $index) {
                 <tr class="border-t border-slate-50 hover:bg-slate-50/30 transition-colors" [formGroupName]="ii">
                   <td class="px-5 py-2.5">
-                    <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                    <p-select [options]="getMaterialItemsByStage(step())" optionLabel="fiber_Ds" optionValue="fiber_Id"
                       formControlName="material_Id" placeholder="Select Material" [filter]="true"
-                      appendTo="body" class="w-full" />
+                      appendTo="body" class="w-full" (onChange)="onMaterialChange($event.value, ii)"/>
                   </td>
                   <td class="px-5 py-2.5">
                     <input pInputText type="number" formControlName="qty" placeholder="0.00" class="w-full" />
@@ -172,8 +171,8 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-5 bg-indigo-50/30 border-b border-indigo-100/60 items-end">
                 <div class="space-y-1.5 lg:col-span-2">
                   <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Party</label>
-                  <p-select [options]="allParties()" optionLabel="viewValue" optionValue="value"
-                    formControlName="party_Id" placeholder="Select Party" [filter]="true" appendTo="body" class="w-full" />
+                  <p-select [options]="getPartiesByStage(step())"  optionLabel="viewValue" optionValue="value"
+                    formControlName="party_Id" placeholder="Select Party" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30" appendTo="body" class="w-full" />
                 </div>
                 <div class="space-y-1.5">
                   <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Qty</label>
@@ -226,7 +225,7 @@
                         @for (item of getKnittingRequired(ri).controls; track item; let ii = $index) {
                         <tr class="border-t border-slate-50" [formGroupName]="ii">
                           <td class="px-4 py-2">
-                            <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                            <p-select [options]="getMaterialItemsByStage(step())" optionLabel="viewValue" optionValue="value"
                               formControlName="material_Id" placeholder="Select" [filter]="true" appendTo="body" class="w-full" />
                           </td>
                           <td class="px-4 py-2">
@@ -266,7 +265,7 @@
                         @for (item of getKnittingInput(ri).controls; track item; let ii = $index) {
                         <tr class="border-t border-slate-50" [formGroupName]="ii">
                           <td class="px-4 py-2">
-                            <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                            <p-select [options]="getMaterialItemsByStage(step())" optionLabel="viewValue" optionValue="value"
                               formControlName="material_Id" placeholder="Select" [filter]="true" appendTo="body" class="w-full" />
                           </td>
                           <td class="px-4 py-2">
@@ -313,8 +312,8 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-5 bg-indigo-50/30 border-b border-indigo-100/60 items-end">
                 <div class="space-y-1.5 lg:col-span-2">
                   <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Party</label>
-                  <p-select [options]="allParties()" optionLabel="viewValue" optionValue="value"
-                    formControlName="party_Id" placeholder="Select Party" [filter]="true" appendTo="body" class="w-full" />
+                  <p-select [options]="getPartiesByStage(step())" optionLabel="viewValue" optionValue="value"
+                    formControlName="party_Id" placeholder="Select Party" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30" appendTo="body" class="w-full" />
                 </div>
                 <div class="space-y-1.5">
                   <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Qty</label>
@@ -377,7 +376,7 @@
                             @for (item of getDyeingColorItems(ri, ci).controls; track item; let ii = $index) {
                             <tr class="border-t border-slate-50" [formGroupName]="ii">
                               <td class="px-4 py-2">
-                                <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                                <p-select [options]="getMaterialItemsByStage(step())" optionLabel="viewValue" optionValue="value"
                                   formControlName="material_Id" placeholder="Select material" [filter]="true"
                                   appendTo="body" class="w-full" />
                               </td>
@@ -421,7 +420,7 @@
                         @for (item of getDyeingInput(ri).controls; track item; let ii = $index) {
                         <tr class="border-t border-slate-50" [formGroupName]="ii">
                           <td class="px-4 py-2">
-                            <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                            <p-select [options]="getMaterialItemsByStage(step())" optionLabel="viewValue" optionValue="value"
                               formControlName="material_Id" placeholder="Select" [filter]="true" appendTo="body" class="w-full" />
                           </td>
                           <td class="px-4 py-2">
@@ -468,8 +467,8 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-5 bg-indigo-50/30 border-b border-indigo-100/60 items-end">
                 <div class="space-y-1.5 lg:col-span-2">
                   <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Party</label>
-                  <p-select [options]="allParties()" optionLabel="viewValue" optionValue="value"
-                    formControlName="party_Id" placeholder="Select Party" [filter]="true" appendTo="body" class="w-full" />
+                  <p-select [options]="getPartiesByStage(step())"  optionLabel="viewValue" optionValue="value"
+                    formControlName="party_Id" placeholder="Select Party" [filter]="true" [virtualScroll]="true" virtualScrollItemSize="30" appendTo="body" class="w-full" />
                 </div>
                 <div class="space-y-1.5">
                   <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Qty</label>
@@ -554,7 +553,7 @@
                                 @for (item of getCuttingRequiredSizeItems(ri, ci, si).controls; track item; let ii = $index) {
                                 <tr class="border-t border-slate-50" [formGroupName]="ii">
                                   <td class="pl-10 pr-4 py-2">
-                                    <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                                    <p-select [options]="getMaterialItemsByStage(step())" optionLabel="viewValue" optionValue="value"
                                       formControlName="material_Id" placeholder="Select material" [filter]="true"
                                       appendTo="body" class="w-full" />
                                   </td>
@@ -612,7 +611,7 @@
                             @for (item of getCuttingInputItems(ri, ci).controls; track item; let ii = $index) {
                             <tr class="border-t border-slate-50" [formGroupName]="ii">
                               <td class="px-4 py-2">
-                                <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                                <p-select [options]="getMaterialItemsByStage(step())" optionLabel="viewValue" optionValue="value"
                                   formControlName="material_Id" placeholder="Select material" [filter]="true"
                                   appendTo="body" class="w-full" />
                               </td>
