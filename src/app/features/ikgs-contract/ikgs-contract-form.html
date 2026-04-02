@@ -17,23 +17,20 @@
     <!-- WORK ORDER & STAGES -->
     <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-8">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-600 uppercase tracking-wider block">Work Order</label>
           <p-select [options]="allWos()" optionLabel="viewValue" optionValue="value" formControlName="WorkOrder"
-            [editable]="true" [filter]="true" [scrollHeight]="'250px'" placeholder="Search or Type" styleClass="w-full"
-            (onChange)="patchValues($event.value)">
+            [editable]="true" [filter]="true" [scrollHeight]="'250px'" placeholder="Search or Type"
+            styleClass="w-full" (onChange)="patchValues($event.value)">
           </p-select>
         </div>
-
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-600 uppercase tracking-wider block">Order Stages</label>
           <p-multiselect [options]="allContarctStages()" formControlName="Stages" optionLabel="viewValue"
-            optionValue="value" placeholder="Choose stages..." [showToggleAll]="false" display="chip" appendTo="body"
-            styleClass="w-full" (onChange)="onStageChange($event.value)">
+            optionValue="value" placeholder="Choose stages..." [showToggleAll]="false" display="chip"
+            appendTo="body" styleClass="w-full" (onChange)="onStageChange($event.value)">
           </p-multiselect>
         </div>
-
       </div>
     </div>
 
@@ -45,12 +42,14 @@
       <div class="flex items-center border-b border-slate-100 px-6 py-4 overflow-x-auto gap-1">
         @for (s of getActiveStepLabels(); track s.index; let i = $index; let last = $last) {
         <button type="button" (click)="step.set(s.index)"
-          class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shrink-0" [class]="step() === s.index
+          class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shrink-0"
+          [class]="step() === s.index
             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
             : step() > s.index
               ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
               : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'">
-          <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" [class]="step() === s.index
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+            [class]="step() === s.index
               ? 'bg-white/20 text-white'
               : step() > s.index
                 ? 'bg-emerald-200 text-emerald-700'
@@ -65,15 +64,590 @@
         }
       </div>
 
-      <!-- Step Content Placeholder -->
-      <div class="p-6 sm:p-8">
-        <h2 class="text-lg font-bold text-slate-900">{{ getCurrentStageLabel() }}</h2>
-        <p class="text-sm text-slate-400 mt-1">Step content goes here.</p>
+      <!-- ═══════════════════════════════════════════════════════════
+           STAGE CONTENT
+      ════════════════════════════════════════════════════════════ -->
+      <div class="p-6 sm:p-8 space-y-6">
+
+        <!-- ── Stage Title ── -->
+        <div class="flex items-center gap-3">
+          <div class="w-2 h-6 bg-indigo-600 rounded-full"></div>
+          <h2 class="text-lg font-bold text-slate-900">{{ getCurrentStageLabel() }}</h2>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════
+             STAGE 0 · YARN PROCURE — single entry, no add button
+        ═══════════════════════════════════════════════════════════ -->
+        @if (step() === 0) {
+        <div class="space-y-5" formGroupName="yarnStage">
+
+          <!-- Header: Party / Qty / UOM / Dates -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-5 bg-indigo-50/30 rounded-2xl border border-indigo-100/60">
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Party</label>
+              <p-select [options]="allParties()" optionLabel="viewValue" optionValue="value"
+                formControlName="party_Id" placeholder="Select Party" [filter]="true" appendTo="body"
+                class="w-full" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Qty</label>
+              <input pInputText type="number" formControlName="qty" placeholder="0.00" class="w-full" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">UOM</label>
+              <p-select [options]="allUoms()" optionLabel="viewValue" optionValue="value"
+                formControlName="uom_Id" placeholder="Select" appendTo="body" class="w-full" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">From Date</label>
+              <input pInputText type="date" formControlName="fromDate" class="w-full" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">To Date</label>
+              <input pInputText type="date" formControlName="toDate" class="w-full" />
+            </div>
+          </div>
+
+          <!-- Yarn Items -->
+          <div class="rounded-2xl border border-slate-200 overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-3 bg-slate-50/80 border-b border-slate-100">
+              <span class="text-xs font-bold text-indigo-600 italic">* for Yarn</span>
+              <button type="button" (click)="addYarnItem()"
+                class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 transition-colors">
+                <i class="pi pi-plus text-[10px]"></i> Add Item
+              </button>
+            </div>
+            <table class="w-full border-collapse">
+              <thead class="bg-slate-50/50">
+                <tr>
+                  <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Item / Material</th>
+                  <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider w-36">Qty</th>
+                  <th class="w-12"></th>
+                </tr>
+              </thead>
+              <tbody formArrayName="yarnItems">
+                @for (item of yarnItems.controls; track item; let ii = $index) {
+                <tr class="border-t border-slate-50 hover:bg-slate-50/30 transition-colors" [formGroupName]="ii">
+                  <td class="px-5 py-2.5">
+                    <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                      formControlName="material_Id" placeholder="Select Material" [filter]="true"
+                      appendTo="body" class="w-full" />
+                  </td>
+                  <td class="px-5 py-2.5">
+                    <input pInputText type="number" formControlName="qty" placeholder="0.00" class="w-full" />
+                  </td>
+                  <td class="px-3 py-2.5 text-center">
+                    <button type="button" (click)="removeYarnItem(ii)" [disabled]="yarnItems.length <= 1"
+                      class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed mx-auto">
+                      <i class="pi pi-times text-[10px]"></i>
+                    </button>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        }
+
+        <!-- ══════════════════════════════════════════════════════════
+             STAGE 1 · KNITTING — required items + input items
+        ═══════════════════════════════════════════════════════════ -->
+        @if (step() === 1) {
+        <div class="space-y-5">
+          <div class="flex justify-end">
+            <button type="button" (click)="addKnittingRow()"
+              class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100">
+              <i class="pi pi-plus text-xs"></i> Add Entry
+            </button>
+          </div>
+
+          <div formArrayName="knittingStage" class="space-y-5">
+            @for (row of knittingStage.controls; track row; let ri = $index) {
+            <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all" [formGroupName]="ri">
+
+              <!-- Header -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-5 bg-indigo-50/30 border-b border-indigo-100/60 items-end">
+                <div class="space-y-1.5 lg:col-span-2">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Party</label>
+                  <p-select [options]="allParties()" optionLabel="viewValue" optionValue="value"
+                    formControlName="party_Id" placeholder="Select Party" [filter]="true" appendTo="body" class="w-full" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Qty</label>
+                  <input pInputText type="number" formControlName="qty" placeholder="0.00" class="w-full" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">UOM</label>
+                  <p-select [options]="allUoms()" optionLabel="viewValue" optionValue="value"
+                    formControlName="uom_Id" placeholder="Select" appendTo="body" class="w-full" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">From Date</label>
+                  <input pInputText type="date" formControlName="fromDate" class="w-full" />
+                </div>
+                <div class="flex items-end gap-2">
+                  <div class="flex-1 space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">To Date</label>
+                    <input pInputText type="date" formControlName="toDate" class="w-full" />
+                  </div>
+                  <button type="button" (click)="removeKnittingRow(ri)" [disabled]="knittingStage.length <= 1"
+                    class="h-10 w-10 flex items-center justify-center bg-red-50 text-red-400 rounded-xl hover:bg-red-100 hover:text-red-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0">
+                    <i class="pi pi-trash text-xs"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Content: Required | Input -->
+              <div class="p-5">
+                <p class="text-xs font-bold text-indigo-600 italic mb-4">* for Knitting</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                  <!-- Required -->
+                  <div class="rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                      <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Required</span>
+                      <button type="button" (click)="addKnittingRequired(ri)"
+                        class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors">
+                        <i class="pi pi-plus text-[10px]"></i> Add
+                      </button>
+                    </div>
+                    <table class="w-full border-collapse">
+                      <thead class="bg-slate-50/50">
+                        <tr>
+                          <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase">Item</th>
+                          <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase w-28">Qty</th>
+                          <th class="w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody formArrayName="required">
+                        @for (item of getKnittingRequired(ri).controls; track item; let ii = $index) {
+                        <tr class="border-t border-slate-50" [formGroupName]="ii">
+                          <td class="px-4 py-2">
+                            <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                              formControlName="material_Id" placeholder="Select" [filter]="true" appendTo="body" class="w-full" />
+                          </td>
+                          <td class="px-4 py-2">
+                            <input pInputText type="number" formControlName="qty" placeholder="0.00" class="w-full" />
+                          </td>
+                          <td class="px-2 py-2 text-center">
+                            <button type="button" (click)="removeKnittingRequired(ri, ii)"
+                              [disabled]="getKnittingRequired(ri).length <= 1"
+                              class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 mx-auto">
+                              <i class="pi pi-times text-[9px]"></i>
+                            </button>
+                          </td>
+                        </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Input -->
+                  <div class="rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                      <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Input</span>
+                      <button type="button" (click)="addKnittingInput(ri)"
+                        class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors">
+                        <i class="pi pi-plus text-[10px]"></i> Add
+                      </button>
+                    </div>
+                    <table class="w-full border-collapse">
+                      <thead class="bg-slate-50/50">
+                        <tr>
+                          <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase">Item</th>
+                          <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase w-28">Qty</th>
+                          <th class="w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody formArrayName="input">
+                        @for (item of getKnittingInput(ri).controls; track item; let ii = $index) {
+                        <tr class="border-t border-slate-50" [formGroupName]="ii">
+                          <td class="px-4 py-2">
+                            <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                              formControlName="material_Id" placeholder="Select" [filter]="true" appendTo="body" class="w-full" />
+                          </td>
+                          <td class="px-4 py-2">
+                            <input pInputText type="number" formControlName="qty" placeholder="0.00" class="w-full" />
+                          </td>
+                          <td class="px-2 py-2 text-center">
+                            <button type="button" (click)="removeKnittingInput(ri, ii)"
+                              [disabled]="getKnittingInput(ri).length <= 1"
+                              class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 mx-auto">
+                              <i class="pi pi-times text-[9px]"></i>
+                            </button>
+                          </td>
+                        </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- ══════════════════════════════════════════════════════════
+             STAGE 2 · DYEING — required: color→items | input: items
+        ═══════════════════════════════════════════════════════════ -->
+        @if (step() === 2) {
+        <div class="space-y-5">
+          <div class="flex justify-end">
+            <button type="button" (click)="addDyeingRow()"
+              class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100">
+              <i class="pi pi-plus text-xs"></i> Add Entry
+            </button>
+          </div>
+
+          <div formArrayName="dyeingStage" class="space-y-5">
+            @for (row of dyeingStage.controls; track row; let ri = $index) {
+            <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all" [formGroupName]="ri">
+
+              <!-- Header -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-5 bg-indigo-50/30 border-b border-indigo-100/60 items-end">
+                <div class="space-y-1.5 lg:col-span-2">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Party</label>
+                  <p-select [options]="allParties()" optionLabel="viewValue" optionValue="value"
+                    formControlName="party_Id" placeholder="Select Party" [filter]="true" appendTo="body" class="w-full" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Qty</label>
+                  <input pInputText type="number" formControlName="qty" placeholder="0.00" class="w-full" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">UOM</label>
+                  <p-select [options]="allUoms()" optionLabel="viewValue" optionValue="value"
+                    formControlName="uom_Id" placeholder="Select" appendTo="body" class="w-full" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">From Date</label>
+                  <input pInputText type="date" formControlName="fromDate" class="w-full" />
+                </div>
+                <div class="flex items-end gap-2">
+                  <div class="flex-1 space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">To Date</label>
+                    <input pInputText type="date" formControlName="toDate" class="w-full" />
+                  </div>
+                  <button type="button" (click)="removeDyeingRow(ri)" [disabled]="dyeingStage.length <= 1"
+                    class="h-10 w-10 flex items-center justify-center bg-red-50 text-red-400 rounded-xl hover:bg-red-100 hover:text-red-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0">
+                    <i class="pi pi-trash text-xs"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Content -->
+              <div class="p-5">
+                <p class="text-xs font-bold text-indigo-600 italic mb-4">* for Dyeing</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                  <!-- Required: Color groups -->
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Required</span>
+                      <button type="button" (click)="addDyeingColorGroup(ri)"
+                        class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors">
+                        <i class="pi pi-plus text-[10px]"></i> Add Color
+                      </button>
+                    </div>
+                    <div formArrayName="required" class="space-y-3">
+                      @for (cg of getDyeingRequired(ri).controls; track cg; let ci = $index) {
+                      <div class="rounded-xl border border-slate-200 overflow-hidden" [formGroupName]="ci">
+                        <div class="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                          <p-select [options]="allColors()" optionLabel="viewValue" optionValue="value"
+                            formControlName="color_Id" placeholder="Select Color" [filter]="true"
+                            appendTo="body" class="flex-1" />
+                          <button type="button" (click)="addDyeingColorItem(ri, ci)"
+                            class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition-colors shrink-0">
+                            <i class="pi pi-plus text-[9px]"></i> Item
+                          </button>
+                          <button type="button" (click)="removeDyeingColorGroup(ri, ci)"
+                            [disabled]="getDyeingRequired(ri).length <= 1"
+                            class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors">
+                            <i class="pi pi-minus text-[9px]"></i>
+                          </button>
+                        </div>
+                        <table class="w-full border-collapse">
+                          <tbody formArrayName="items">
+                            @for (item of getDyeingColorItems(ri, ci).controls; track item; let ii = $index) {
+                            <tr class="border-t border-slate-50" [formGroupName]="ii">
+                              <td class="px-4 py-2">
+                                <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                                  formControlName="material_Id" placeholder="Select material" [filter]="true"
+                                  appendTo="body" class="w-full" />
+                              </td>
+                              <td class="px-4 py-2 w-28">
+                                <input pInputText type="number" formControlName="qty" placeholder="qty" class="w-full" />
+                              </td>
+                              <td class="px-2 py-2 w-10 text-center">
+                                <button type="button" (click)="removeDyeingColorItem(ri, ci, ii)"
+                                  [disabled]="getDyeingColorItems(ri, ci).length <= 1"
+                                  class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto">
+                                  <i class="pi pi-times text-[9px]"></i>
+                                </button>
+                              </td>
+                            </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Input -->
+                  <div class="rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                      <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Input</span>
+                      <button type="button" (click)="addDyeingInput(ri)"
+                        class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors">
+                        <i class="pi pi-plus text-[10px]"></i> Add
+                      </button>
+                    </div>
+                    <table class="w-full border-collapse">
+                      <thead class="bg-slate-50/50">
+                        <tr>
+                          <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase">Item</th>
+                          <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase w-28">Qty</th>
+                          <th class="w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody formArrayName="input">
+                        @for (item of getDyeingInput(ri).controls; track item; let ii = $index) {
+                        <tr class="border-t border-slate-50" [formGroupName]="ii">
+                          <td class="px-4 py-2">
+                            <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                              formControlName="material_Id" placeholder="Select" [filter]="true" appendTo="body" class="w-full" />
+                          </td>
+                          <td class="px-4 py-2">
+                            <input pInputText type="number" formControlName="qty" placeholder="0.00" class="w-full" />
+                          </td>
+                          <td class="px-2 py-2 text-center">
+                            <button type="button" (click)="removeDyeingInput(ri, ii)"
+                              [disabled]="getDyeingInput(ri).length <= 1"
+                              class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto">
+                              <i class="pi pi-times text-[9px]"></i>
+                            </button>
+                          </td>
+                        </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        <!-- ══════════════════════════════════════════════════════════
+             STAGE 3+ · CUTTING ONWARDS — required: color→size→items | input: color→items
+        ═══════════════════════════════════════════════════════════ -->
+        @if (step() >= 3) {
+        <div class="space-y-5">
+          <div class="flex justify-end">
+            <button type="button" (click)="addCuttingRow()"
+              class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100">
+              <i class="pi pi-plus text-xs"></i> Add Entry
+            </button>
+          </div>
+
+          <div formArrayName="cuttingStage" class="space-y-5">
+            @for (row of cuttingStage.controls; track row; let ri = $index) {
+            <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all" [formGroupName]="ri">
+
+              <!-- Header -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-5 bg-indigo-50/30 border-b border-indigo-100/60 items-end">
+                <div class="space-y-1.5 lg:col-span-2">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Party</label>
+                  <p-select [options]="allParties()" optionLabel="viewValue" optionValue="value"
+                    formControlName="party_Id" placeholder="Select Party" [filter]="true" appendTo="body" class="w-full" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Qty</label>
+                  <input pInputText type="number" formControlName="qty" placeholder="0.00" class="w-full" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">UOM</label>
+                  <p-select [options]="allUoms()" optionLabel="viewValue" optionValue="value"
+                    formControlName="uom_Id" placeholder="Select" appendTo="body" class="w-full" />
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">From Date</label>
+                  <input pInputText type="date" formControlName="fromDate" class="w-full" />
+                </div>
+                <div class="flex items-end gap-2">
+                  <div class="flex-1 space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">To Date</label>
+                    <input pInputText type="date" formControlName="toDate" class="w-full" />
+                  </div>
+                  <button type="button" (click)="removeCuttingRow(ri)" [disabled]="cuttingStage.length <= 1"
+                    class="h-10 w-10 flex items-center justify-center bg-red-50 text-red-400 rounded-xl hover:bg-red-100 hover:text-red-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0">
+                    <i class="pi pi-trash text-xs"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Content -->
+              <div class="p-5">
+                <p class="text-xs font-bold text-indigo-600 italic mb-4">* for Cutting onwards</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                  <!-- Required: Color → Size → Items -->
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Required</span>
+                      <button type="button" (click)="addCuttingColorGroup(ri)"
+                        class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors">
+                        <i class="pi pi-plus text-[10px]"></i> Add Color
+                      </button>
+                    </div>
+                    <div formArrayName="required" class="space-y-3">
+                      @for (cg of getCuttingRequired(ri).controls; track cg; let ci = $index) {
+                      <div class="rounded-xl border border-slate-200 overflow-hidden" [formGroupName]="ci">
+                        <!-- Color row -->
+                        <div class="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                          <div class="w-2 h-4 bg-indigo-400 rounded-full shrink-0"></div>
+                          <p-select [options]="allColors()" optionLabel="viewValue" optionValue="value"
+                            formControlName="color_Id" placeholder="Select Color" [filter]="true"
+                            appendTo="body" class="flex-1" />
+                          <button type="button" (click)="addCuttingSize(ri, ci)"
+                            class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 shrink-0">
+                            <i class="pi pi-plus text-[9px]"></i> Size
+                          </button>
+                          <button type="button" (click)="removeCuttingColorGroup(ri, ci)"
+                            [disabled]="getCuttingRequired(ri).length <= 1"
+                            class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors">
+                            <i class="pi pi-minus text-[9px]"></i>
+                          </button>
+                        </div>
+                        <!-- Size groups -->
+                        <div formArrayName="sizes" class="divide-y divide-slate-50">
+                          @for (sg of getCuttingRequiredSizes(ri, ci).controls; track sg; let si = $index) {
+                          <div [formGroupName]="si">
+                            <div class="flex items-center gap-3 px-4 py-2 bg-slate-50/40 border-b border-slate-50">
+                              <div class="w-1.5 h-3 bg-emerald-400 rounded-full ml-3 shrink-0"></div>
+                              <p-select [options]="allSizes()" optionLabel="viewValue" optionValue="value"
+                                formControlName="size_Id" placeholder="Select Size" [filter]="true"
+                                appendTo="body" class="flex-1" />
+                              <button type="button" (click)="addCuttingSizeItem(ri, ci, si)"
+                                class="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 shrink-0">
+                                <i class="pi pi-plus text-[9px]"></i> Item
+                              </button>
+                              <button type="button" (click)="removeCuttingSize(ri, ci, si)"
+                                [disabled]="getCuttingRequiredSizes(ri, ci).length <= 1"
+                                class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors">
+                                <i class="pi pi-minus text-[9px]"></i>
+                              </button>
+                            </div>
+                            <!-- Items for this size -->
+                            <table class="w-full border-collapse">
+                              <tbody formArrayName="items">
+                                @for (item of getCuttingRequiredSizeItems(ri, ci, si).controls; track item; let ii = $index) {
+                                <tr class="border-t border-slate-50" [formGroupName]="ii">
+                                  <td class="pl-10 pr-4 py-2">
+                                    <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                                      formControlName="material_Id" placeholder="Select material" [filter]="true"
+                                      appendTo="body" class="w-full" />
+                                  </td>
+                                  <td class="px-4 py-2 w-28">
+                                    <input pInputText type="number" formControlName="qty" placeholder="qty" class="w-full" />
+                                  </td>
+                                  <td class="px-2 py-2 w-10 text-center">
+                                    <button type="button" (click)="removeCuttingSizeItem(ri, ci, si, ii)"
+                                      [disabled]="getCuttingRequiredSizeItems(ri, ci, si).length <= 1"
+                                      class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto">
+                                      <i class="pi pi-times text-[9px]"></i>
+                                    </button>
+                                  </td>
+                                </tr>
+                                }
+                              </tbody>
+                            </table>
+                          </div>
+                          }
+                        </div>
+                      </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Input: Color → Items -->
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Input</span>
+                      <button type="button" (click)="addCuttingInputColor(ri)"
+                        class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors">
+                        <i class="pi pi-plus text-[10px]"></i> Add Color
+                      </button>
+                    </div>
+                    <div formArrayName="input" class="space-y-3">
+                      @for (cg of getCuttingInput(ri).controls; track cg; let ci = $index) {
+                      <div class="rounded-xl border border-slate-200 overflow-hidden" [formGroupName]="ci">
+                        <div class="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                          <div class="w-2 h-4 bg-violet-400 rounded-full shrink-0"></div>
+                          <p-select [options]="allColors()" optionLabel="viewValue" optionValue="value"
+                            formControlName="color_Id" placeholder="Select Color" [filter]="true"
+                            appendTo="body" class="flex-1" />
+                          <button type="button" (click)="addCuttingInputItem(ri, ci)"
+                            class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 shrink-0">
+                            <i class="pi pi-plus text-[9px]"></i> Item
+                          </button>
+                          <button type="button" (click)="removeCuttingInputColor(ri, ci)"
+                            [disabled]="getCuttingInput(ri).length <= 1"
+                            class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors">
+                            <i class="pi pi-minus text-[9px]"></i>
+                          </button>
+                        </div>
+                        <table class="w-full border-collapse">
+                          <tbody formArrayName="items">
+                            @for (item of getCuttingInputItems(ri, ci).controls; track item; let ii = $index) {
+                            <tr class="border-t border-slate-50" [formGroupName]="ii">
+                              <td class="px-4 py-2">
+                                <p-select [options]="allMaterials()" optionLabel="viewValue" optionValue="value"
+                                  formControlName="material_Id" placeholder="Select material" [filter]="true"
+                                  appendTo="body" class="w-full" />
+                              </td>
+                              <td class="px-4 py-2 w-28">
+                                <input pInputText type="number" formControlName="qty" placeholder="qty" class="w-full" />
+                              </td>
+                              <td class="px-2 py-2 w-10 text-center">
+                                <button type="button" (click)="removeCuttingInputItem(ri, ci, ii)"
+                                  [disabled]="getCuttingInputItems(ri, ci).length <= 1"
+                                  class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto">
+                                  <i class="pi pi-times text-[9px]"></i>
+                                </button>
+                              </td>
+                            </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                      }
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
       </div>
+      <!-- end step content -->
 
       <!-- Navigation -->
       <div class="flex items-center justify-between border-t border-slate-100 px-6 sm:px-8 py-4">
-        <button type="button" (click)="stepMinus()" [disabled]="isFirstActiveStep()" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2
+        <button type="button" (click)="stepMinus()" [disabled]="isFirstActiveStep()"
+          class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2
                  disabled:opacity-30 disabled:cursor-not-allowed bg-slate-100 text-slate-600 hover:bg-slate-200">
           <i class="pi pi-arrow-left text-xs"></i> Previous
         </button>
@@ -84,7 +658,8 @@
           <i class="pi pi-check text-xs"></i> Save Contract
         </button>
         } @else {
-        <button type="button" (click)="stepPlus()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold
+        <button type="button" (click)="stepPlus()"
+          class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold
                  shadow-md hover:shadow-lg transition-all flex items-center gap-2">
           Next <i class="pi pi-arrow-right text-xs"></i>
         </button>
