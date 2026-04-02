@@ -63,6 +63,11 @@ export enum EndPoints {
     AddUpdateStyleConfigSizeConsumptionAsync = "AddUpdateStyleConfigSizeConsumptionAsync",
     RemoveStyleConfigSizeConsumptionAsync = "RemoveStyleConfigSizeConsumptionAsync",
     RemoveStyleConfigSizeConsumptionDtlAsync = "RemoveStyleConfigSizeConsumptionDtlAsync",
+    RemoveStyleConfigColorAsync = "RemoveStyleConfigColorAsync",
+    RemoveStyleConfigColorAddsonAsync = "RemoveStyleConfigColorAddsonAsync",
+    RemoveStyleConfigFabricPanelAsync = "RemoveStyleConfigFabricPanelAsync",
+    RemoveStyleConfigFiberAsync = "RemoveStyleConfigFiberAsync",
+    RemoveStyleConfigFiberDtlAsync = "RemoveStyleConfigFiberDtlAsync",
     GetStyleConfigMainByStyleIdAsync = "GetStyleConfigMainByStyleIdAsync",
     GetAllStyleConfigurations = "GetAllStyleConfigurations",
 

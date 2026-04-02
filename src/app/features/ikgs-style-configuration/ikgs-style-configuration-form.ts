@@ -224,9 +224,36 @@ export class IkgsStyleConfigurationForm {
         this.colorsArray.push(this.createColorGroup());
     }
 
-    removeColor(index: number): void {
-        if (this.colorsArray.length > 1) {
-            this.colorsArray.removeAt(index);
+    removeColor(masterIndex: number, detailIndex: number, param: string): void {
+        const isConfirmed = window.confirm('Are you sure you want to delete this Record?');
+        if (!isConfirmed) {
+            return;
+        }
+
+        let _value = 0;
+        if (param == 'color_RowId') {
+            let cons = this.colorsArray.at(masterIndex).value;
+            _value = cons.color_RowId;
+        }
+        if (_value > 0) {
+            let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+            authApiOpts.RequestType = RequestType.GET;
+            authApiOpts.Repository = Repository.StyleConfiguration;
+            authApiOpts.EndPoint = param == 'color_RowId' ? EndPoints.RemoveStyleConfigColorAsync : EndPoints.RemoveStyleConfigColorAddsonAsync;
+            authApiOpts.ReqQueryParams = [{
+                Key: param,
+                Value: _value,
+                IsDate: false
+            }];
+            this.restService.CallApi<any, any>(authApiOpts)
+                .subscribe((result: any) => {
+                    if (result?.Code === 200 && result.Data) {
+                        if (result.Data == true)
+                            if (param == 'color_RowId') {
+                                this.colorsArray.removeAt(masterIndex);
+                            }
+                    }
+                });
         }
     }
 
@@ -263,9 +290,35 @@ export class IkgsStyleConfigurationForm {
         this.panelsArray.push(this.createPanelGroup());
     }
 
-    removePanel(index: number): void {
+    removePanel(masterIndex: number): void {
         if (this.panelsArray.length > 1) {
-            this.panelsArray.removeAt(index);
+            const isConfirmed = window.confirm('Are you sure you want to delete this Record?');
+            if (!isConfirmed) {
+                return;
+            }
+            let _value = 0;
+
+            let cons = this.panelsArray.at(masterIndex).value;
+            _value = cons.fabric_RowId;
+
+            if (_value > 0) {
+                let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+                authApiOpts.RequestType = RequestType.GET;
+                authApiOpts.Repository = Repository.StyleConfiguration;
+                authApiOpts.EndPoint = EndPoints.RemoveStyleConfigFabricPanelAsync;
+                authApiOpts.ReqQueryParams = [{
+                    Key: 'fabric_RowId',
+                    Value: _value,
+                    IsDate: false
+                }];
+                this.restService.CallApi<any, any>(authApiOpts)
+                    .subscribe((result: any) => {
+                        if (result?.Code === 200 && result.Data) {
+                            if (result.Data == true)
+                                this.panelsArray.removeAt(masterIndex);
+                        }
+                    });
+            }
         }
     }
 
@@ -287,7 +340,7 @@ export class IkgsStyleConfigurationForm {
 
     createFiberDetailGroup(): FormGroup {
         return this.fb.group({
-            fibers_dtl_rowid: [0],
+            fibers_Dtl_RowId: [0],
             fiber_Id: [null, Validators.required],
             fiber_consumption_id: [null],
             fiber_ratio: [null, Validators.required],
@@ -308,9 +361,48 @@ export class IkgsStyleConfigurationForm {
         this.fibersArray.push(this.createFiberMasterGroup());
     }
 
-    removeFiberGroup(index: number): void {
+    removeFiberGroup(masterIndex: number, detailIndex: number, param: string): void {
         if (this.fibersArray.length > 1) {
-            this.fibersArray.removeAt(index);
+            const isConfirmed = window.confirm('Are you sure you want to delete this Record?');
+            if (!isConfirmed) {
+                return;
+            }
+            let _value = 0;
+            if (param == 'fibers_RowId') {
+                let cons = this.fibersArray.at(masterIndex).value;
+                _value = cons.fibers_RowId;
+            }
+            else if (param == 'fibers_Dtl_RowId') {
+                let details = this.getFiberDetailsArray(masterIndex);
+                if (details.length > 1) {
+                    let detail = details.at(detailIndex).value;
+                    _value = detail.fibers_Dtl_RowId;
+                }
+            }
+
+            if (_value > 0) {
+                let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
+                authApiOpts.RequestType = RequestType.GET;
+                authApiOpts.Repository = Repository.StyleConfiguration;
+                authApiOpts.EndPoint = param == 'fibers_RowId' ? EndPoints.RemoveStyleConfigFiberAsync : EndPoints.RemoveStyleConfigFiberDtlAsync;
+                authApiOpts.ReqQueryParams = [{
+                    Key: param,
+                    Value: _value,
+                    IsDate: false
+                }];
+                this.restService.CallApi<any, any>(authApiOpts)
+                    .subscribe((result: any) => {
+                        if (result?.Code === 200 && result.Data) {
+                            if (result.Data == true)
+                                if (param == 'fibers_RowId') {
+                                    this.fibersArray.removeAt(masterIndex);
+                                }
+                                else if (param == 'fibers_Dtl_RowId') {
+                                    this.getFiberDetailsArray(masterIndex).removeAt(detailIndex);
+                                }
+                        }
+                    });
+            }
         }
     }
 
@@ -320,13 +412,6 @@ export class IkgsStyleConfigurationForm {
 
     addFiberDetail(index: number): void {
         this.getFiberDetailsArray(index).push(this.createFiberDetailGroup());
-    }
-
-    removeFiberDetail(groupIndex: number, detailIndex: number): void {
-        const details = this.getFiberDetailsArray(groupIndex);
-        if (details.length > 1) {
-            details.removeAt(detailIndex);
-        }
     }
 
     // Size consumption
@@ -367,8 +452,8 @@ export class IkgsStyleConfigurationForm {
         }
         else if (param == 'size_dtl_RowId') {
             let sizeArray = this.getSizesArray(masterIndex);
-            let sisssdetail = sizeArray.at(detailIndex).value;
-            _value = sisssdetail.size_Dtl_RowId;
+            let detail = sizeArray.at(detailIndex).value;
+            _value = detail.size_Dtl_RowId;
         }
         if (_value > 0) {
             let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
@@ -725,7 +810,8 @@ export class IkgsStyleConfigurationForm {
                         const dtlGroup = this.createFiberDetailGroup();
                         dtlGroup.patchValue({
                             fiber_Id: dtl.fiber_Id?.toString(),
-                            fiber_ratio: dtl.fiber_Ratio,
+                            fiber_ratio: dtl.fiber_Ratio,                            
+                            fibers_Dtl_RowId: dtl.fibers_Dtl_RowId,
                             knit_type: dtl.knit_Type,
                             is_fiber_dye: dtl.is_Fiber_Dye,
                             fiber_color_id: dtl.fiber_Color_Id?.toString(),

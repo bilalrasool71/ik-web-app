@@ -208,7 +208,7 @@
                                     optionValue="value"></p-selectbutton>
                             </div>
 
-                            <button (click)="removeColor(ci)" type="button"
+                            <button (click)="removeColor(ci,0,'color_RowId')" type="button"
                                 class="h-10.5 px-4 bg-red-100/50 text-red-600 text-xs font-bold rounded-xl hover:bg-red-100 transition-all border border-red-200"
                                 [disabled]="colorsArray.length === 1">
                                 <i class="pi pi-trash mr-1.5"></i>Remove Color
@@ -535,7 +535,8 @@
                                             context</p>
                                     </div>
                                 </div>
-                                <button (click)="removeFiberGroup(fi)" type="button" title="Remove entire group"
+                                <button (click)="removeFiberGroup(fi,0,'fibers_RowId')" type="button"
+                                    title="Remove entire group"
                                     class="w-9 h-9 flex items-center justify-center bg-white text-red-500 rounded-xl border border-slate-200 hover:bg-red-50 hover:border-red-100 hover:text-red-600 transition-all shadow-sm"
                                     [disabled]="fibersArray.length <= 1">
                                     <i class="pi pi-trash text-xs"></i>
@@ -658,7 +659,7 @@
                                     </div> -->
 
                                     <!-- Remove Detail Button -->
-                                    <button (click)="removeFiberDetail(fi, di)" type="button"
+                                    <button (click)="removeFiberGroup(fi, di,'fibers_Dtl_RowId')" type="button"
                                         class="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center bg-white text-red-500 rounded-lg border border-slate-200 opacity-0 group-hover/detail:opacity-100 hover:bg-red-50 hover:border-red-100 transition-all shadow-sm"
                                         [disabled]="getFiberDetailsArray(fi).length <= 1">
                                         <i class="pi pi-times text-[8px]"></i>

@@ -18,6 +18,7 @@ export interface StyleConfigFibersDto {
     fabric_RowId: number;
     panel_Id?: number;
     fibers_RowId: number;
+    fibers_Dtl_RowId: number;
     fiber_Id?: number;
     is_Active: string;
     eby: number;
