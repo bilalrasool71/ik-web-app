@@ -11,7 +11,8 @@ import { HttpClient } from '@angular/common/http';
 import { SelectionValueModel } from '../../models/common/selection-value.model';
 import { IkgsRest } from '../../core/services/ikgs-rest';
 import { RequestType, Repository, EndPoints } from '../../core/enums/api.enum';
-import { ApiOptionsModel } from '../../core/models/api.model';
+import { ApiOptionsModel, QueryParamsModel } from '../../core/models/api.model';
+import { GetWoItemsDto } from '../../models/domain/GetWoItem.model';
 
 @Component({
   selector: 'app-ikgs-contract-form',
@@ -58,13 +59,39 @@ export class IkgsContractForm implements OnInit {
 
     this.getAllWoShortAsync();
     this.getOrderStagesShortAsync();
+    this.getAllUOMAsync();
   }
 
   // ── Stepper ────────────────────────────────────────────────
   onStageChange(selectedStages: string[]) {
+    // 🆕 1. Find newly selected stages
+    const newStages = selectedStages.filter(
+      s => !this.previousSelectedStages.includes(s)
+    );
+
+    // 🆕 2. Call API for new stage(s)
+    if (newStages.length > 0) {
+      newStages.forEach(stageId => {
+        this.getAllPartiesByStageIdAsync(+stageId); // convert to number
+      });
+    }
+
+    // 🔁 3. Update previous selection
     this.previousSelectedStages = [...selectedStages];
+
+    // 📌 4. Get active steps
     const active = this.getActiveStepLabels();
-    if (active.length > 0 && !active.some(s => s.index === this.step())) {
+
+    const currentStepIndex = this.step();
+    const isStillSelected = active.some(s => s.index === currentStepIndex);
+
+    // ✅ 5. Keep current step if still valid
+    if (isStillSelected) {
+      return;
+    }
+
+    // ❌ 6. Otherwise switch to first available
+    if (active.length > 0) {
       this.step.set(active[0].index);
     }
   }
@@ -244,6 +271,31 @@ export class IkgsContractForm implements OnInit {
     opts.ReqQueryParams = [{ Key: 'stageId', Value: stage_Id, IsDate: false }];
     this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(opts).subscribe((res: any) => {
       if (res?.Code === 200 && res.Data) this.allParties.set(res.Data);
+    });
+  }
+
+  getAllUOMAsync() {
+    const opts = new ApiOptionsModel<SelectionValueModel[]>();
+    opts.RequestType = RequestType.GET;
+    opts.Repository = Repository.Catalog;
+    opts.EndPoint = EndPoints.GetAllUOMAsync;
+    opts.ReqQueryParams = [];
+    this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(opts).subscribe((res: any) => {
+      if (res?.Code === 200 && res.Data) this.allUoms.set(res.Data);
+    });
+  }
+
+  getAllItemsByStageIdAsync(wo: number, stage_Id: number) {
+    const opts = new ApiOptionsModel<GetWoItemsDto[]>();
+    opts.RequestType = RequestType.GET;
+    opts.Repository = Repository.Contract;
+    opts.EndPoint = EndPoints.GetAllItemsByStageIdAsync;
+    opts.ReqQueryParams = [
+      { Key: 'wo', Value: wo, IsDate: false },
+      { Key: 'stageId', Value: stage_Id, IsDate: false }
+    ];
+    this.restService.CallApi<GetWoItemsDto[], GetWoItemsDto[]>(opts).subscribe((res: any) => {
+      // if (res?.Code === 200 && res.Data) this.yarnItems.set(res.Data);
     });
   }
 

@@ -447,9 +447,15 @@ export class IkgsWorkOrderForm implements OnInit {
     let value = event.target.value;
 
     if (!value) return;
-    const num = Number(value);
-    if (num <= 0 || num > 100) {
 
+    // Allow values starting with 0. like 0.05
+    if (/^\d*\.?\d*$/.test(value)) {
+      const num = parseFloat(value);
+      if (num > 100) {
+        this.workOrderForm.get(field)?.setValue('', { emitEvent: false });
+      }
+    } else {
+      // Invalid input (letters etc.)
       this.workOrderForm.get(field)?.setValue('', { emitEvent: false });
     }
   }
@@ -512,8 +518,6 @@ export class IkgsWorkOrderForm implements OnInit {
   callCatalogApis() {
     this.getAllStyle();
     this.getAllCustomers();
-    this.getAllColors();
-    this.getAllSizes();
   }
 
 
@@ -549,12 +553,13 @@ export class IkgsWorkOrderForm implements OnInit {
   }
 
 
-  getAllColors() {
+  getAllColors(style_Id: string) {
     this.allColors.set([]);
     let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
     authApiOpts.RequestType = RequestType.GET;
-    authApiOpts.Repository = Repository.Catalog;
-    authApiOpts.EndPoint = EndPoints.GetAllColors;
+    authApiOpts.Repository = Repository.StyleConfiguration;
+    authApiOpts.EndPoint = EndPoints.GetStyleConfigColorShortByStyleIdForFabricAsync;
+    authApiOpts.ReqQueryParams = [{ Key: 'style_Id', Value: style_Id, IsDate: false }];
     this.restService
       .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
       .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
@@ -565,12 +570,13 @@ export class IkgsWorkOrderForm implements OnInit {
   }
 
 
-  getAllSizes() {
+  getAllSizes(style_Id: string) {
     this.allSizes.set([]);
     let authApiOpts = new ApiOptionsModel<SelectionValueModel[]>();
     authApiOpts.RequestType = RequestType.GET;
-    authApiOpts.Repository = Repository.Catalog;
-    authApiOpts.EndPoint = EndPoints.GetAllPanelSizes;
+    authApiOpts.Repository = Repository.StyleConfiguration;
+    authApiOpts.EndPoint = EndPoints.GetStyleConfigSizeShortByStyleIdForFiberAsync;
+    authApiOpts.ReqQueryParams = [{ Key: 'style_Id', Value: style_Id, IsDate: false }];
     this.restService
       .CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
       .subscribe((result: ApiResponseModel<SelectionValueModel[]>) => {
@@ -784,4 +790,11 @@ export class IkgsWorkOrderForm implements OnInit {
     return newObj;
   }
 
+
+  onStyleChange(event: any) {
+    const selectedValue = event.value; // This is the value of the selected option
+    console.log('Selected style value:', selectedValue);    
+    this.getAllColors(selectedValue);
+    this.getAllSizes(selectedValue)
+  }
 }

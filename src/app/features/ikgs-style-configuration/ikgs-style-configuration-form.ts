@@ -1429,7 +1429,7 @@ export class IkgsStyleConfigurationForm {
             Value: this.configForm.value.style_Id,
             IsDate: false
         }]
-        authApiOpts.EndPoint = EndPoints.GetStyleConfigColorShortByStyleIdForFabric;
+        authApiOpts.EndPoint = EndPoints.GetStyleConfigColorShortByStyleIdForFabricAsync;
         this.restService.CallApi<SelectionValueModel[], SelectionValueModel[]>(authApiOpts)
             .subscribe((result: any) => {
                 if (result?.Code === 200 && result.Data) {

@@ -85,9 +85,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-5 bg-indigo-50/30 rounded-2xl border border-indigo-100/60">
             <div class="space-y-1.5">
               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Party</label>
-              <p-select [options]="allParties()" optionLabel="viewValue" optionValue="value"
-                formControlName="party_Id" placeholder="Select Party" [filter]="true" appendTo="body"
+              <p-select appendTo="body"  [options]="allParties()"  optionLabel="viewValue"  optionValue="value"
+                formControlName="party_Id" placeholder="Select Party" [filter]="true" [virtualScroll]="true" [emptyFilterMessage]="'No Party Found'"  virtualScrollItemSize="30" 
                 class="w-full" />
+
+         
             </div>
             <div class="space-y-1.5">
               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Qty</label>

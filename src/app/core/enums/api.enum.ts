@@ -48,15 +48,17 @@ export enum EndPoints {
     GetAllFabrics = "GetAllFabrics",
     GetAllCompositions = "GetAllCompositions",
     GetAllStyle = "GetAllStyle",
+    GetAllUOMAsync = "GetAllUOMAsync",
     //#endregion
 
     //#region StyleConfiguration
     GetAllAddsOnCatalog = "GetAllAddsOnCatalog",
     AddUpdateStyleConfigMain = "AddUpdateStyleConfigMain",
     AddUpdateStyleConfigColor = "AddUpdateStyleConfigColor",
-    GetStyleConfigColorShortByStyleIdForFabric = "GetStyleConfigColorShortByStyleIdForFabric",
+    GetStyleConfigColorShortByStyleIdForFabricAsync = "GetStyleConfigColorShortByStyleIdForFabricAsync",
     AddUpdateStyleConfigFabricAsync = "AddUpdateStyleConfigFabricAsync",
     GetStyleConfigColorShortByStyleIdForFiberAsync = "GetStyleConfigColorShortByStyleIdForFiberAsync",
+    GetStyleConfigSizeShortByStyleIdForFiberAsync = "GetStyleConfigSizeShortByStyleIdForFiberAsync",
     GetStyleConfigFabricShortByStyleIdForFiberAsync = "GetStyleConfigFabricShortByStyleIdForFiberAsync",
     GetStyleConfigPanelShortByStyleIdForFiberAsync = "GetStyleConfigPanelShortByStyleIdForFiberAsync",
     AddUpdateStyleConfigFiberAsync = "AddUpdateStyleConfigFiberAsync",
@@ -86,6 +88,8 @@ export enum EndPoints {
     GetStageItemsAsync = "GetStageItemsAsync",
     GetOrderStagesShortAsync = "GetOrderStagesShortAsync",
     GetAllPartiesByStageIdAsync = "GetAllPartiesByStageIdAsync",
-    AddUpdateContractsAsync = "AddUpdateContractsAsync"
+    AddUpdateContractsAsync = "AddUpdateContractsAsync",
+    GetAllItemsByStageIdAsync = "GetAllItemsByStageIdAsync"
+
     //#endregion
 }
