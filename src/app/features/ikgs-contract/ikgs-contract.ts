@@ -1,9 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from "primeng/table";
 import { TagModule } from "primeng/tag";
+import { ApiOptionsModel } from '../../core/models/api.model';
+import { GetContractModel } from '../../models/domain/GetContractModel';
+import { EndPoints, Repository, RequestType } from '../../core/enums/api.enum';
+import { IkgsRest } from '../../core/services/ikgs-rest';
 
 @Component({
     selector: 'app-ikgs-contract',
@@ -11,13 +15,27 @@ import { TagModule } from "primeng/tag";
     templateUrl: './ikgs-contract.html',
     styleUrl: './ikgs-contract.scss',
 })
-export class IkgsContract {
+export class IkgsContract implements OnInit {
+    contracts: any[] = [];
+    restService = inject(IkgsRest);
 
-    contracts = [
-        { id: 1, customer: 'Nike', styleType: 'Garment', season: 'Spring 2026', gender: 'Men', productType: 'T-Shirt', status: 'Draft' },
-        { id: 2, customer: 'Adidas', styleType: 'Garment', season: 'Fall 2026', gender: 'Women', productType: 'Polo Shirt', status: 'Completed' },
-        { id: 3, customer: 'Puma', styleType: 'Fabric', season: 'Summer 2026', gender: 'Kids', productType: 'Shorts', status: 'In Progress' },
-    ];
+
+    constructor() { }
+    ngOnInit() {
+        this.GetAllContractAsync();
+    }
+
+
+
+    GetAllContractAsync() {
+        const opts = new ApiOptionsModel<GetContractModel[]>();
+        opts.RequestType = RequestType.GET;
+        opts.Repository = Repository.Contract;
+        opts.EndPoint = EndPoints.GetAllContractAsync;
+        this.restService.CallApi<GetContractModel[], GetContractModel[]>(opts).subscribe((res: any) => {
+            if (res?.Code === 200 && res.Data) this.contracts = res.Data;
+        });
+    }
 
     getStatusSeverity(status: string): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" | undefined {
         switch (status) {

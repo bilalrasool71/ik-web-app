@@ -88,7 +88,10 @@ export enum EndPoints {
     GetStageItemsAsync = "GetStageItemsAsync",
     GetOrderStagesShortAsync = "GetOrderStagesShortAsync",
     GetAllPartiesByStageIdAsync = "GetAllPartiesByStageIdAsync",
-    AddUpdateContractsAsync = "AddUpdateContractsAsync",
+    GetAllContractAsync="GetAllContractAsync",
+    GetContractByIdAsync = "GetContractByIdAsync",
+    AddUpdateMasterContractAsync = "AddUpdateMasterContractAsync",
+    AddUpdateContractStageAsync="AddUpdateContractStageAsync",
     GetAllItemsByStageIdAsync = "GetAllItemsByStageIdAsync"
 
     //#endregion
