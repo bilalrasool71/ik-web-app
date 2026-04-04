@@ -1,57 +1,57 @@
 export interface ContractsMaterialsDto {
     contract_Id?: number | null;
-    stage_id?: number | null;
-    stage_rowId?: number;
-    material_rowId?: number | null;
-    item_id?: number | null;
-    party_id?: number | null;
+    stage_Id?: number | null;
+    stage_RowId?: number | null;
+    material_RowId: number;
+    item_Id?: number | null;
+    party_Id?: number | null;
     qty?: number | null;
     uom?: number | null;
-    eby?: number | null;
-    eip?: string | null;
-    edat?: string | null;
-    is_active?: string | null;
+    eBy?: number | null;
+    eIp?: string | null;
+    eDat?: string | null;
+    is_Active?: string | null;
 }
 
 export interface ContractsStagesDtlDto {
     contract_Id: number;
     stage_Id: number;
-    stage_rowid: number;
-    party_Id?: number;
-    color_id?: number;
-    size_id?: number;
-    req_Qty?: number;
-    uom?: string;
-    plan_sdat?: string;
-    plan_edat?: string;
-    achQty?: number;
-    actSdat?: string;
-    actEdat?: string;
-    eby?: number | null;
-    edat?: string | null;
-    is_active?: string | null;
-    materialsList: ContractsMaterialsDto[];
+    stage_RowId: number;
+    party_Id?: number | null;
+    color_Id?: number | null;
+    size_Id?: number | null;
+    req_Qty?: number | null;
+    uom?: number | null;
+    plan_SDat?: string | null;
+    plan_EDat?: string | null;
+    ach_Qty?: number | null;
+    act_SDat?: string | null;
+    act_EDat?: string | null;
+    eBy?: number | null;
+    eDat?: string | null;
+    is_Active?: string | null;
+    materialsList?: ContractsMaterialsDto[] | null;
 }
 
 export interface ContractsStagesDto {
     contract_Id?: number;
     stage_Id: number;
-    is_active?: string;
+is_Active?: string | null;
     stageDtlList: ContractsStagesDtlDto[];
 }
 
 export interface ContractsMasterDto {
-    contract_Id: number;
-    wo: number;
-    lock_flag?: string;
-    eby?: number;
-    eip?: string;
-    edat?: string;
-    lockBy?: number;
-    lockIp?: string;
-    lockDate?: string;
-    mBy?: number;
-    mIp?: string;
-    mDate?: string;
-    stagesList?: ContractsStagesDto[];
+    contract_Id?: number | null;
+    wo?: number | null;
+    lock_Flag?: string | null;
+    eBy?: number | null;
+    eIp?: string | null;
+    eDat?: string | null;
+    lockBy?: number | null;
+    lockIp?: string | null;
+    lockDate?: string | null;
+    mBy?: number | null;
+    mIp?: string | null;
+    mDate?: string | null;
+    stagesList?: ContractsStagesDto[] | null;
 }
