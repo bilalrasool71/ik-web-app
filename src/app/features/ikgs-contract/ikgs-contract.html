@@ -47,7 +47,8 @@
                             <i class="pi pi-pencil text-xs"></i>
                         </button>
                         <button
-                            class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all ml-1">
+                            class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all ml-1"
+                            (click)="removeMasterContractAsync(config.contract_Id)">
                             <i class="pi pi-trash text-xs"></i>
                         </button>
                     </td>
