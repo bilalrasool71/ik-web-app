@@ -11,6 +11,8 @@ export interface ContractsMaterialsDto {
   eIp?: string | null;
   eDat?: string | null;
   is_Active?: string | null;
+  mat_Type?: string;
+  parent_Mat_RowId?: number;
 }
 
 export interface ContractsStagesDtlDto {

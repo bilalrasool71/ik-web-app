@@ -223,14 +223,14 @@
                             [filter]="true"
                             appendTo="body"
                             class="w-full"
-                            (onChange)="onMaterialChange($event.value, ii)"
+                            (onChange)="onMaterialChange($event.value, 0, ii)"
                           />
                         </td>
                         <td class="px-5 py-2.5">
                           <input
                             pInputText
                             type="number"
-                            formControlName="qty"
+                            formControlName="fiber_Qty"
                             placeholder="0.00"
                             class="w-full"
                           />
@@ -389,24 +389,30 @@
                                 track item;
                                 let ii = $index
                               ) {
-                                <tr class="border-t border-slate-50" [formGroupName]="ii">
+                                <tr
+                                  class="border-t border-slate-50 cursor-pointer transition-colors"
+                                  [class.bg-indigo-50]="getHoveredRequired(ri) === ii"
+                                  [formGroupName]="ii"
+                                  (mouseenter)="setHoveredRequired(ri, ii)"
+                                >
                                   <td class="px-4 py-2">
                                     <p-select
-                                      [options]="getMaterialItemsByStage(step())"
-                                      optionLabel="fiber_Ds"
-                                      optionValue="fiber_Id"
+                                      [options]="getAvailableRequiredItems(ri, ii)"
+                                      optionLabel="item_Ds1"
+                                      optionValue="item1"
                                       formControlName="material_Id"
                                       placeholder="Select"
                                       [filter]="true"
                                       appendTo="body"
                                       class="w-full"
+                                      (onChange)="onMaterialChange($event.value, ri, ii)"
                                     />
                                   </td>
                                   <td class="px-4 py-2">
                                     <input
                                       pInputText
                                       type="number"
-                                      formControlName="qty"
+                                      formControlName="item1_Qty"
                                       placeholder="0.00"
                                       class="w-full"
                                     />
@@ -414,7 +420,9 @@
                                   <td class="px-2 py-2 text-center">
                                     <button
                                       type="button"
-                                      (click)="removeMaterialItem(item.value.material_RowId, 1, ri, ii)"
+                                      (click)="
+                                        removeMaterialItem(item.value.material_RowId, 1, ri, ii)
+                                      "
                                       [disabled]="getKnittingRequired(ri).length <= 1"
                                       class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 mx-auto"
                                     >
@@ -426,19 +434,25 @@
                             </tbody>
                           </table>
                         </div>
-
-                        <!-- Input -->
+                        <!-- Input — always shows items of hovered required -->
                         <div class="rounded-2xl border border-slate-200 overflow-hidden">
                           <div
                             class="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100"
                           >
-                            <span
-                              class="text-[10px] font-bold text-slate-600 uppercase tracking-wider"
-                              >Input</span
-                            >
+                            <div class="flex items-center gap-2">
+                              <span
+                                class="text-[10px] font-bold text-slate-600 uppercase tracking-wider"
+                                >Input</span
+                              >
+                              @if (getHoveredRequiredLabel(ri) !== 'Input Items') {
+                                <span class="text-[10px] text-indigo-500 font-bold italic">
+                                  — {{ getHoveredRequiredLabel(ri) }}
+                                </span>
+                              }
+                            </div>
                             <button
                               type="button"
-                              (click)="addKnittingInput(ri)"
+                              (click)="addKnittingInputItem(ri, getHoveredRequired(ri))"
                               class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
                             >
                               <i class="pi pi-plus text-[10px]"></i> Add
@@ -460,30 +474,45 @@
                                 <th class="w-10"></th>
                               </tr>
                             </thead>
-                            <tbody formArrayName="input">
+                            <tbody>
                               @for (
-                                item of getKnittingInput(ri).controls;
-                                track item;
-                                let ii = $index
+                                inp of getKnittingInputItems(ri, getHoveredRequired(ri)).controls;
+                                track inp;
+                                let iii = $index
                               ) {
-                                <tr class="border-t border-slate-50" [formGroupName]="ii">
+                                <tr
+                                  class="border-t border-slate-50"
+                                  [formGroup]="
+                                    $any(getKnittingInputItems(ri, getHoveredRequired(ri)).at(iii))
+                                  "
+                                >
                                   <td class="px-4 py-2">
                                     <p-select
-                                      [options]="getMaterialItemsByStage(step())"
-                                      optionLabel="fiber_Ds"
-                                      optionValue="fiber_Id"
+                                      [options]="
+                                        getAvailableInputItems(ri, getHoveredRequired(ri), iii)
+                                      "
+                                      optionLabel="item_Ds2"
+                                      optionValue="item2"
                                       formControlName="material_Id"
                                       placeholder="Select"
                                       [filter]="true"
                                       appendTo="body"
                                       class="w-full"
+                                      (onChange)="
+                                        onInputItemChange(
+                                          $event.value,
+                                          ri,
+                                          getHoveredRequired(ri),
+                                          iii
+                                        )
+                                      "
                                     />
                                   </td>
                                   <td class="px-4 py-2">
                                     <input
                                       pInputText
                                       type="number"
-                                      formControlName="qty"
+                                      formControlName="item2_Qty"
                                       placeholder="0.00"
                                       class="w-full"
                                     />
@@ -491,10 +520,14 @@
                                   <td class="px-2 py-2 text-center">
                                     <button
                                       type="button"
-                                     (click)="removeKnittingInputItemWithDb(ri, ii)"
-
-                                      [disabled]="getKnittingInput(ri).length <= 1"
-                                      class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 mx-auto"
+                                      (click)="
+                                        removeKnittingInputItem(ri, getHoveredRequired(ri), iii)
+                                      "
+                                      [disabled]="
+                                        getKnittingInputItems(ri, getHoveredRequired(ri)).length <=
+                                        1
+                                      "
+                                      class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 mx-auto"
                                     >
                                       <i class="pi pi-times text-[9px]"></i>
                                     </button>
@@ -1030,7 +1063,9 @@
                                               <td class="px-2 py-2 w-10 text-center">
                                                 <button
                                                   type="button"
-                                                  (click)="removeCuttingSizeItemWithDb(ri, ci, si, ii)"
+                                                  (click)="
+                                                    removeCuttingSizeItemWithDb(ri, ci, si, ii)
+                                                  "
                                                   [disabled]="
                                                     getCuttingRequiredSizeItems(ri, ci, si)
                                                       .length <= 1
