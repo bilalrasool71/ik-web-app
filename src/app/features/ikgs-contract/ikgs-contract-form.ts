@@ -68,10 +68,12 @@ export class IkgsContractForm implements OnInit {
   allUoms: WritableSignal<SelectionValueModel[]> = signal([]);
   allPartiesByStage = signal<Record<number, SelectionValueModel[]>>({});
   allMaterialsByStage = signal<Record<number, GetWoItemsDto[]>>({});
+  allColorByStage = signal<Record<number, GetWoItemsDto[]>>({});
   allInputItemsByKnittingRow = signal<Record<number, GetWoItemsDto[]>>({});
+  hoveredRequiredIndex = signal<Record<number, number>>({});
+
 
   // ── Lifecycle ─────────────────────────────────────────────
-
   ngOnInit(): void {
     this.route.queryParams.subscribe((params) => {
       const id = params['contractId'];
@@ -201,44 +203,46 @@ export class IkgsContractForm implements OnInit {
           stage_RowId: row.stage_RowId ?? 0,
         });
 
-        // Split materialsList into required and input
+        // Split by mat_Type
         const requiredMats = row.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
         const inputMats = row.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
 
         const reqArr = entry.get('required') as FormArray;
         reqArr.clear();
 
-        requiredMats.forEach((reqMat) => {
-          const reqItem = this.createKnittingRequiredItem();
-          reqItem.patchValue({
-            material_Id: reqMat.item_Id ?? 0,
-            item1_Qty: reqMat.qty ?? 0,
-            material_RowId: reqMat.material_RowId ?? 0,
-          });
-
-          // Find input items that belong to this required item
-          const childInputs = inputMats.filter((m) => m.parent_Mat_RowId === reqMat.material_RowId);
-
-          const inputArr = reqItem.get('inputItems') as FormArray;
-          inputArr.clear();
-
-          if (childInputs.length) {
-            childInputs.forEach((inp) => {
-              const inpItem = this.createMaterialItem('item2_Qty');
-              inpItem.patchValue({
-                material_Id: inp.item_Id ?? 0,
-                item2_Qty: inp.qty ?? 0,
-                material_RowId: inp.material_RowId ?? 0,
-              });
-              inputArr.push(inpItem);
+        if (requiredMats.length) {
+          requiredMats.forEach((reqMat) => {
+            const reqItem = this.createKnittingRequiredItem();
+            reqItem.patchValue({
+              material_Id: reqMat.item_Id ?? 0,
+              item1_Qty: reqMat.qty ?? 0,
+              material_RowId: reqMat.material_RowId ?? 0,
             });
-          }
-          // else — default empty inputItems row already exists from createKnittingRequiredItem
 
-          reqArr.push(reqItem);
-        });
+            // Find input children by parent_Mat_RowId
+            if (wo && reqMat.item_Id) this.getAllItemsBystage_IdAsync(wo, 1, false, reqMat.item_Id);
+            const childInputs = inputMats.filter(
+              (m) => m.parent_Mat_RowId === reqMat.material_RowId,
+            );
 
-        if (!requiredMats.length) {
+            const inputArr = reqItem.get('inputItems') as FormArray;
+            inputArr.clear();
+
+            if (childInputs.length) {
+              childInputs.forEach((inp) => {
+                const inpItem = this.createMaterialItem('item2_Qty');
+                inpItem.patchValue({
+                  material_Id: inp.item_Id ?? 0,
+                  item2_Qty: inp.qty ?? 0,
+                  material_RowId: inp.material_RowId ?? 0,
+                });
+                inputArr.push(inpItem);
+              });
+            }
+
+            reqArr.push(reqItem);
+          });
+        } else {
           reqArr.push(this.createKnittingRequiredItem());
         }
 
@@ -294,8 +298,47 @@ export class IkgsContractForm implements OnInit {
     }
   }
 
-  // ── Work Order Change ─────────────────────────────────────
+  private updateFormAfterSave(saved: ContractsStagesDtlDto): void {
+    const stageId = saved.stage_Id ?? 0;
 
+    if (stageId === 1) {
+      const rowIndex = this.knittingStage.controls.findIndex(
+        (c) => c.value.stage_RowId === saved.stage_RowId || c.value.stage_RowId === 0,
+      );
+      if (rowIndex === -1) return;
+
+      // Update stage_RowId
+      this.knittingStage.at(rowIndex).patchValue({
+        stage_RowId: saved.stage_RowId,
+      });
+
+      // Update material_RowIds — same order as sent
+      const reqArr = this.getKnittingRequired(rowIndex);
+      const requiredMats = saved.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
+      const inputMats = saved.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
+
+      reqArr.controls.forEach((reqCtrl, ii) => {
+        // Update required material_RowId
+        const reqMat = requiredMats[ii];
+        if (reqMat) {
+          reqCtrl.patchValue({ material_RowId: reqMat.material_RowId ?? 0 });
+        }
+
+        // Update input items material_RowIds linked to this required
+        const inputArr = this.getKnittingInputItems(rowIndex, ii);
+        const childInputs = inputMats.filter((m) => m.parent_Mat_RowId === reqMat?.material_RowId);
+        childInputs.forEach((inp, iii) => {
+          if (inputArr.at(iii)) {
+            inputArr.at(iii).patchValue({
+              material_RowId: inp.material_RowId ?? 0,
+            });
+          }
+        });
+      });
+    }
+  }
+
+  // ── Work Order Change ─────────────────────────────────────
   handleWorkOrderChange(wo: number) {
     if (!this.isEditMode) {
       // Only reset in new mode; in edit mode data is pre-loaded
@@ -415,8 +458,8 @@ export class IkgsContractForm implements OnInit {
     return this.getActiveStepLabels().find((s) => s.index === this.step())?.label ?? '';
   }
 
-  hoveredRequiredIndex = signal<Record<number, number>>({});
-  // key = ri (knitting row), value = ii (required item index being hovered)
+  
+  
 
   setHoveredRequired(ri: number, ii: number) {
     this.hoveredRequiredIndex.update((prev) => ({ ...prev, [ri]: ii }));
@@ -505,8 +548,9 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
-  // ── DTO Builders ──────────────────────────────────────────
 
+  // ── DTO Builders ──────────────────────────────────────────
+//#region DTO Builders
   /**
    * Converts the current form state for a given stage_Id into
    * an array of ContractsStagesDtlDto (one per row) ready for the API.
@@ -644,6 +688,8 @@ export class IkgsContractForm implements OnInit {
       } as ContractsStagesDtlDto;
     });
   }
+
+  //#endregion
 
   // ── Stage Save Status Helpers ─────────────────────────────
 
@@ -921,13 +967,18 @@ export class IkgsContractForm implements OnInit {
     ];
     this.restService.CallApi<GetWoItemsDto[], GetWoItemsDto[]>(opts).subscribe((res: any) => {
       if (res?.Code === 200 && res.Data) {
-        if (isParent)
-          this.allMaterialsByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
-        else {
-          this.allInputItemsByKnittingRow.update((prev) => ({
-            ...prev,
-            [parentId]: res.Data,
-          }));
+        if (stage_Id === 0 || stage_Id === 1) {
+          if (isParent)
+            this.allMaterialsByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
+          else {
+            this.allInputItemsByKnittingRow.update((prev) => ({
+              ...prev,
+              [parentId]: res.Data,
+            }));
+          }
+        }
+        else if (stage_Id === 2) {
+
         }
       }
     });
@@ -975,22 +1026,6 @@ export class IkgsContractForm implements OnInit {
     }
   }
 
-  private saveStage(stage_Id: number, contractId: number): void {
-    const stageDtos = this.buildStageDtos(stage_Id, contractId);
-
-    // Save all rows of the stage sequentially using reduce (avoids nested subscribes)
-    stageDtos
-      .reduce((chain, dto) => {
-        return chain.then(() => this.saveStageRow(dto));
-      }, Promise.resolve())
-      .then(() => {
-        this.stageSaveStatus.update((s) => ({ ...s, [stage_Id]: 'saved' }));
-      })
-      .catch(() => {
-        this.stageSaveStatus.update((s) => ({ ...s, [stage_Id]: 'error' }));
-      });
-  }
-
   private saveStageRow(dto: ContractsStagesDtlDto): Promise<void> {
     return new Promise((resolve, reject) => {
       const opts = new ApiOptionsModel<ContractsStagesDtlDto>();
@@ -1001,8 +1036,10 @@ export class IkgsContractForm implements OnInit {
 
       this.restService.CallApi<ContractsStagesDtlDto, ContractsStagesDtlDto>(opts).subscribe({
         next: (res: any) => {
-          if (res?.Code === 200) resolve();
-          else reject(res);
+          if (res?.Code === 200 && res.Data) {
+            this.updateFormAfterSave(res.Data); // ← update form with returned IDs
+            resolve();
+          } else reject(res);
         },
         error: (err: any) => reject(err),
       });
