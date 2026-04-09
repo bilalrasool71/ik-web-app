@@ -21,6 +21,8 @@ import {
   createKnittingEntry,
   createKnittingRequiredItem,
   createDyeingEntry,
+  createDyeingRequiredItem,
+  createDyeingInputItem,
   createCuttingEntry,
   createMaterialItem,
   createColorItemGroup,
@@ -68,8 +70,8 @@ export class IkgsContractForm implements OnInit {
   allUoms: WritableSignal<SelectionValueModel[]> = signal([]);
   allPartiesByStage = signal<Record<number, SelectionValueModel[]>>({});
   allMaterialsByStage = signal<Record<number, GetWoItemsDto[]>>({});
-  allColorByStage = signal<Record<number, GetWoItemsDto[]>>({});
   allInputItemsByKnittingRow = signal<Record<number, GetWoItemsDto[]>>({});
+  allDyeingItemsByColor = signal<Record<number, GetWoItemsDto[]>>({});
   hoveredRequiredIndex = signal<Record<number, number>>({});
 
   // ── Lifecycle ─────────────────────────────────────────────
@@ -101,7 +103,8 @@ export class IkgsContractForm implements OnInit {
     if (this.isEditMode) this.isEdit();
   }
 
-  // ── Edit Mode ─────────────────────────────────────────────
+  //#region Form Loading
+
   isEdit(): void {
     if (this.contractId) this.loadContractForEdit(this.contractId);
   }
@@ -118,6 +121,13 @@ export class IkgsContractForm implements OnInit {
       },
       error: () => this.isLoadingContract.set(false),
     });
+  }
+
+  resetStageForms() {
+    this.contractForm.patchValue({ yarnStage: createYarnEntry(this.fb).value });
+    this.contractForm.setControl('knittingStage', this.fb.array([createKnittingEntry(this.fb)]));
+    this.contractForm.setControl('dyeingStage', this.fb.array([createDyeingEntry(this.fb)]));
+    this.contractForm.setControl('cuttingStage', this.fb.array([createCuttingEntry(this.fb)]));
   }
 
   populateFormFromApi(data: ContractsMasterDto): void {
@@ -233,12 +243,46 @@ export class IkgsContractForm implements OnInit {
           fromDate: row.plan_SDat ? row.plan_SDat.split('T')[0] : null,
           toDate: row.plan_EDat ? row.plan_EDat.split('T')[0] : null,
           stage_RowId: row.stage_RowId ?? 0,
-          color_Id: row.color_Id ?? 0,
         });
+
+        const colorMats = row.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
+        const inputMats = row.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
         const reqArr = entry.get('required') as FormArray;
         reqArr.clear();
-        const reqMats = row.materialsList?.length ? row.materialsList : [{}];
-        reqMats.forEach(() => reqArr.push(createColorItemGroup(this.fb)));
+
+        if (colorMats.length) {
+          colorMats.forEach((colorMat) => {
+            const colorGroup = createDyeingRequiredItem(this.fb);
+            colorGroup.patchValue({
+              color_Id: colorMat.item_Id ?? 0,
+              material_RowId: colorMat.material_RowId ?? 0,
+            });
+
+            if (wo && colorMat.item_Id)
+              this.GetAllItemsByStageIdAsync(wo, 2, false, [colorMat.item_Id.toString()]);
+
+            const childInputs = inputMats.filter(
+              (m) => m.parent_Mat_RowId === colorMat.material_RowId,
+            );
+            const inputArr = colorGroup.get('inputItems') as FormArray;
+            inputArr.clear();
+
+            if (childInputs.length) {
+              childInputs.forEach((inp) => {
+                const inpItem = createDyeingInputItem(this.fb);
+                inpItem.patchValue({
+                  item1_Id: inp.item_Id ?? 0,
+                  item1_Qty: inp.qty ?? 0,
+                  material_RowId: inp.material_RowId ?? 0,
+                });
+                inputArr.push(inpItem);
+              });
+            }
+            reqArr.push(colorGroup);
+          });
+        } else {
+          reqArr.push(createDyeingRequiredItem(this.fb));
+        }
         arr.push(entry);
       });
     } else {
@@ -293,24 +337,6 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
-  // ── Work Order Change ─────────────────────────────────────
-  handleWorkOrderChange(wo: number) {
-    if (!this.isEditMode) {
-      this.allPartiesByStage.set({});
-      this.allMaterialsByStage.set({});
-      this.resetStageForms();
-    }
-    const stages = this.contractForm.get('Stages')?.value || [];
-    stages.forEach((stage_Id: number) => this.loadStageData(stage_Id, wo, true, 0));
-  }
-
-  resetStageForms() {
-    this.contractForm.patchValue({ yarnStage: createYarnEntry(this.fb).value });
-    this.contractForm.setControl('knittingStage', this.fb.array([createKnittingEntry(this.fb)]));
-    this.contractForm.setControl('dyeingStage', this.fb.array([createDyeingEntry(this.fb)]));
-    this.contractForm.setControl('cuttingStage', this.fb.array([createCuttingEntry(this.fb)]));
-  }
-
   loadStageData(
     stage_Id: number,
     wo: number | null | undefined,
@@ -322,19 +348,29 @@ export class IkgsContractForm implements OnInit {
     if (!this.allPartiesByStage()[stage_Id]) this.getAllPartiesBystage_IdAsync(stage_Id);
   }
 
-  // ── Stepper ───────────────────────────────────────────────
+  //#endregion
+
+  //#region Change Events
+
+  handleWorkOrderChange(wo: number) {
+    if (!this.isEditMode) {
+      this.allPartiesByStage.set({});
+      this.allMaterialsByStage.set({});      
+      this.resetStageForms();
+    }
+    const stages = this.contractForm.get('Stages')?.value || [];
+    stages.forEach((stage_Id: number) => this.loadStageData(stage_Id, wo, true, 0));
+  }
+
   onStageChange(selectedStages: string[]) {
     const wo = this.contractForm.get('WorkOrder')?.value;
     const newStages = selectedStages.filter((s) => !this.previousSelectedStages.includes(s));
     newStages.forEach((stage_Id) => {
       if (wo) this.loadStageData(+stage_Id, wo, true, 0);
     });
-
     const removedStages = this.previousSelectedStages.filter((s) => !selectedStages.includes(s));
     if (removedStages.length > 0) this.removeStageData(removedStages.map((s) => +s));
-
     this.previousSelectedStages = [...selectedStages];
-
     const active = this.getActiveStepLabels();
     const isStillSelected = active.some((s) => s.index === this.step());
     if (!isStillSelected && active.length > 0) this.step.set(active[0].index);
@@ -356,23 +392,43 @@ export class IkgsContractForm implements OnInit {
         this.contractForm.get('WorkOrder')?.value,
         this.step(),
         false,
-        value,
+        [value.toString()],
       );
     }
   }
 
-  removeStageData(stage_Ids: number[]) {
-    this.allMaterialsByStage.update((prev) => {
-      const updated = { ...prev };
-      stage_Ids.forEach((id) => delete updated[id]);
-      return updated;
-    });
-    this.allPartiesByStage.update((prev) => {
-      const updated = { ...prev };
-      stage_Ids.forEach((id) => delete updated[id]);
-      return updated;
+  onInputItemChange(value: any, ri: number, ii: number, iii: number): void {
+    const items = this.getInputItemsByRequiredItem(ri, ii);
+    const selected = items.find((m) => m.item2 === value);
+    if (!selected) return;
+    this.getKnittingInputItems(ri, ii).at(iii).patchValue({ item2_Qty: selected.item2_Qty ?? 0 });
+  }
+
+  onDyeingColorChange(ri: number, ci: number): void {
+    const wo = this.contractForm.get('WorkOrder')?.value;
+    const colorId: number = this.getDyeingRequired(ri).at(ci).value.color_Id;
+    if (!wo || !colorId) return;
+    const inputArr = this.getDyeingInputItems(ri, ci);
+    inputArr.clear();
+    inputArr.push(createDyeingInputItem(this.fb));
+    this.GetAllItemsByStageIdAsync(wo, 2, false, [colorId.toString()]);
+  }
+
+  onDyeingItemChange(value: number, ri: number, ci: number, ii: number): void {
+    const colorId = this.getDyeingRequired(ri).at(ci).value.color_Id;
+    const items = this.allDyeingItemsByColor()[colorId] || [];
+    const selected = items.find((m) => m.item1 === value);
+    if (!selected) return;
+    this.getDyeingInputItems(ri, ci).at(ii).patchValue({
+      item1_Qty: selected.item1_Qty ?? 0,
+      item2_Id: selected.item2 ?? 0,
+      item2_Qty: selected.item2_Qty ?? 0,
     });
   }
+
+  //#endregion
+
+  //#region Stepper
 
   getActiveStepLabels(): { index: number; label: string }[] {
     const selected: string[] = this.contractForm?.get('Stages')?.value || [];
@@ -408,14 +464,19 @@ export class IkgsContractForm implements OnInit {
     return this.getActiveStepLabels().find((s) => s.index === this.step())?.label ?? '';
   }
 
-  // ── Knitting Hover Helpers ────────────────────────────────
+  //#endregion
+
+  //#region Hover Helpers (Knitting)
+
   setHoveredRequired(ri: number, ii: number) {
     this.hoveredRequiredIndex.update((prev) => ({ ...prev, [ri]: ii }));
     this.getInputItemsByRow(ri);
   }
+
   getHoveredRequired(ri: number): number {
     return this.hoveredRequiredIndex()[ri] ?? 0;
   }
+
   getHoveredRequiredLabel(ri: number): string {
     const ii = this.getHoveredRequired(ri);
     const materialId = this.getKnittingRequired(ri).at(ii)?.value?.material_Id;
@@ -423,15 +484,30 @@ export class IkgsContractForm implements OnInit {
     const found = this.getMaterialItemsByStage(1).find((m) => m.item1 === materialId);
     return found?.item_Ds1 ?? 'Input Items';
   }
+
+  //#endregion
+
+  //#region Dropdown Helpers
+
+  getPartiesByStage(stage_Id: number): SelectionValueModel[] {
+    return this.allPartiesByStage()[stage_Id] || [];
+  }
+
+  getMaterialItemsByStage(stage_Id: number): GetWoItemsDto[] {
+    return this.allMaterialsByStage()[stage_Id] || [];
+  }
+
   getInputItemsByRow(ri: number): GetWoItemsDto[] {
     const ii = this.getHoveredRequired(ri);
     const item1 = this.getKnittingRequired(ri).at(ii)?.value?.material_Id;
     return this.allInputItemsByKnittingRow()[item1] || [];
   }
+
   getInputItemsByRequiredItem(ri: number, ii: number): GetWoItemsDto[] {
     const item1 = this.getKnittingRequired(ri).at(ii)?.value?.material_Id;
     return this.allInputItemsByKnittingRow()[item1] || [];
   }
+
   getAvailableRequiredItems(ri: number, ii: number): GetWoItemsDto[] {
     const selected = this.getKnittingRequired(ri)
       .controls.filter((_, idx) => idx !== ii)
@@ -439,6 +515,7 @@ export class IkgsContractForm implements OnInit {
       .filter((id) => id && id !== 0);
     return this.getMaterialItemsByStage(1).filter((m) => !selected.includes(m.item1));
   }
+
   getAvailableInputItems(ri: number, ii: number, iii: number): GetWoItemsDto[] {
     const selected = this.getKnittingInputItems(ri, ii)
       .controls.filter((_, idx) => idx !== iii)
@@ -446,374 +523,158 @@ export class IkgsContractForm implements OnInit {
       .filter((id) => id && id !== 0);
     return this.getInputItemsByRequiredItem(ri, ii).filter((m) => !selected.includes(m.item2));
   }
-  onInputItemChange(value: any, ri: number, ii: number, iii: number): void {
-    const items = this.getInputItemsByRequiredItem(ri, ii);
-    const selected = items.find((m) => m.item2 === value);
-    if (!selected) return;
-    this.getKnittingInputItems(ri, ii)
-      .at(iii)
-      .patchValue({ item2_Qty: selected.item2_Qty ?? 0 });
+
+  getColorRequiredItems(ri: number, ii: number): GetWoItemsDto[] {
+    const selected = this.getDyeingRequired(ri)
+      .controls.filter((_, idx) => idx !== ii)
+      .map((c) => c.value.color_Id)
+      .filter((id: number) => id && id !== 0);
+    return this.getMaterialItemsByStage(2).filter((m) => !selected.includes(m.color1));
   }
 
-  // ── Stage Save Status ─────────────────────────────────────
-  getStageSaveStatus(stage_Id: number): 'saving' | 'saved' | 'error' | null {
-    return this.stageSaveStatus()[stage_Id] ?? 0;
-  }
-  isStageSaving(stage_Id: number): boolean {
-    return this.stageSaveStatus()[stage_Id] === 'saving';
+  getDyeingAvailableItems(ri: number, ci: number, ii: number): GetWoItemsDto[] {
+    const colorId = this.getDyeingRequired(ri).at(ci).value.color_Id;
+    const allItems = this.allDyeingItemsByColor()[colorId] || [];
+    const selected = this.getDyeingInputItems(ri, ci)
+      .controls.filter((_, idx) => idx !== ii)
+      .map((c) => (c as any).value.item1_Id)
+      .filter((id: number) => id && id !== 0);
+    return allItems.filter((m) => !selected.includes(m.item1));
   }
 
-  // ── Form Accessors: Yarn ──────────────────────────────────
+  //#endregion
+
+  //#region Form Accessors
+
   get yarnStage(): FormGroup {
     return this.contractForm.get('yarnStage') as FormGroup;
   }
+
   get yarnItems(): FormArray {
     return this.yarnStage.get('yarnItems') as FormArray;
   }
+
+  get knittingStage(): FormArray {
+    return this.contractForm.get('knittingStage') as FormArray;
+  }
+
+  get dyeingStage(): FormArray {
+    return this.contractForm.get('dyeingStage') as FormArray;
+  }
+
+  get cuttingStage(): FormArray {
+    return this.contractForm.get('cuttingStage') as FormArray;
+  }
+
+  getKnittingRequired(ri: number): FormArray {
+    return this.knittingStage.at(ri).get('required') as FormArray;
+  }
+
+  getKnittingInputItems(ri: number, ii: number): FormArray {
+    return this.getKnittingRequired(ri).at(ii).get('inputItems') as FormArray;
+  }
+
+  getDyeingRequired(ri: number): FormArray {
+    return this.dyeingStage.at(ri).get('required') as FormArray;
+  }
+
+  getDyeingInputItems(ri: number, ci: number): FormArray {
+    return this.getDyeingRequired(ri).at(ci).get('inputItems') as FormArray;
+  }
+
+  getCuttingRequired(ri: number): FormArray {
+    return this.cuttingStage.at(ri).get('required') as FormArray;
+  }
+
+  getCuttingRequiredSizes(ri: number, ci: number): FormArray {
+    return this.getCuttingRequired(ri).at(ci).get('sizes') as FormArray;
+  }
+
+  getCuttingRequiredSizeItems(ri: number, ci: number, si: number): FormArray {
+    return this.getCuttingRequiredSizes(ri, ci).at(si).get('items') as FormArray;
+  }
+
+  getCuttingInput(ri: number): FormArray {
+    return this.cuttingStage.at(ri).get('input') as FormArray;
+  }
+
+  getCuttingInputItems(ri: number, ci: number): FormArray {
+    return this.getCuttingInput(ri).at(ci).get('items') as FormArray;
+  }
+
+  //#endregion
+
+  //#region Add Rows / Items
+
   addYarnItem() {
     this.yarnItems.push(createMaterialItem(this.fb, 'fiber_Qty'));
   }
 
-  // ── Form Accessors: Knitting ──────────────────────────────
-  get knittingStage(): FormArray {
-    return this.contractForm.get('knittingStage') as FormArray;
-  }
   addKnittingRow() {
     this.knittingStage.push(createKnittingEntry(this.fb));
   }
-  getKnittingRequired(ri: number): FormArray {
-    return this.knittingStage.at(ri).get('required') as FormArray;
-  }
-  getKnittingInputItems(ri: number, ii: number): FormArray {
-    return this.getKnittingRequired(ri).at(ii).get('inputItems') as FormArray;
-  }
+
   addKnittingRequired(ri: number) {
     this.getKnittingRequired(ri).push(createKnittingRequiredItem(this.fb));
   }
+
   addKnittingInputItem(ri: number, ii: number) {
     this.getKnittingInputItems(ri, ii).push(createMaterialItem(this.fb, 'item2_Qty'));
   }
-  removeKnittingInputItem(ri: number, ii: number, iii: number) {
-    const arr = this.getKnittingInputItems(ri, ii);
-    const materialRowId = arr.at(iii).value.material_RowId;
-    if (!materialRowId || materialRowId === 0) {
-      if (arr.length > 1) arr.removeAt(iii);
-      return;
-    }
-    this.contractFormService
-      .removeMaterialItemApi(materialRowId)
-      .then(() => {
-        if (arr.length > 1) arr.removeAt(iii);
-      })
-      .catch(() => console.error('Failed to remove knitting input item'));
-  }
 
-  // ── Form Accessors: Dyeing ────────────────────────────────
-  get dyeingStage(): FormArray {
-    return this.contractForm.get('dyeingStage') as FormArray;
-  }
   addDyeingRow() {
     this.dyeingStage.push(createDyeingEntry(this.fb));
   }
-  getDyeingRequired(ri: number): FormArray {
-    return this.dyeingStage.at(ri).get('required') as FormArray;
-  }
-  getDyeingColorItems(ri: number, ci: number): FormArray {
-    return this.getDyeingRequired(ri).at(ci).get('items') as FormArray;
-  }
-  getDyeingInput(ri: number): FormArray {
-    return this.dyeingStage.at(ri).get('input') as FormArray;
-  }
+
   addDyeingColorGroup(ri: number) {
-    this.getDyeingRequired(ri).push(createColorItemGroup(this.fb));
-  }
-  addDyeingColorItem(ri: number, ci: number) {
-    this.getDyeingColorItems(ri, ci).push(createMaterialItem(this.fb, 'qty'));
-  }
-  addDyeingInput(ri: number) {
-    this.getDyeingInput(ri).push(createMaterialItem(this.fb, 'qty'));
+    this.getDyeingRequired(ri).push(createDyeingRequiredItem(this.fb));
   }
 
-  // ── Form Accessors: Cutting ───────────────────────────────
-  get cuttingStage(): FormArray {
-    return this.contractForm.get('cuttingStage') as FormArray;
+  addDyeingInputItem(ri: number, ci: number) {
+    this.getDyeingInputItems(ri, ci).push(createDyeingInputItem(this.fb));
   }
+
   addCuttingRow() {
     this.cuttingStage.push(createCuttingEntry(this.fb));
   }
-  getCuttingRequired(ri: number): FormArray {
-    return this.cuttingStage.at(ri).get('required') as FormArray;
-  }
-  getCuttingRequiredSizes(ri: number, ci: number): FormArray {
-    return this.getCuttingRequired(ri).at(ci).get('sizes') as FormArray;
-  }
-  getCuttingRequiredSizeItems(ri: number, ci: number, si: number): FormArray {
-    return this.getCuttingRequiredSizes(ri, ci).at(si).get('items') as FormArray;
-  }
-  getCuttingInput(ri: number): FormArray {
-    return this.cuttingStage.at(ri).get('input') as FormArray;
-  }
-  getCuttingInputItems(ri: number, ci: number): FormArray {
-    return this.getCuttingInput(ri).at(ci).get('items') as FormArray;
-  }
+
   addCuttingColorGroup(ri: number) {
     this.getCuttingRequired(ri).push(createColorSizeGroup(this.fb));
   }
+
   addCuttingSize(ri: number, ci: number) {
     this.getCuttingRequiredSizes(ri, ci).push(createSizeItemGroup(this.fb));
   }
+
   addCuttingSizeItem(ri: number, ci: number, si: number) {
     this.getCuttingRequiredSizeItems(ri, ci, si).push(createMaterialItem(this.fb, 'qty'));
   }
+
   addCuttingInputColor(ri: number) {
     this.getCuttingInput(ri).push(createColorItemGroup(this.fb));
   }
+
   addCuttingInputItem(ri: number, ci: number) {
     this.getCuttingInputItems(ri, ci).push(createMaterialItem(this.fb, 'qty'));
   }
 
-  // ── LOV Loading ───────────────────────────────────────────
-  getAllWoShortAsync() {
-    this.contractFormService.getAllWoShortAsync().subscribe((res: any) => {
-      if (res?.Code === 200 && res.Data) this.allWos.set(res.Data);
+  //#endregion
+
+  //#region Delete
+
+  removeStageData(stage_Ids: number[]) {
+    this.allMaterialsByStage.update((prev) => {
+      const updated = { ...prev };
+      stage_Ids.forEach((id) => delete updated[id]);
+      return updated;
+    });
+    this.allPartiesByStage.update((prev) => {
+      const updated = { ...prev };
+      stage_Ids.forEach((id) => delete updated[id]);
+      return updated;
     });
   }
 
-  getOrderStagesShortAsync() {
-    this.contractFormService.getOrderStagesShortAsync().subscribe((res: any) => {
-      if (res?.Code === 200 && res.Data) this.allContarctStages.set(res.Data);
-    });
-  }
-
-  getPartiesByStage(stage_Id: number): SelectionValueModel[] {
-    return this.allPartiesByStage()[stage_Id] || [];
-  }
-
-  getAllPartiesBystage_IdAsync(stage_Id: number) {
-    this.contractFormService.getAllPartiesBystage_IdAsync(stage_Id).subscribe((res: any) => {
-      if (res?.Code === 200 && res.Data)
-        this.allPartiesByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
-    });
-  }
-
-  getAllUOMAsync() {
-    this.contractFormService.getAllUOMAsync().subscribe((res: any) => {
-      if (res?.Code === 200 && res.Data) this.allUoms.set(res.Data);
-    });
-  }
-
-  getMaterialItemsByStage(stage_Id: number): GetWoItemsDto[] {
-    return this.allMaterialsByStage()[stage_Id] || [];
-  }
-
-  GetAllItemsByStageIdAsync(wo: number, stage_Id: number, isParent: boolean, params?: string[]) {
-    this.contractFormService
-      .GetAllItemsByStageIdAsync(wo, stage_Id, isParent, params)
-      .subscribe((res: any) => {
-        if (res?.Code === 200 && res.Data) {
-          if (stage_Id === 0 || stage_Id === 1) {
-            if (isParent)
-              this.allMaterialsByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
-            else {
-              let parentId = 0;
-              if (params && params.length > 0) {
-                parentId = parseInt(params[0]);
-              }
-              this.allInputItemsByKnittingRow.update((prev) => ({ ...prev, [parentId]: res.Data }));
-            }
-          }
-        }
-      });
-  }
-
-  // ── DTO Builders ──────────────────────────────────────────
-  buildStageDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
-    if (stage_Id === 0) return this.buildYarnDtos(stage_Id, contractId);
-    if (stage_Id === 1) return this.buildKnittingDtos(stage_Id, contractId);
-    if (stage_Id === 2) return this.buildDyeingDtos(stage_Id, contractId);
-    return this.buildCuttingDtos(stage_Id, contractId);
-  }
-
-  private buildYarnDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
-    const v = this.yarnStage.value;
-    const materials: ContractsMaterialsDto[] = (v.yarnItems || []).map((m: any) => ({
-      material_RowId: m.material_RowId ?? 0,
-      item_Id: m.material_Id ?? 0,
-      qty: m.fiber_Qty ?? 0,
-      is_Active: 'Y',
-    }));
-    return [
-      {
-        contract_Id: contractId,
-        stage_Id,
-        stage_RowId: (this.yarnStage as any)['_stage_RowId'] ?? 0,
-        party_Id: v.party_Id ?? 0,
-        req_Qty: v.qty ?? 0,
-        uom: v.uom_Id ?? 0,
-        plan_SDat: v.fromDate ?? null,
-        plan_EDat: v.toDate ?? null,
-        is_Active: 'Y',
-        materialsList: materials,
-      },
-    ];
-  }
-
-  private buildKnittingDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
-    return this.knittingStage.controls.map((ctrl) => {
-      const v = ctrl.value;
-      const materials: ContractsMaterialsDto[] = [];
-      (v.required || []).forEach((req: any) => {
-        const reqMatRowId = req.material_RowId ?? 0;
-        materials.push({
-          material_RowId: reqMatRowId,
-          item_Id: req.material_Id ?? 0,
-          qty: req.item1_Qty ?? 0,
-          is_Active: 'Y',
-          mat_Type: 'R',
-          parent_Mat_RowId: 0,
-        });
-        (req.inputItems || []).forEach((inp: any) => {
-          materials.push({
-            material_RowId: inp.material_RowId ?? 0,
-            item_Id: inp.material_Id ?? 0,
-            qty: inp.item2_Qty ?? 0,
-            is_Active: 'Y',
-            mat_Type: 'I',
-            parent_Mat_RowId: reqMatRowId,
-          });
-        });
-      });
-      return {
-        contract_Id: contractId,
-        stage_Id,
-        stage_RowId: v.stage_RowId ?? 0,
-        party_Id: v.party_Id ?? 0,
-        req_Qty: v.qty ?? 0,
-        uom: v.uom_Id ?? 0,
-        plan_SDat: v.fromDate ?? null,
-        plan_EDat: v.toDate ?? null,
-        is_Active: 'Y',
-        materialsList: materials,
-      } as ContractsStagesDtlDto;
-    });
-  }
-
-  private buildDyeingDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
-    return this.dyeingStage.controls.map((ctrl) => {
-      const v = ctrl.value;
-      const materials: ContractsMaterialsDto[] = (v.input || []).map((m: any) => ({
-        material_RowId: m.material_RowId ?? 0,
-        item_Id: m.material_Id ?? 0,
-        qty: m.qty ?? 0,
-        is_Active: 'Y',
-      }));
-      return {
-        contract_Id: contractId,
-        stage_Id,
-        stage_RowId: v.stage_RowId ?? 0,
-        party_Id: v.party_Id ?? 0,
-        color_Id: v.color_Id ?? 0,
-        req_Qty: v.qty ?? 0,
-        uom: v.uom_Id ?? 0,
-        plan_SDat: v.fromDate ?? null,
-        plan_EDat: v.toDate ?? null,
-        is_Active: 'Y',
-        materialsList: materials,
-      } as ContractsStagesDtlDto;
-    });
-  }
-
-  private buildCuttingDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
-    return this.cuttingStage.controls.map((ctrl) => {
-      const v = ctrl.value;
-      const materials: ContractsMaterialsDto[] = [];
-      (v.input || []).forEach((colorGroup: any) => {
-        (colorGroup.items || []).forEach((m: any) => {
-          materials.push({
-            material_RowId: m.material_RowId ?? 0,
-            item_Id: m.material_Id ?? 0,
-            qty: m.qty ?? 0,
-            is_Active: 'Y',
-          });
-        });
-      });
-      return {
-        contract_Id: contractId,
-        stage_Id,
-        stage_RowId: v.stage_RowId ?? 0,
-        party_Id: v.party_Id ?? 0,
-        color_Id: v.color_Id ?? 0,
-        size_Id: v.size_Id ?? 0,
-        req_Qty: v.qty ?? 0,
-        uom: v.uom_Id ?? 0,
-        plan_SDat: v.fromDate ?? null,
-        plan_EDat: v.toDate ?? null,
-        is_Active: 'Y',
-        materialsList: materials,
-      } as ContractsStagesDtlDto;
-    });
-  }
-
-  // ── Save ──────────────────────────────────────────────────
-  onSubmit() {
-    if (!this.contractForm.valid) return;
-
-    const saveAll = () => {
-      const active = this.getActiveStepLabels();
-      return active.reduce((chain, stage) => {
-        return chain.then(() => {
-          const dtos = this.buildStageDtos(stage.index, this.contractId!);
-          return dtos.reduce(
-            (c, dto) =>
-              c.then(() =>
-                this.contractFormService
-                  .saveStageRow(dto)
-                  .then((saved) => this.updateFormAfterSave(saved)),
-              ),
-            Promise.resolve(),
-          );
-        });
-      }, Promise.resolve());
-    };
-
-    const afterSave = () => {
-      this.isEditMode = !!this.contractId;
-      if (this.isEditMode) this.isEdit();
-    };
-
-    if (!this.contractId) {
-      this.saveMaster((contractId: number) => {
-        this.contractId = contractId;
-        saveAll()
-          .then(afterSave)
-          .catch((err) => console.error('Save failed:', err));
-      });
-    } else {
-      saveAll()
-        .then(afterSave)
-        .catch((err) => console.error('Save failed:', err));
-    }
-  }
-
-  private saveMaster(onSuccess: (contractId: number) => void): void {
-    const masterDto: ContractsMasterDto = {
-      contract_Id: this.contractId ?? 0,
-      wo: this.contractForm.get('WorkOrder')?.value,
-      lock_Flag: 'N',
-    };
-    this.contractFormService.saveMaster(masterDto).subscribe({
-      next: (res: any) => {
-        if (res?.Code === 200 && res.Data?.contract_Id) {
-          onSuccess(res.Data.contract_Id);
-        } else {
-          this.stageSaveStatus.update((s) => ({ ...s, [this.step()]: 'error' }));
-        }
-      },
-      error: () => this.stageSaveStatus.update((s) => ({ ...s, [this.step()]: 'error' })),
-    });
-  }
-
-  // ── Delete ────────────────────────────────────────────────
   removeStageRow(stageRowId: number, stageId: number, rowIndex: number): void {
     if (!stageRowId || stageRowId === 0) {
       this.removeStageRowFromForm(stageId, rowIndex);
@@ -857,15 +718,45 @@ export class IkgsContractForm implements OnInit {
       const arr = this.getKnittingRequired(rowIndex);
       if (arr.length > 1) arr.removeAt(itemIndex);
     } else if (stageId === 2) {
-      const arr = this.getDyeingInput(rowIndex);
+      const arr = this.getDyeingRequired(rowIndex);
       if (arr.length > 1) arr.removeAt(itemIndex);
     }
   }
 
+  removeDyeingInputItemWithDb(ri: number, ci: number, ii: number): void {
+    const arr = this.getDyeingInputItems(ri, ci);
+    const materialRowId = arr.at(ii).value.material_RowId;
+    if (!materialRowId || materialRowId === 0) {
+      if (arr.length > 1) arr.removeAt(ii);
+      return;
+    }
+    this.contractFormService
+      .removeMaterialItemApi(materialRowId)
+      .then(() => {
+        if (arr.length > 1) arr.removeAt(ii);
+      })
+      .catch(() => console.error('Failed to remove dyeing input item'));
+  }
+
+  removeKnittingInputItem(ri: number, ii: number, iii: number) {
+    const arr = this.getKnittingInputItems(ri, ii);
+    const materialRowId = arr.at(iii).value.material_RowId;
+    if (!materialRowId || materialRowId === 0) {
+      if (arr.length > 1) arr.removeAt(iii);
+      return;
+    }
+    this.contractFormService
+      .removeMaterialItemApi(materialRowId)
+      .then(() => {
+        if (arr.length > 1) arr.removeAt(iii);
+      })
+      .catch(() => console.error('Failed to remove knitting input item'));
+  }
+
   removeDyeingColorGroupWithDb(ri: number, ci: number): void {
-    const materialIds = this.getDyeingColorItems(ri, ci)
-      .controls.map((c) => c.value.material_RowId)
-      .filter((id) => id && id !== 0);
+    const materialIds = this.getDyeingInputItems(ri, ci)
+      .controls.map((c: any) => c.value.material_RowId)
+      .filter((id: any) => id && id !== 0);
     if (materialIds.length === 0) {
       if (this.getDyeingRequired(ri).length > 1) this.getDyeingRequired(ri).removeAt(ci);
       return;
@@ -976,7 +867,289 @@ export class IkgsContractForm implements OnInit {
       .catch(() => console.error('Failed to remove cutting input item'));
   }
 
-  // ── Navigation ────────────────────────────────────────────
+  //#endregion
+
+  //#region Stage Save Status
+
+  getStageSaveStatus(stage_Id: number): 'saving' | 'saved' | 'error' | null {
+    return this.stageSaveStatus()[stage_Id] ?? 0;
+  }
+
+  isStageSaving(stage_Id: number): boolean {
+    return this.stageSaveStatus()[stage_Id] === 'saving';
+  }
+
+  //#endregion
+
+  //#region LOV Loading
+
+  getAllWoShortAsync() {
+    this.contractFormService.getAllWoShortAsync().subscribe((res: any) => {
+      if (res?.Code === 200 && res.Data) this.allWos.set(res.Data);
+    });
+  }
+
+  getOrderStagesShortAsync() {
+    this.contractFormService.getOrderStagesShortAsync().subscribe((res: any) => {
+      if (res?.Code === 200 && res.Data) this.allContarctStages.set(res.Data);
+    });
+  }
+
+  getAllPartiesBystage_IdAsync(stage_Id: number) {
+    this.contractFormService.getAllPartiesBystage_IdAsync(stage_Id).subscribe((res: any) => {
+      if (res?.Code === 200 && res.Data)
+        this.allPartiesByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
+    });
+  }
+
+  getAllUOMAsync() {
+    this.contractFormService.getAllUOMAsync().subscribe((res: any) => {
+      if (res?.Code === 200 && res.Data) this.allUoms.set(res.Data);
+    });
+  }
+
+  //#endregion
+
+  //#region API Calls
+
+  GetAllItemsByStageIdAsync(wo: number, stage_Id: number, isParent: boolean, param?: string[]) {
+    this.contractFormService
+      .GetAllItemsByStageIdAsync(wo, stage_Id, isParent, param)
+      .subscribe((res: any) => {
+        if (res?.Code === 200 && res.Data) {
+          if (stage_Id === 0 || stage_Id === 1) {
+            if (isParent)
+              this.allMaterialsByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
+            else {
+              let parentId = 0;
+              if (param && param.length > 0) parentId = parseInt(param[0]);
+              this.allInputItemsByKnittingRow.update((prev) => ({ ...prev, [parentId]: res.Data }));
+            }
+          } else if (stage_Id === 2) {
+            if (isParent)
+              this.allMaterialsByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
+            else {
+              let colorId = 0;
+              if (param && param.length > 0) colorId = parseInt(param[0]);
+              this.allDyeingItemsByColor.update((prev) => ({ ...prev, [colorId]: res.Data }));
+            }
+          }
+        }
+      });
+  }
+
+  //#endregion
+
+  //#region DTO Builders
+
+  buildStageDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
+    if (stage_Id === 0) return this.buildYarnDtos(stage_Id, contractId);
+    if (stage_Id === 1) return this.buildKnittingDtos(stage_Id, contractId);
+    if (stage_Id === 2) return this.buildDyeingDtos(stage_Id, contractId);
+    return this.buildCuttingDtos(stage_Id, contractId);
+  }
+
+  private buildYarnDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
+    const v = this.yarnStage.value;
+    const materials: ContractsMaterialsDto[] = (v.yarnItems || []).map((m: any) => ({
+      material_RowId: m.material_RowId ?? 0,
+      item_Id: m.material_Id ?? 0,
+      qty: m.fiber_Qty ?? 0,
+      is_Active: 'Y',
+    }));
+    return [
+      {
+        contract_Id: contractId,
+        stage_Id,
+        stage_RowId: (this.yarnStage as any)['_stage_RowId'] ?? 0,
+        party_Id: v.party_Id ?? 0,
+        req_Qty: v.qty ?? 0,
+        uom: v.uom_Id ?? 0,
+        plan_SDat: v.fromDate ?? null,
+        plan_EDat: v.toDate ?? null,
+        is_Active: 'Y',
+        materialsList: materials,
+      },
+    ];
+  }
+
+  private buildKnittingDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
+    return this.knittingStage.controls.map((ctrl) => {
+      const v = ctrl.value;
+      const materials: ContractsMaterialsDto[] = [];
+      (v.required || []).forEach((req: any) => {
+        const reqMatRowId = req.material_RowId ?? 0;
+        materials.push({
+          material_RowId: reqMatRowId,
+          item_Id: req.material_Id ?? 0,
+          qty: req.item1_Qty ?? 0,
+          is_Active: 'Y',
+          mat_Type: 'R',
+          parent_Mat_RowId: 0,
+        });
+        (req.inputItems || []).forEach((inp: any) => {
+          materials.push({
+            material_RowId: inp.material_RowId ?? 0,
+            item_Id: inp.material_Id ?? 0,
+            qty: inp.item2_Qty ?? 0,
+            is_Active: 'Y',
+            mat_Type: 'I',
+            parent_Mat_RowId: reqMatRowId,
+          });
+        });
+      });
+      return {
+        contract_Id: contractId,
+        stage_Id,
+        stage_RowId: v.stage_RowId ?? 0,
+        party_Id: v.party_Id ?? 0,
+        req_Qty: v.qty ?? 0,
+        uom: v.uom_Id ?? 0,
+        plan_SDat: v.fromDate ?? null,
+        plan_EDat: v.toDate ?? null,
+        is_Active: 'Y',
+        materialsList: materials,
+      } as ContractsStagesDtlDto;
+    });
+  }
+
+  private buildDyeingDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
+    return this.dyeingStage.controls.map((ctrl) => {
+      const v = ctrl.value;
+      const materials: ContractsMaterialsDto[] = [];
+      (v.required || []).forEach((req: any) => {
+        const colorMatRowId = req.material_RowId ?? 0;
+        materials.push({
+          material_RowId: colorMatRowId,
+          item_Id: req.color_Id ?? 0,
+          qty: 0,
+          is_Active: 'Y',
+          mat_Type: 'R',
+          parent_Mat_RowId: 0,
+        });
+        (req.inputItems || []).forEach((inp: any) => {
+          materials.push({
+            material_RowId: inp.material_RowId ?? 0,
+            item_Id: inp.item1_Id ?? 0,
+            qty: inp.item1_Qty ?? 0,
+            is_Active: 'Y',
+            mat_Type: 'I',
+            parent_Mat_RowId: colorMatRowId,
+          });
+        });
+      });
+      return {
+        contract_Id: contractId,
+        stage_Id,
+        stage_RowId: v.stage_RowId ?? 0,
+        party_Id: v.party_Id ?? 0,
+        req_Qty: v.qty ?? 0,
+        uom: v.uom_Id ?? 0,
+        plan_SDat: v.fromDate ?? null,
+        plan_EDat: v.toDate ?? null,
+        is_Active: 'Y',
+        materialsList: materials,
+      } as ContractsStagesDtlDto;
+    });
+  }
+
+  private buildCuttingDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
+    return this.cuttingStage.controls.map((ctrl) => {
+      const v = ctrl.value;
+      const materials: ContractsMaterialsDto[] = [];
+      (v.input || []).forEach((colorGroup: any) => {
+        (colorGroup.items || []).forEach((m: any) => {
+          materials.push({
+            material_RowId: m.material_RowId ?? 0,
+            item_Id: m.material_Id ?? 0,
+            qty: m.qty ?? 0,
+            is_Active: 'Y',
+          });
+        });
+      });
+      return {
+        contract_Id: contractId,
+        stage_Id,
+        stage_RowId: v.stage_RowId ?? 0,
+        party_Id: v.party_Id ?? 0,
+        color_Id: v.color_Id ?? 0,
+        size_Id: v.size_Id ?? 0,
+        req_Qty: v.qty ?? 0,
+        uom: v.uom_Id ?? 0,
+        plan_SDat: v.fromDate ?? null,
+        plan_EDat: v.toDate ?? null,
+        is_Active: 'Y',
+        materialsList: materials,
+      } as ContractsStagesDtlDto;
+    });
+  }
+
+  //#endregion
+
+  //#region Save
+
+  onSubmit() {
+    if (!this.contractForm.valid) return;
+
+    const saveAll = () => {
+      const active = this.getActiveStepLabels();
+      return active.reduce((chain, stage) => {
+        return chain.then(() => {
+          const dtos = this.buildStageDtos(stage.index, this.contractId!);
+          return dtos.reduce(
+            (c, dto) =>
+              c.then(() =>
+                this.contractFormService
+                  .saveStageRow(dto)
+                  .then((saved) => this.updateFormAfterSave(saved)),
+              ),
+            Promise.resolve(),
+          );
+        });
+      }, Promise.resolve());
+    };
+
+    const afterSave = () => {
+      this.isEditMode = !!this.contractId;
+      if (this.isEditMode) this.isEdit();
+    };
+
+    if (!this.contractId) {
+      this.saveMaster((contractId: number) => {
+        this.contractId = contractId;
+        saveAll()
+          .then(afterSave)
+          .catch((err) => console.error('Save failed:', err));
+      });
+    } else {
+      saveAll()
+        .then(afterSave)
+        .catch((err) => console.error('Save failed:', err));
+    }
+  }
+
+  private saveMaster(onSuccess: (contractId: number) => void): void {
+    const masterDto: ContractsMasterDto = {
+      contract_Id: this.contractId ?? 0,
+      wo: this.contractForm.get('WorkOrder')?.value,
+      lock_Flag: 'N',
+    };
+    this.contractFormService.saveMaster(masterDto).subscribe({
+      next: (res: any) => {
+        if (res?.Code === 200 && res.Data?.contract_Id) {
+          onSuccess(res.Data.contract_Id);
+        } else {
+          this.stageSaveStatus.update((s) => ({ ...s, [this.step()]: 'error' }));
+        }
+      },
+      error: () => this.stageSaveStatus.update((s) => ({ ...s, [this.step()]: 'error' })),
+    });
+  }
+
+  //#endregion
+
+  //#region Navigation
+
   backArrowBtn(): void {
     this.router.navigate(['/ikgs/contract']);
   }
@@ -984,4 +1157,6 @@ export class IkgsContractForm implements OnInit {
   patchValues(value: any) {
     console.log(value);
   }
+
+  
 }

@@ -66,12 +66,30 @@ export function createKnittingEntry(fb: FormBuilder): FormGroup {
 }
 
 // ── Stage 2: Dyeing ───────────────────────────────────────────
+
+/** One item row under a color group: item1 (required) + item2 (input, auto-filled) */
+export function createDyeingInputItem(fb: FormBuilder): FormGroup {
+  return fb.group({
+    item1_Id: [0],
+    item1_Qty: [0],
+    item2_Id: [0],
+    item2_Qty: [0],
+    material_RowId: [0],
+  });
+}
+
+/** One color group: color dropdown + its item rows */
+export function createDyeingRequiredItem(fb: FormBuilder): FormGroup {
+  return fb.group({
+    color_Id: [0],
+    material_RowId: [0],
+    inputItems: fb.array([createDyeingInputItem(fb)]),
+  });
+}
 export function createDyeingEntry(fb: FormBuilder): FormGroup {
   return fb.group({
     ...createStageHeader(),
-    color_Id: [0],
-    required: fb.array([createColorItemGroup(fb)]),
-    input: fb.array([createMaterialItem(fb, 'qty')]),
+    required: fb.array([createDyeingRequiredItem(fb)]),    
   });
 }
 

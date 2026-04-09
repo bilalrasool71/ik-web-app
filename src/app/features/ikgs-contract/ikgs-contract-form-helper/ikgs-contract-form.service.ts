@@ -54,7 +54,7 @@ export class IkgsContractFormService {
     wo: number,
     stage_Id: number,
     isParent: boolean,    
-    params?: string[],
+    param?: string[],
   ): Observable<any> {
     const opts = new ApiOptionsModel<GetWoItemsDto[]>();
     opts.RequestType = RequestType.GET;
@@ -64,7 +64,7 @@ export class IkgsContractFormService {
       { Key: 'wo', Value: wo, IsDate: false },
       { Key: 'stage_Id', Value: stage_Id, IsDate: false },
       { Key: 'isParent', Value: isParent, IsDate: false },
-      { Key: 'params', Value: params, IsDate: false },
+      { Key: 'param', Value: param, IsDate: false },
     ];
     return this.restService.CallApi<GetWoItemsDto[], GetWoItemsDto[]>(opts);
   }

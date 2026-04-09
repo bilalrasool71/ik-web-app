@@ -640,191 +640,150 @@
 
                     <!-- Content -->
                     <div class="p-5">
-                      <p class="text-xs font-bold text-indigo-600 italic mb-4">* for Dyeing</p>
-                      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Required: Color groups -->
-                        <div class="space-y-3">
-                          <div class="flex items-center justify-between">
-                            <span
-                              class="text-[10px] font-bold text-slate-600 uppercase tracking-wider"
-                              >Required</span
-                            >
-                            <button
-                              type="button"
-                              (click)="addDyeingColorGroup(ri)"
-                              class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
-                            >
-                              <i class="pi pi-plus text-[10px]"></i> Add Color
-                            </button>
-                          </div>
-                          <div formArrayName="required" class="space-y-3">
-                            @for (cg of getDyeingRequired(ri).controls; track cg; let ci = $index) {
-                              <div
-                                class="rounded-xl border border-slate-200 overflow-hidden"
-                                [formGroupName]="ci"
-                              >
-                                <div
-                                  class="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100"
-                                >
-                                  <p-select
-                                    [options]="allColors()"
-                                    optionLabel="viewValue"
-                                    optionValue="value"
-                                    formControlName="color_Id"
-                                    placeholder="Select Color"
-                                    [filter]="true"
-                                    appendTo="body"
-                                    class="flex-1"
-                                  />
-                                  <button
-                                    type="button"
-                                    (click)="addDyeingColorItem(ri, ci)"
-                                    class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition-colors shrink-0"
-                                  >
-                                    <i class="pi pi-plus text-[9px]"></i> Item
-                                  </button>
-                                  <button
-                                    type="button"
-                                    (click)="removeDyeingColorGroupWithDb(ri, ci)"
-                                    [disabled]="getDyeingRequired(ri).length <= 1"
-                                    class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors"
-                                  >
-                                    <i class="pi pi-minus text-[9px]"></i>
-                                  </button>
-                                </div>
-                                <table class="w-full border-collapse">
-                                  <tbody formArrayName="items">
-                                    @for (
-                                      item of getDyeingColorItems(ri, ci).controls;
-                                      track item;
-                                      let ii = $index
-                                    ) {
-                                      <tr class="border-t border-slate-50" [formGroupName]="ii">
-                                        <td class="px-4 py-2">
-                                          <p-select
-                                            [options]="getMaterialItemsByStage(step())"
-                                            optionLabel="fiber_Ds"
-                                            optionValue="fiber_Id"
-                                            formControlName="material_Id"
-                                            placeholder="Select material"
-                                            [filter]="true"
-                                            appendTo="body"
-                                            class="w-full"
-                                          />
-                                        </td>
-                                        <td class="px-4 py-2 w-28">
-                                          <input
-                                            pInputText
-                                            type="number"
-                                            formControlName="qty"
-                                            placeholder="qty"
-                                            class="w-full"
-                                          />
-                                        </td>
-                                        <td class="px-2 py-2 w-10 text-center">
-                                          <button
-                                            type="button"
-                                            (click)="
-                                              removeMaterialItem(
-                                                item.value.material_RowId,
-                                                2,
-                                                ri,
-                                                ii
-                                              )
-                                            "
-                                            [disabled]="getDyeingColorItems(ri, ci).length <= 1"
-                                            class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto"
-                                          >
-                                            <i class="pi pi-times text-[9px]"></i>
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    }
-                                  </tbody>
-                                </table>
-                              </div>
-                            }
-                          </div>
-                        </div>
+                      <div class="flex items-center justify-between mb-4">
+                        <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider"
+                          >Required Items by Color</span
+                        >
+                        <button
+                          type="button"
+                          (click)="addDyeingColorGroup(ri)"
+                          class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
+                        >
+                          <i class="pi pi-plus text-[10px]"></i> Add Color
+                        </button>
+                      </div>
 
-                        <!-- Input -->
-                        <div class="rounded-2xl border border-slate-200 overflow-hidden">
+                      <div formArrayName="required" class="space-y-4">
+                        @for (cg of getDyeingRequired(ri).controls; track cg; let ci = $index) {
                           <div
-                            class="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100"
+                            class="rounded-xl border border-slate-200 overflow-hidden"
+                            [formGroupName]="ci"
                           >
-                            <span
-                              class="text-[10px] font-bold text-slate-600 uppercase tracking-wider"
-                              >Input</span
+                            <!-- Color header row -->
+                            <div
+                              class="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100"
                             >
-                            <button
-                              type="button"
-                              (click)="addDyeingInput(ri)"
-                              class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
-                            >
-                              <i class="pi pi-plus text-[10px]"></i> Add
-                            </button>
-                          </div>
-                          <table class="w-full border-collapse">
-                            <thead class="bg-slate-50/50">
-                              <tr>
-                                <th
-                                  class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase"
-                                >
-                                  Item
-                                </th>
-                                <th
-                                  class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase w-28"
-                                >
-                                  Qty
-                                </th>
-                                <th class="w-10"></th>
-                              </tr>
-                            </thead>
-                            <tbody formArrayName="input">
-                              @for (
-                                item of getDyeingInput(ri).controls;
-                                track item;
-                                let ii = $index
-                              ) {
-                                <tr class="border-t border-slate-50" [formGroupName]="ii">
-                                  <td class="px-4 py-2">
-                                    <p-select
-                                      [options]="getMaterialItemsByStage(step())"
-                                      optionLabel="fiber_Ds"
-                                      optionValue="fiber_Id"
-                                      formControlName="material_Id"
-                                      placeholder="Select"
-                                      [filter]="true"
-                                      appendTo="body"
-                                      class="w-full"
-                                    />
-                                  </td>
-                                  <td class="px-4 py-2">
-                                    <input
-                                      pInputText
-                                      type="number"
-                                      formControlName="qty"
-                                      placeholder="0.00"
-                                      class="w-full"
-                                    />
-                                  </td>
-                                  <td class="px-2 py-2 text-center">
-                                    <button
-                                      type="button"
-                                      (click)="
-                                        removeMaterialItem(item.value.material_RowId, 2, ri, ii)
-                                      "
-                                      [disabled]="getDyeingInput(ri).length <= 1"
-                                      class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto"
-                                    >
-                                      <i class="pi pi-times text-[9px]"></i>
-                                    </button>
-                                  </td>
+                              <p-select
+                                [options]="getColorRequiredItems(ri, ci)"
+                                optionLabel="colorDs1"
+                                optionValue="color1"
+                                formControlName="color_Id"
+                                placeholder="Select Color"
+                                [filter]="true"
+                                appendTo="body"
+                                class="flex-1"
+                                (onChange)="onDyeingColorChange(ri, ci)"
+                              />
+                              <button
+                                type="button"
+                                (click)="addDyeingInputItem(ri, ci)"
+                                class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition-colors shrink-0"
+                              >
+                                <i class="pi pi-plus text-[9px]"></i> Item
+                              </button>
+                              <button
+                                type="button"
+                                (click)="removeDyeingColorGroupWithDb(ri, ci)"
+                                [disabled]="getDyeingRequired(ri).length <= 1"
+                                class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors"
+                              >
+                                <i class="pi pi-minus text-[9px]"></i>
+                              </button>
+                            </div>
+
+                            <!-- Input items table -->
+                            <table class="w-full border-collapse">
+                              <thead class="bg-slate-50/50">
+                                <tr>
+                                  <th
+                                    class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase"
+                                  >
+                                    Required Item
+                                  </th>
+                                  <th
+                                    class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase w-24"
+                                  >
+                                    Qty
+                                  </th>
+                                  <th
+                                    class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase"
+                                  >
+                                    Input Item
+                                  </th>
+                                  <th
+                                    class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase w-24"
+                                  >
+                                    Qty
+                                  </th>
+                                  <th class="w-10"></th>
                                 </tr>
-                              }
-                            </tbody>
-                          </table>
-                        </div>
+                              </thead>
+                              <tbody formArrayName="inputItems">
+                                @for (
+                                  inp of getDyeingInputItems(ri, ci).controls;
+                                  track inp;
+                                  let ii = $index
+                                ) {
+                                  <tr class="border-t border-slate-50" [formGroupName]="ii">
+                                    <td class="px-4 py-2">
+                                      <p-select
+                                        [options]="getDyeingAvailableItems(ri, ci, ii)"
+                                        optionLabel="item_Ds1"
+                                        optionValue="item1"
+                                        formControlName="item1_Id"
+                                        placeholder="Select item"
+                                        [filter]="true"
+                                        appendTo="body"
+                                        class="w-full"
+                                        (onChange)="onDyeingItemChange($event.value, ri, ci, ii)"
+                                      />
+                                    </td>
+                                    <td class="px-4 py-2 w-24">
+                                      <input
+                                        pInputText
+                                        type="number"
+                                        formControlName="item1_Qty"
+                                        placeholder="0.00"
+                                        [readonly]="true"
+                                        class="w-full bg-slate-50"
+                                      />
+                                    </td>
+                                    <td class="px-4 py-2">
+                                      <input
+                                        pInputText
+                                        type="text"
+                                        [value]="inp.value?.item2_Id || ''"
+                                        placeholder="Auto-filled"
+                                        [readonly]="true"
+                                        class="w-full bg-slate-50 text-slate-500"
+                                      />
+                                    </td>
+                                    <td class="px-4 py-2 w-24">
+                                      <input
+                                        pInputText
+                                        type="number"
+                                        formControlName="item2_Qty"
+                                        placeholder="0.00"
+                                        [readonly]="true"
+                                        class="w-full bg-slate-50"
+                                      />
+                                    </td>
+                                    <td class="px-2 py-2 w-10 text-center">
+                                      <button
+                                        type="button"
+                                        (click)="removeDyeingInputItemWithDb(ri, ci, ii)"
+                                        [disabled]="getDyeingInputItems(ri, ci).length <= 1"
+                                        class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto"
+                                      >
+                                        <i class="pi pi-times text-[9px]"></i>
+                                      </button>
+                                    </td>
+                                  </tr>
+                                }
+                              </tbody>
+                            </table>
+                          </div>
+                        }
                       </div>
                     </div>
                   </div>
