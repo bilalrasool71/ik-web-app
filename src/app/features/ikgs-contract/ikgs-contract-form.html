@@ -738,33 +738,22 @@
                                         (onChange)="onDyeingItemChange($event.value, ri, ci, ii)"
                                       />
                                     </td>
-                                    <td class="px-4 py-2 w-24">
+                                    <td class="px-4 py-2 w-40">
                                       <input
                                         pInputText
                                         type="number"
                                         formControlName="item1_Qty"
                                         placeholder="0.00"
-                                        [readonly]="true"
                                         class="w-full bg-slate-50"
                                       />
                                     </td>
-                                    <td class="px-4 py-2">
-                                      <input
-                                        pInputText
-                                        type="text"
-                                        [value]="inp.value?.item2_Id || ''"
-                                        placeholder="Auto-filled"
-                                        [readonly]="true"
-                                        class="w-full bg-slate-50 text-slate-500"
-                                      />
-                                    </td>
-                                    <td class="px-4 py-2 w-24">
+                                    
+                                    <td class="px-4 py-2 w-40">
                                       <input
                                         pInputText
                                         type="number"
                                         formControlName="item2_Qty"
                                         placeholder="0.00"
-                                        [readonly]="true"
                                         class="w-full bg-slate-50"
                                       />
                                     </td>

@@ -1,3 +1,4 @@
+import { Observable, tap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Component, inject, Input, OnInit, signal, WritableSignal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
@@ -202,7 +203,7 @@ export class IkgsContractForm implements OnInit {
             });
 
             if (wo && reqMat.item_Id)
-              this.GetAllItemsByStageIdAsync(wo, 1, false, [reqMat.item_Id.toString()]);
+              this.GetAllItemsByStageIdAsync(wo, 1, false, [reqMat.item_Id.toString()]).subscribe();
             const childInputs = inputMats.filter(
               (m) => m.parent_Mat_RowId === reqMat.material_RowId,
             );
@@ -246,7 +247,11 @@ export class IkgsContractForm implements OnInit {
         });
 
         const colorMats = row.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
-        const inputMats = row.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
+        const allInputMats = row.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
+        const colorRowIds = new Set(colorMats.map((c) => c.material_RowId));
+        const item1Mats = allInputMats.filter((m) => colorRowIds.has(m.parent_Mat_RowId ?? 0));
+        const item1RowIds = new Set(item1Mats.map((m) => m.material_RowId));
+        const item2Mats = allInputMats.filter((m) => item1RowIds.has(m.parent_Mat_RowId ?? 0));
         const reqArr = entry.get('required') as FormArray;
         reqArr.clear();
 
@@ -259,25 +264,35 @@ export class IkgsContractForm implements OnInit {
             });
 
             if (wo && colorMat.item_Id)
-              this.GetAllItemsByStageIdAsync(wo, 2, false, [colorMat.item_Id.toString()]);
+              this.GetAllItemsByStageIdAsync(wo, 2, false, [colorMat.item_Id.toString()]).subscribe();
 
-            const childInputs = inputMats.filter(
+            const childItem1s = item1Mats.filter(
               (m) => m.parent_Mat_RowId === colorMat.material_RowId,
             );
             const inputArr = colorGroup.get('inputItems') as FormArray;
             inputArr.clear();
 
-            if (childInputs.length) {
-              childInputs.forEach((inp) => {
+            if (childItem1s.length) {
+              for (let index = 0; index < childItem1s.length; index++) {
+                 let inp1 = childItem1s[index++];
+                 let inp2 = childItem1s[index];
                 const inpItem = createDyeingInputItem(this.fb);
+                const item2 = item2Mats.find((m) => m.parent_Mat_RowId === inp1.material_RowId);
                 inpItem.patchValue({
-                  item1_Id: inp.item_Id ?? 0,
-                  item1_Qty: inp.qty ?? 0,
-                  material_RowId: inp.material_RowId ?? 0,
+                  item1_Id: inp1.item_Id ?? 0,
+                  item1_Qty: inp1.qty ?? 0,
+                  material_RowId: inp1.material_RowId ?? 0,
+                  item2_Id: inp2?.item_Id ?? 0,
+                  item2_Qty: inp2?.qty ?? 0,
+                  item2_material_RowId: item2?.material_RowId ?? 0,                  
                 });
                 inputArr.push(inpItem);
-              });
+              
+                
+              }
+             
             }
+
             reqArr.push(colorGroup);
           });
         } else {
@@ -344,7 +359,7 @@ export class IkgsContractForm implements OnInit {
     parentId: number,
   ) {
     if (wo && !this.allMaterialsByStage()[stage_Id])
-      this.GetAllItemsByStageIdAsync(wo, stage_Id, isParent, [parentId.toString()]);
+      this.GetAllItemsByStageIdAsync(wo, stage_Id, isParent, [parentId.toString()]).subscribe();
     if (!this.allPartiesByStage()[stage_Id]) this.getAllPartiesBystage_IdAsync(stage_Id);
   }
 
@@ -393,7 +408,7 @@ export class IkgsContractForm implements OnInit {
         this.step(),
         false,
         [value.toString()],
-      );
+      ).subscribe();
     }
   }
 
@@ -411,7 +426,7 @@ export class IkgsContractForm implements OnInit {
     const inputArr = this.getDyeingInputItems(ri, ci);
     inputArr.clear();
     inputArr.push(createDyeingInputItem(this.fb));
-    this.GetAllItemsByStageIdAsync(wo, 2, false, [colorId.toString()]);
+    this.GetAllItemsByStageIdAsync(wo, 2, false, [colorId.toString()]).subscribe();
   }
 
   onDyeingItemChange(value: number, ri: number, ci: number, ii: number): void {
@@ -912,30 +927,32 @@ export class IkgsContractForm implements OnInit {
 
   //#region API Calls
 
-  GetAllItemsByStageIdAsync(wo: number, stage_Id: number, isParent: boolean, param?: string[]) {
-    this.contractFormService
+  GetAllItemsByStageIdAsync(wo: number, stage_Id: number, isParent: boolean, param?: string[]): Observable<any> {
+    return this.contractFormService
       .GetAllItemsByStageIdAsync(wo, stage_Id, isParent, param)
-      .subscribe((res: any) => {
-        if (res?.Code === 200 && res.Data) {
-          if (stage_Id === 0 || stage_Id === 1) {
-            if (isParent)
-              this.allMaterialsByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
-            else {
-              let parentId = 0;
-              if (param && param.length > 0) parentId = parseInt(param[0]);
-              this.allInputItemsByKnittingRow.update((prev) => ({ ...prev, [parentId]: res.Data }));
-            }
-          } else if (stage_Id === 2) {
-            if (isParent)
-              this.allMaterialsByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
-            else {
-              let colorId = 0;
-              if (param && param.length > 0) colorId = parseInt(param[0]);
-              this.allDyeingItemsByColor.update((prev) => ({ ...prev, [colorId]: res.Data }));
+      .pipe(
+        tap((res: any) => {
+          if (res?.Code === 200 && res.Data) {
+            if (stage_Id === 0 || stage_Id === 1) {
+              if (isParent)
+                this.allMaterialsByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
+              else {
+                let parentId = 0;
+                if (param && param.length > 0) parentId = parseInt(param[0]);
+                this.allInputItemsByKnittingRow.update((prev) => ({ ...prev, [parentId]: res.Data }));
+              }
+            } else if (stage_Id === 2) {
+              if (isParent)
+                this.allMaterialsByStage.update((prev) => ({ ...prev, [stage_Id]: res.Data }));
+              else {
+                let colorId = 0;
+                if (param && param.length > 0) colorId = parseInt(param[0]);
+                this.allDyeingItemsByColor.update((prev) => ({ ...prev, [colorId]: res.Data }));
+              }
             }
           }
-        }
-      });
+        }),
+      );
   }
 
   //#endregion
@@ -1028,13 +1045,22 @@ export class IkgsContractForm implements OnInit {
           parent_Mat_RowId: 0,
         });
         (req.inputItems || []).forEach((inp: any) => {
+          const item1RowId = inp.material_RowId ?? 0;
           materials.push({
-            material_RowId: inp.material_RowId ?? 0,
+            material_RowId: item1RowId,
             item_Id: inp.item1_Id ?? 0,
             qty: inp.item1_Qty ?? 0,
             is_Active: 'Y',
             mat_Type: 'I',
             parent_Mat_RowId: colorMatRowId,
+          });
+          materials.push({
+            material_RowId: inp.item2_material_RowId ?? 0,
+            item_Id: inp.item2_Id ?? 0,
+            qty: inp.item2_Qty ?? 0,
+            is_Active: 'Y',
+            mat_Type: 'I',
+            parent_Mat_RowId: item1RowId,
           });
         });
       });

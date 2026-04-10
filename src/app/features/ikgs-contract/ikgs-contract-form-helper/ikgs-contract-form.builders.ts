@@ -75,6 +75,7 @@ export function createDyeingInputItem(fb: FormBuilder): FormGroup {
     item2_Id: [0],
     item2_Qty: [0],
     material_RowId: [0],
+    item2_material_RowId: [0],
   });
 }
 
