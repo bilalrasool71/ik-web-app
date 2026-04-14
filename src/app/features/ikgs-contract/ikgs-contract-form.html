@@ -782,7 +782,7 @@
           }
 
           <!-- ══════════════════════════════════════════════════════════
-             STAGE 3+ · CUTTING ONWARDS — required: color→size→items | input: color→items
+             STAGE 3+ · CUTTING — Required: color→size→items | Input: hover-driven color→items
         ═══════════════════════════════════════════════════════════ -->
           @if (step() >= 3) {
             <div class="space-y-5">
@@ -874,17 +874,15 @@
                       </div>
                     </div>
 
-                    <!-- Content -->
+                    <!-- Content: Required (left) | Input (right, hover-driven) -->
                     <div class="p-5">
                       <p class="text-xs font-bold text-indigo-600 italic mb-4">* for Cutting</p>
                       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Required: Color → Size → Items -->
+
+                        <!-- ── Group 2: Required — Color → Size → Items ── -->
                         <div class="space-y-3">
                           <div class="flex items-center justify-between">
-                            <span
-                              class="text-[10px] font-bold text-slate-600 uppercase tracking-wider"
-                              >Required</span
-                            >
+                            <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Required</span>
                             <button
                               type="button"
                               (click)="addCuttingColorGroup(ri)"
@@ -893,30 +891,30 @@
                               <i class="pi pi-plus text-[10px]"></i> Add Color
                             </button>
                           </div>
+
                           <div formArrayName="required" class="space-y-3">
-                            @for (
-                              cg of getCuttingRequired(ri).controls;
-                              track cg;
-                              let ci = $index
-                            ) {
+                            @for (cg of getCuttingRequired(ri).controls; track cg; let ci = $index) {
                               <div
-                                class="rounded-xl border border-slate-200 overflow-hidden"
+                                class="rounded-xl border overflow-hidden transition-all cursor-pointer"
+                                [class]="getHoveredCuttingColor(ri) === ci
+                                  ? 'border-indigo-400 ring-2 ring-indigo-200'
+                                  : 'border-slate-200'"
                                 [formGroupName]="ci"
+                                (mouseenter)="setHoveredCuttingColor(ri, ci)"
                               >
-                                <!-- Color row -->
-                                <div
-                                  class="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100"
-                                >
+                                <!-- Color header row -->
+                                <div class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
                                   <div class="w-2 h-4 bg-indigo-400 rounded-full shrink-0"></div>
                                   <p-select
-                                    [options]="allColors()"
-                                    optionLabel="viewValue"
-                                    optionValue="value"
+                                    [options]="getCuttingColors()"
+                                    optionLabel="colorDs1"
+                                    optionValue="color1"
                                     formControlName="color_Id"
                                     placeholder="Select Color"
                                     [filter]="true"
                                     appendTo="body"
                                     class="flex-1"
+                                    (onChange)="onCuttingColorChange(ri, ci, $event.value)"
                                   />
                                   <button
                                     type="button"
@@ -929,34 +927,29 @@
                                     type="button"
                                     (click)="removeCuttingColorGroupWithDb(ri, ci)"
                                     [disabled]="getCuttingRequired(ri).length <= 1"
-                                    class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors"
+                                    class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors shrink-0"
                                   >
                                     <i class="pi pi-minus text-[9px]"></i>
                                   </button>
                                 </div>
+
                                 <!-- Size groups -->
                                 <div formArrayName="sizes" class="divide-y divide-slate-50">
-                                  @for (
-                                    sg of getCuttingRequiredSizes(ri, ci).controls;
-                                    track sg;
-                                    let si = $index
-                                  ) {
+                                  @for (sg of getCuttingRequiredSizes(ri, ci).controls; track sg; let si = $index) {
                                     <div [formGroupName]="si">
-                                      <div
-                                        class="flex items-center gap-3 px-4 py-2 bg-slate-50/40 border-b border-slate-50"
-                                      >
-                                        <div
-                                          class="w-1.5 h-3 bg-emerald-400 rounded-full ml-3 shrink-0"
-                                        ></div>
+                                      <!-- Size row -->
+                                      <div class="flex items-center gap-2 px-4 py-2 bg-slate-50/40 border-b border-slate-50">
+                                        <div class="w-1.5 h-3 bg-emerald-400 rounded-full ml-3 shrink-0"></div>
                                         <p-select
-                                          [options]="allSizes()"
-                                          optionLabel="viewValue"
-                                          optionValue="value"
+                                          [options]="getCuttingSizesByColor(getCuttingRequired(ri).at(ci).value.color_Id)"
+                                          optionLabel="sizeDs1"
+                                          optionValue="sizeId1"
                                           formControlName="size_Id"
                                           placeholder="Select Size"
                                           [filter]="true"
                                           appendTo="body"
                                           class="flex-1"
+                                          (onChange)="onCuttingSizeChange(ri, ci, si, $event.value)"
                                         />
                                         <button
                                           type="button"
@@ -969,34 +962,35 @@
                                           type="button"
                                           (click)="removeCuttingSizeWithDb(ri, ci, si)"
                                           [disabled]="getCuttingRequiredSizes(ri, ci).length <= 1"
-                                          class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors"
+                                          class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors shrink-0"
                                         >
                                           <i class="pi pi-minus text-[9px]"></i>
                                         </button>
                                       </div>
+
                                       <!-- Items for this size -->
                                       <table class="w-full border-collapse">
                                         <tbody formArrayName="items">
                                           @for (
-                                            item of getCuttingRequiredSizeItems(ri, ci, si)
-                                              .controls;
+                                            item of getCuttingRequiredSizeItems(ri, ci, si).controls;
                                             track item;
                                             let ii = $index
                                           ) {
-                                            <tr
-                                              class="border-t border-slate-50"
-                                              [formGroupName]="ii"
-                                            >
+                                            <tr class="border-t border-slate-50" [formGroupName]="ii">
                                               <td class="pl-10 pr-4 py-2">
                                                 <p-select
-                                                  [options]="getMaterialItemsByStage(step())"
-                                                  optionLabel="fiber_Ds"
-                                                  optionValue="fiber_Id"
+                                                  [options]="getCuttingItemsByColorSize(
+                                                    getCuttingRequired(ri).at(ci).value.color_Id,
+                                                    getCuttingRequiredSizes(ri, ci).at(si).value.size_Id
+                                                  )"
+                                                  optionLabel="item_Ds1"
+                                                  optionValue="item1"
                                                   formControlName="material_Id"
-                                                  placeholder="Select material"
+                                                  placeholder="Select Item"
                                                   [filter]="true"
                                                   appendTo="body"
                                                   class="w-full"
+                                                  (onChange)="onCuttingRequiredItemChange(ri, ci, si, ii, $event.value)"
                                                 />
                                               </td>
                                               <td class="px-4 py-2 w-28">
@@ -1004,20 +998,15 @@
                                                   pInputText
                                                   type="number"
                                                   formControlName="qty"
-                                                  placeholder="qty"
+                                                  placeholder="0.00"
                                                   class="w-full"
                                                 />
                                               </td>
                                               <td class="px-2 py-2 w-10 text-center">
                                                 <button
                                                   type="button"
-                                                  (click)="
-                                                    removeCuttingSizeItemWithDb(ri, ci, si, ii)
-                                                  "
-                                                  [disabled]="
-                                                    getCuttingRequiredSizeItems(ri, ci, si)
-                                                      .length <= 1
-                                                  "
+                                                  (click)="removeCuttingSizeItemWithDb(ri, ci, si, ii)"
+                                                  [disabled]="getCuttingRequiredSizeItems(ri, ci, si).length <= 1"
                                                   class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto"
                                                 >
                                                   <i class="pi pi-times text-[9px]"></i>
@@ -1035,104 +1024,76 @@
                           </div>
                         </div>
 
-                        <!-- Input: Color → Items -->
-                        <div class="space-y-3">
-                          <div class="flex items-center justify-between">
-                            <span
-                              class="text-[10px] font-bold text-slate-600 uppercase tracking-wider"
-                              >Input</span
-                            >
-                            <button
-                              type="button"
-                              (click)="addCuttingInputColor(ri)"
-                              class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
-                            >
-                              <i class="pi pi-plus text-[10px]"></i> Add Color
-                            </button>
-                          </div>
-                          <div formArrayName="input" class="space-y-3">
-                            @for (cg of getCuttingInput(ri).controls; track cg; let ci = $index) {
-                              <div
-                                class="rounded-xl border border-slate-200 overflow-hidden"
-                                [formGroupName]="ci"
-                              >
-                                <div
-                                  class="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100"
-                                >
-                                  <div class="w-2 h-4 bg-violet-400 rounded-full shrink-0"></div>
-                                  <p-select
-                                    [options]="allColors()"
-                                    optionLabel="viewValue"
-                                    optionValue="value"
-                                    formControlName="color_Id"
-                                    placeholder="Select Color"
-                                    [filter]="true"
-                                    appendTo="body"
-                                    class="flex-1"
-                                  />
-                                  <button
-                                    type="button"
-                                    (click)="addCuttingInputItem(ri, ci)"
-                                    class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 shrink-0"
-                                  >
-                                    <i class="pi pi-plus text-[9px]"></i> Item
-                                  </button>
-                                  <button
-                                    type="button"
-                                    (click)="removeCuttingInputColorWithDb(ri, ci)"
-                                    [disabled]="getCuttingInput(ri).length <= 1"
-                                    class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors"
-                                  >
-                                    <i class="pi pi-minus text-[9px]"></i>
-                                  </button>
-                                </div>
-                                <table class="w-full border-collapse">
-                                  <tbody formArrayName="items">
-                                    @for (
-                                      item of getCuttingInputItems(ri, ci).controls;
-                                      track item;
-                                      let ii = $index
-                                    ) {
-                                      <tr class="border-t border-slate-50" [formGroupName]="ii">
-                                        <td class="px-4 py-2">
-                                          <p-select
-                                            [options]="getMaterialItemsByStage(step())"
-                                            optionLabel="fiber_Ds"
-                                            optionValue="fiber_Id"
-                                            formControlName="material_Id"
-                                            placeholder="Select material"
-                                            [filter]="true"
-                                            appendTo="body"
-                                            class="w-full"
-                                          />
-                                        </td>
-                                        <td class="px-4 py-2 w-28">
-                                          <input
-                                            pInputText
-                                            type="number"
-                                            formControlName="qty"
-                                            placeholder="qty"
-                                            class="w-full"
-                                          />
-                                        </td>
-                                        <td class="px-2 py-2 w-10 text-center">
-                                          <button
-                                            type="button"
-                                            (click)="removeCuttingInputItemWithDb(ri, ci, ii)"
-                                            [disabled]="getCuttingInputItems(ri, ci).length <= 1"
-                                            class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto"
-                                          >
-                                            <i class="pi pi-times text-[9px]"></i>
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    }
-                                  </tbody>
-                                </table>
-                              </div>
+                        <!-- ── Group 3: Input — hover-driven, no Add button ── -->
+                        <div class="rounded-2xl border border-slate-200 overflow-hidden self-start">
+                          <!-- Header: shows hovered color label -->
+                          <div class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                            <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Input</span>
+                            @if (getHoveredCuttingColorLabel(ri) !== 'Input Items') {
+                              <span class="text-[10px] text-indigo-500 font-bold italic">
+                                — {{ getHoveredCuttingColorLabel(ri) }}
+                              </span>
                             }
                           </div>
+
+                          <!-- Items of hovered color's input group -->
+                          <table class="w-full border-collapse">
+                            <thead class="bg-slate-50/50">
+                              <tr>
+                                <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase">Item</th>
+                                <th class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase w-28">Qty</th>
+                                <th class="w-10"></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (
+                                inp of getCuttingInputItems(ri, getHoveredCuttingColor(ri)).controls;
+                                track inp;
+                                let ii = $index
+                              ) {
+                                <tr
+                                  class="border-t border-slate-50"
+                                  [formGroup]="$any(getCuttingInputItems(ri, getHoveredCuttingColor(ri)).at(ii))"
+                                >
+                                  <td class="px-4 py-2">
+                                    <p-select
+                                      [options]="getCuttingInputItemsForColor(getHoveredCuttingColorId(ri))"
+                                      optionLabel="item_Ds2"
+                                      optionValue="item2"
+                                      formControlName="material_Id"
+                                      placeholder="Select Item"
+                                      [filter]="true"
+                                      appendTo="body"
+                                      class="w-full"
+                                        (onChange)="onCuttingInputItemChange(ri, getHoveredCuttingColor(ri), ii, $event.value)"
+
+                                    />
+                                  </td>
+                                  <td class="px-4 py-2">
+                                    <input
+                                      pInputText
+                                      type="number"
+                                      formControlName="qty"
+                                      placeholder="0.00"
+                                      class="w-full"
+                                    />
+                                  </td>
+                                  <td class="px-2 py-2 text-center">
+                                    <button
+                                      type="button"
+                                      (click)="removeCuttingInputItemWithDb(ri, getHoveredCuttingColor(ri), ii)"
+                                      [disabled]="getCuttingInputItems(ri, getHoveredCuttingColor(ri)).length <= 1"
+                                      class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-30 transition-colors mx-auto"
+                                    >
+                                      <i class="pi pi-times text-[9px]"></i>
+                                    </button>
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
                         </div>
+
                       </div>
                     </div>
                   </div>

@@ -37,15 +37,19 @@ export class IkgsRest {
     else if (options.RequestType === RequestType.GET) {
       let url: string = this.baseUrl() + options.Repository + options.EndPoint;
       if (options.ReqQueryParams && options.ReqQueryParams.length > 0) {
-        options.ReqQueryParams.forEach((param, index) => {
+        let firstParam = true;
+        options.ReqQueryParams.forEach((param) => {
           if (param.IsDate === true) {
-            param.Value = this.datePipe.transform(new Date(param.Value), 'shortDate')
+            param.Value = this.datePipe.transform(new Date(param.Value), 'shortDate');
           }
-          if (index === 0) {
-            url = `${url}?${param.Key}=${param.Value}`;
-          }
-          else {
-            url = `${url}&${param.Key}=${param.Value}`;
+          if (Array.isArray(param.Value)) {
+            param.Value.forEach((v: any) => {
+              url = `${url}${firstParam ? '?' : '&'}${param.Key}=${v}`;
+              firstParam = false;
+            });
+          } else {
+            url = `${url}${firstParam ? '?' : '&'}${param.Key}=${param.Value}`;
+            firstParam = false;
           }
         });
       }

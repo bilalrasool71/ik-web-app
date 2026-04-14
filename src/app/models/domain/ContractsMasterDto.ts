@@ -13,6 +13,8 @@ export interface ContractsMaterialsDto {
   is_Active?: string | null;
   mat_Type?: string;
   parent_Mat_RowId?: number;
+  temp_Id?: number;
+
 }
 
 export interface ContractsStagesDtlDto {

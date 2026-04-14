@@ -95,12 +95,51 @@ export function createDyeingEntry(fb: FormBuilder): FormGroup {
 }
 
 // ── Stage 3+: Cutting ─────────────────────────────────────────
+
+export function createCuttingRequiredItem(fb: FormBuilder): FormGroup {
+  return fb.group({
+    material_Id: [0],
+    qty: [0],
+    material_RowId: [0],
+  });
+}
+
+export function createCuttingSizeGroup(fb: FormBuilder): FormGroup {
+  return fb.group({
+    size_Id: [0],
+    material_RowId: [0],
+    items: fb.array([createCuttingRequiredItem(fb)]),
+  });
+}
+
+export function createCuttingColorGroup(fb: FormBuilder): FormGroup {
+  return fb.group({
+    color_Id: [0],
+    material_RowId: [0],
+    sizes: fb.array([createCuttingSizeGroup(fb)]),
+  });
+}
+
+export function createCuttingInputItem(fb: FormBuilder): FormGroup {
+  return fb.group({
+    material_Id: [0],
+    qty: [0],
+    material_RowId: [0],
+  });
+}
+
+export function createCuttingInputColorGroup(fb: FormBuilder): FormGroup {
+  return fb.group({
+    color_Id: [0],
+    material_RowId: [0],
+    items: fb.array([createCuttingInputItem(fb)]),
+  });
+}
+
 export function createCuttingEntry(fb: FormBuilder): FormGroup {
   return fb.group({
     ...createStageHeader(),
-    color_Id: [null],
-    size_Id: [null],
-    required: fb.array([createColorSizeGroup(fb)]),
-    input: fb.array([createColorItemGroup(fb)]),
+    required: fb.array([createCuttingColorGroup(fb)]),
+    input: fb.array([createCuttingInputColorGroup(fb)]),
   });
 }

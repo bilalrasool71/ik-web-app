@@ -19,4 +19,7 @@ export interface GetWoItemsDto {
   color2: number;
   colorDs2: string;
   color2_Qty: number;
+
+  sizeId1: number;
+  sizeDs1: string;
 }
