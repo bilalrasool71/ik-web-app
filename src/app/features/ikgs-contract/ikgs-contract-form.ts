@@ -1,4 +1,5 @@
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, forkJoin, of, map } from 'rxjs';
+import { NotificationService } from '../../core/services/notification.service';
 import { CommonModule } from '@angular/common';
 import { Component, inject, Input, OnInit, signal, WritableSignal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
@@ -7,6 +8,8 @@ import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SelectionValueModel } from '../../models/common/selection-value.model';
 import { GetWoItemsDto } from '../../models/domain/GetWoItem.model';
@@ -43,6 +46,8 @@ import {
     ButtonModule,
     InputTextModule,
     InputNumberModule,
+    ToastModule,
+    ConfirmDialogModule,
   ],
   templateUrl: './ikgs-contract-form.html',
   styleUrl: './ikgs-contract-form.scss',
@@ -53,6 +58,7 @@ export class IkgsContractForm implements OnInit {
 
   // ── Injections ────────────────────────────────────────────
   private contractFormService = inject(IkgsContractFormService);
+  private notification = inject(NotificationService);
   private router = inject(Router);
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
@@ -148,8 +154,17 @@ export class IkgsContractForm implements OnInit {
     this.previousSelectedStages = [...stage_Ids];
 
     stage_Ids?.forEach((id) => this.loadStageData(+id, data.wo ?? null, true, 0));
-    if (stage_Ids.some((id) => +id >= 3) && data.wo) this.loadCuttingColorsAsync(data.wo);
-    data.stagesList?.forEach((stage) => this.populateStageForm(stage, data.wo ?? null));
+
+    const nonCuttingStages = data.stagesList?.filter((s) => s.stage_Id < 3) ?? [];
+    const cuttingStages = data.stagesList?.filter((s) => s.stage_Id >= 3) ?? [];
+
+    nonCuttingStages.forEach((stage) => this.populateStageForm(stage, data.wo ?? null));
+
+    if (cuttingStages.length && data.wo) {
+      this.loadCuttingColorsAsync(data.wo).subscribe(() => {
+        cuttingStages.forEach((stage) => this.populateStageForm(stage, data.wo ?? null));
+      });
+    }
   }
 
   populateStageForm(stage: ContractsStagesDto, wo: number | null | undefined): void {
@@ -341,66 +356,85 @@ export class IkgsContractForm implements OnInit {
 
       const reqArr = entry.get('required') as FormArray;
       reqArr.clear();
-      if (colorMats.length) {
-        colorMats.forEach((colorMat) => {
-          const colorGroup = createCuttingColorGroup(this.fb);
-          colorGroup.patchValue({
-            color_Id: colorMat.item_Id ?? 0,
-            material_RowId: colorMat.material_RowId ?? 0,
-          });
-          if (wo && colorMat.item_Id) this.loadCuttingSizesByColorAsync(wo, colorMat.item_Id);
 
-          const sizesArr = colorGroup.get('sizes') as FormArray;
-          sizesArr.clear();
-          const childSizes = sizeMats.filter((s) => s.parent_Mat_RowId === colorMat.material_RowId);
-          if (childSizes.length) {
-            childSizes.forEach((sizeMat) => {
-              const sizeGroup = createCuttingSizeGroup(this.fb);
-              sizeGroup.patchValue({
-                size_Id: sizeMat.item_Id ?? 0,
-                material_RowId: sizeMat.material_RowId ?? 0,
-              });
-              if (wo && colorMat.item_Id && sizeMat.item_Id)
-                this.loadCuttingItemsByColorSizeAsync(wo, colorMat.item_Id, sizeMat.item_Id);
+      const inputArr = entry.get('input') as FormArray;
+      inputArr.clear();
 
-              const itemsArr = sizeGroup.get('items') as FormArray;
-              itemsArr.clear();
-              const childItems = reqMats.filter(
-                (r) => r.parent_Mat_RowId === sizeMat.material_RowId,
-              );
-              if (childItems.length) {
-                childItems.forEach((reqMat) => {
-                  const itemGroup = createCuttingRequiredItem(this.fb);
-                  itemGroup.patchValue({
-                    material_Id: reqMat.item_Id ?? 0,
-                    qty: reqMat.qty ?? 0,
-                    material_RowId: reqMat.material_RowId ?? 0,
-                  });
-                  if (wo && colorMat.item_Id && sizeMat.item_Id && reqMat.item_Id)
-                    this.loadCuttingInputItemsByParamsAsync(
-                      wo,
-                      colorMat.item_Id,
-                      sizeMat.item_Id,
-                      reqMat.item_Id,
-                    );
-                  itemsArr.push(itemGroup);
-                });
-              } else {
-                itemsArr.push(createCuttingRequiredItem(this.fb));
-              }
-              sizesArr.push(sizeGroup);
+      if (colorMats.length && wo) {
+        // Wait for all color sizes to load, then build the required tree
+        forkJoin(
+          colorMats.map((c) =>
+            c.item_Id ? this.loadCuttingSizesByColorAsync(wo, c.item_Id) : of(void 0),
+          ),
+        ).subscribe(() => {
+          colorMats.forEach((colorMat) => {
+            const colorGroup = createCuttingColorGroup(this.fb);
+            colorGroup.patchValue({
+              color_Id: colorMat.item_Id ?? 0,
+              material_RowId: colorMat.material_RowId ?? 0,
             });
-          } else {
-            sizesArr.push(createCuttingSizeGroup(this.fb));
-          }
-          reqArr.push(colorGroup);
+
+            const sizesArr = colorGroup.get('sizes') as FormArray;
+            sizesArr.clear();
+            const childSizes = sizeMats.filter(
+              (s) => s.parent_Mat_RowId === colorMat.material_RowId,
+            );
+
+            if (childSizes.length) {
+              // Wait for all items under each size to load, then build size groups
+              forkJoin(
+                childSizes.map((s) =>
+                  colorMat.item_Id && s.item_Id
+                    ? this.loadCuttingItemsByColorSizeAsync(wo, colorMat.item_Id, s.item_Id)
+                    : of(void 0),
+                ),
+              ).subscribe(() => {
+                childSizes.forEach((sizeMat) => {
+                  const sizeGroup = createCuttingSizeGroup(this.fb);
+                  sizeGroup.patchValue({
+                    size_Id: sizeMat.item_Id ?? 0,
+                    material_RowId: sizeMat.material_RowId ?? 0,
+                  });
+
+                  const itemsArr = sizeGroup.get('items') as FormArray;
+                  itemsArr.clear();
+                  const childItems = reqMats.filter(
+                    (r) => r.parent_Mat_RowId === sizeMat.material_RowId,
+                  );
+                  if (childItems.length) {
+                    childItems.forEach((reqMat) => {
+                      const itemGroup = createCuttingRequiredItem(this.fb);
+                      itemGroup.patchValue({
+                        material_Id: reqMat.item_Id ?? 0,
+                        qty: reqMat.qty ?? 0,
+                        material_RowId: reqMat.material_RowId ?? 0,
+                      });
+                      if (colorMat.item_Id && sizeMat.item_Id && reqMat.item_Id)
+                        this.loadCuttingInputItemsByParamsAsync(
+                          wo,
+                          colorMat.item_Id,
+                          sizeMat.item_Id,
+                          reqMat.item_Id,
+                        );
+                      itemsArr.push(itemGroup);
+                    });
+                  } else {
+                    itemsArr.push(createCuttingRequiredItem(this.fb));
+                  }
+                  sizesArr.push(sizeGroup);
+                });
+              });
+            } else {
+              sizesArr.push(createCuttingSizeGroup(this.fb));
+            }
+
+            reqArr.push(colorGroup);
+          });
         });
       } else {
         reqArr.push(createCuttingColorGroup(this.fb));
       }
 
-      const inputArr = entry.get('input') as FormArray;
-      inputArr.clear();
       if (inputColorMats.length) {
         inputColorMats.forEach((inputColorMat) => {
           const inputColorGroup = createCuttingInputColorGroup(this.fb);
@@ -537,7 +571,7 @@ export class IkgsContractForm implements OnInit {
     }
     const stages = this.contractForm.get('Stages')?.value || [];
     stages.forEach((stage_Id: number) => this.loadStageData(+stage_Id, wo, true, 0));
-    if (stages.includes('3') || stages.includes(3)) this.loadCuttingColorsAsync(wo);
+    if (stages.includes('3') || stages.includes(3)) this.loadCuttingColorsAsync(wo).subscribe();
   }
 
   onStageChange(selectedStages: string[]) {
@@ -545,7 +579,7 @@ export class IkgsContractForm implements OnInit {
     const newStages = selectedStages.filter((s) => !this.previousSelectedStages.includes(s));
     newStages.forEach((stage_Id) => {
       if (wo) this.loadStageData(+stage_Id, wo, true, 0);
-      if (+stage_Id === 3 && wo) this.loadCuttingColorsAsync(wo);
+      if (+stage_Id === 3 && wo) this.loadCuttingColorsAsync(wo).subscribe();
     });
     const removedStages = this.previousSelectedStages.filter((s) => !selectedStages.includes(s));
     if (removedStages.length > 0) this.removeStageData(removedStages.map((s) => +s));
@@ -566,6 +600,13 @@ export class IkgsContractForm implements OnInit {
       if (!selected) return;
       const knittingGroup = this.knittingStage.at(ri) as FormGroup;
       const requiredArray = knittingGroup.get('required') as FormArray;
+      const oldMaterialRowId = requiredArray.at(ii).value.material_RowId;
+      if (oldMaterialRowId > 0) {
+        requiredArray.at(ii).patchValue({ material_RowId: 0 });
+        this.getKnittingInputItems(ri, ii).controls.forEach((ctrl) =>
+          ctrl.patchValue({ material_RowId: 0 }),
+        );
+      }
       requiredArray.at(ii).patchValue({ item1_Qty: selected.item1_Qty || 0 });
       this.GetAllItemsByStageIdAsync(
         this.contractForm.get('WorkOrder')?.value,
@@ -589,6 +630,7 @@ export class IkgsContractForm implements OnInit {
     const wo = this.contractForm.get('WorkOrder')?.value;
     const colorId: number = this.getDyeingRequired(ri).at(ci).value.color_Id;
     if (!wo || !colorId) return;
+    this.getDyeingRequired(ri).at(ci).patchValue({ material_RowId: 0 });
     const inputArr = this.getDyeingInputItems(ri, ci);
     inputArr.clear();
     inputArr.push(createDyeingInputItem(this.fb));
@@ -863,33 +905,40 @@ export class IkgsContractForm implements OnInit {
 
   //#region Cutting LOV Loading
 
-  loadCuttingColorsAsync(wo: number): void {
-    if (this.allCuttingColors().length) return;
-    this.contractFormService.GetAllItemsByStageIdAsync(wo, 3, true, []).subscribe((res: any) => {
-      if (res?.Code === 200 && res.Data) this.allCuttingColors.set(res.Data);
-    });
+  loadCuttingColorsAsync(wo: number): Observable<void> {
+    if (this.allCuttingColors().length) return of(void 0);
+    return this.contractFormService.GetAllItemsByStageIdAsync(wo, 3, true, []).pipe(
+      tap((res: any) => {
+        if (res?.Code === 200 && res.Data) this.allCuttingColors.set(res.Data);
+      }),
+      map(() => void 0),
+    );
   }
 
-  loadCuttingSizesByColorAsync(wo: number, colorId: number): void {
+  loadCuttingSizesByColorAsync(wo: number, colorId: number): Observable<void> {
     const key = colorId.toString();
-    if (this.allCuttingSizesByColor()[key]) return;
-    this.contractFormService
-      .GetAllItemsByStageIdAsync(wo, 3, false, [key])
-      .subscribe((res: any) => {
+    if (this.allCuttingSizesByColor()[key]) return of(void 0);
+    return this.contractFormService.GetAllItemsByStageIdAsync(wo, 3, false, [key]).pipe(
+      tap((res: any) => {
         if (res?.Code === 200 && res.Data)
           this.allCuttingSizesByColor.update((prev) => ({ ...prev, [key]: res.Data }));
-      });
+      }),
+      map(() => void 0),
+    );
   }
 
-  loadCuttingItemsByColorSizeAsync(wo: number, colorId: number, sizeId: number): void {
+  loadCuttingItemsByColorSizeAsync(wo: number, colorId: number, sizeId: number): Observable<void> {
     const key = `${colorId}_${sizeId}`;
-    if (this.allCuttingItemsByColorSize()[key]) return;
-    this.contractFormService
+    if (this.allCuttingItemsByColorSize()[key]) return of(void 0);
+    return this.contractFormService
       .GetAllItemsByStageIdAsync(wo, 3, false, [colorId.toString(), sizeId.toString()])
-      .subscribe((res: any) => {
-        if (res?.Code === 200 && res.Data)
-          this.allCuttingItemsByColorSize.update((prev) => ({ ...prev, [key]: res.Data }));
-      });
+      .pipe(
+        tap((res: any) => {
+          if (res?.Code === 200 && res.Data)
+            this.allCuttingItemsByColorSize.update((prev) => ({ ...prev, [key]: res.Data }));
+        }),
+        map(() => void 0),
+      );
   }
 
   loadCuttingInputItemsByParamsAsync(
@@ -943,20 +992,20 @@ export class IkgsContractForm implements OnInit {
     const wo = this.contractForm.get('WorkOrder')?.value;
     if (!colorId) return;
 
-    // Reset sizes and items under this color group
+    this.getCuttingRequired(ri).at(ci).patchValue({ material_RowId: 0 });
+
     const sizesArr = this.getCuttingRequiredSizes(ri, ci);
     sizesArr.clear();
     sizesArr.push(createCuttingSizeGroup(this.fb));
 
-    // Sync color to corresponding input group
     if (this.getCuttingInput(ri).at(ci)) {
-      this.getCuttingInput(ri).at(ci).patchValue({ color_Id: colorId });
+      this.getCuttingInput(ri).at(ci).patchValue({ color_Id: colorId, material_RowId: 0 });
       const inputItemsArr = this.getCuttingInputItems(ri, ci);
       inputItemsArr.clear();
       inputItemsArr.push(createCuttingInputItem(this.fb));
     }
 
-    if (wo) this.loadCuttingSizesByColorAsync(wo, colorId);
+    if (wo) this.loadCuttingSizesByColorAsync(wo, colorId).subscribe();
     this.setHoveredCuttingColor(ri, ci);
   }
 
@@ -965,12 +1014,13 @@ export class IkgsContractForm implements OnInit {
     const colorId: number = this.getCuttingRequired(ri).at(ci).value.color_Id;
     if (!colorId || !sizeId) return;
 
-    // Reset items under this size group
+    this.getCuttingRequiredSizes(ri, ci).at(si).patchValue({ material_RowId: 0 });
+
     const itemsArr = this.getCuttingRequiredSizeItems(ri, ci, si);
     itemsArr.clear();
     itemsArr.push(createCuttingRequiredItem(this.fb));
 
-    if (wo) this.loadCuttingItemsByColorSizeAsync(wo, colorId, sizeId);
+    if (wo) this.loadCuttingItemsByColorSizeAsync(wo, colorId, sizeId).subscribe();
   }
 
   onCuttingRequiredItemChange(
@@ -1036,17 +1086,36 @@ export class IkgsContractForm implements OnInit {
 
   //#endregion
 
-  removeStageRow(stageRowId: number, stageId: number, rowIndex: number): void {
+  async removeStageRow(stageRowId: number, stageId: number, rowIndex: number): Promise<void> {
+    const stageNames: Record<number, string> = {
+      1: 'Knitting',
+      2: 'Dyeing',
+      3: 'Cutting',
+    };
+    const stageName = stageNames[stageId] ?? 'Cutting';
+
     if (!stageRowId || stageRowId === 0) {
       this.removeStageRowFromForm(stageId, rowIndex);
       return;
     }
-    this.contractFormService.removeStageRowApi(stageRowId).subscribe({
-      next: (res: any) => {
-        if (res === true) this.removeStageRowFromForm(stageId, rowIndex);
-      },
-      error: () => console.error('Failed to remove stage row'),
-    });
+
+    const confirmed = await this.notification.confirm(
+      `Remove ${stageName} Entry?`,
+      'This will permanently delete this entry and all its materials.',
+    );
+    if (!confirmed) return;
+
+    try {
+      await this.contractFormService.removeStageRowApi(stageRowId);
+
+      this.removeStageRowFromForm(stageId, rowIndex);
+      this.notification.success('Removed', `${stageName} entry has been removed.`);
+    } catch (err: any) {
+      this.notification.error(
+        'Error',
+        err?.Message || 'Could not remove the entry. Please try again.',
+      );
+    }
   }
 
   private removeStageRowFromForm(stageId: number, rowIndex: number): void {
@@ -1055,22 +1124,34 @@ export class IkgsContractForm implements OnInit {
     else if (stageId >= 3 && this.cuttingStage.length > 1) this.cuttingStage.removeAt(rowIndex);
   }
 
-  removeMaterialItem(
+  async removeMaterialItem(
     materialRowId: number,
     stageId: number,
     rowIndex: number,
     itemIndex: number,
-  ): void {
+  ): Promise<void> {
     if (!materialRowId || materialRowId === 0) {
       this.removeMaterialFromForm(stageId, rowIndex, itemIndex);
       return;
     }
-    this.contractFormService.removeStageRowApi(materialRowId).subscribe({
-      next: (res: any) => {
-        if (res === true) this.removeMaterialFromForm(stageId, rowIndex, itemIndex);
-      },
-      error: () => console.error('Failed to remove material item'),
-    });
+
+    const confirmed = await this.notification.confirm(
+      'Remove Item?',
+      'This material entry will be permanently removed.',
+    );
+    if (!confirmed) return;
+
+    try {
+      await this.contractFormService.removeMaterialItemApi(materialRowId);
+
+      this.removeMaterialFromForm(stageId, rowIndex, itemIndex);
+      this.notification.success('Removed', 'Item has been removed.');
+    } catch (err: any) {
+      this.notification.error(
+        'Error',
+        err?.Message || 'Could not remove the item. Please try again.',
+      );
+    }
   }
 
   private removeMaterialFromForm(stageId: number, rowIndex: number, itemIndex: number): void {
@@ -1084,56 +1165,116 @@ export class IkgsContractForm implements OnInit {
     }
   }
 
-  removeDyeingInputItemWithDb(ri: number, ci: number, ii: number): void {
+  async removeYarnItemMaterialWithDb(
+    materialRowId: number,
+    stageId: number,
+    rowIndex: number,
+    itemIndex: number,
+  ): Promise<void> {
+    if (!materialRowId || materialRowId === 0) {
+      this.removeMaterialFromForm(stageId, rowIndex, itemIndex);
+      return;
+    }
+
+    const confirmed = await this.notification.confirm(
+      'Remove Item?',
+      'This material entry will be permanently removed.',
+    );
+    if (!confirmed) return;
+
+    try {
+      await this.contractFormService.removeMaterialItemApi(materialRowId);
+
+      this.removeMaterialFromForm(stageId, rowIndex, itemIndex);
+      this.notification.success('Removed', 'Input item has been removed.');
+    } catch (err: any) {
+      this.notification.error(
+        'Error',
+        err?.Message || 'Could not remove the item. Please try again.',
+      );
+    }
+  }
+
+  async removeDyeingInputItemWithDb(ri: number, ci: number, ii: number): Promise<void> {
     const arr = this.getDyeingInputItems(ri, ci);
     const materialRowId = arr.at(ii).value.material_RowId;
+
+    // Not saved yet — remove from form silently, no confirm needed
     if (!materialRowId || materialRowId === 0) {
       if (arr.length > 1) arr.removeAt(ii);
       return;
     }
-    this.contractFormService
-      .removeMaterialItemApi(materialRowId)
-      .then(() => {
-        if (arr.length > 1) arr.removeAt(ii);
-      })
-      .catch(() => console.error('Failed to remove dyeing input item'));
+
+    const confirmed = await this.notification.confirm(
+      'Remove Item?',
+      'This input item will be permanently removed.',
+    );
+    if (!confirmed) return;
+
+    try {
+      await this.contractFormService.removeMaterialItemApi(materialRowId, 'I');
+      if (arr.length > 1) arr.removeAt(ii);
+      this.notification.success('Removed', 'Input item has been removed.');
+    } catch {
+      this.notification.error('Delete Failed', 'Could not remove the item. Please try again.');
+    }
   }
 
-  removeKnittingInputItem(ri: number, ii: number, iii: number) {
+  async removeKnittingInputItem(ri: number, ii: number, iii: number): Promise<void> {
     const arr = this.getKnittingInputItems(ri, ii);
     const materialRowId = arr.at(iii).value.material_RowId;
     if (!materialRowId || materialRowId === 0) {
       if (arr.length > 1) arr.removeAt(iii);
       return;
     }
+    const confirmed = await this.notification.confirm(
+      'Remove Item?',
+      'This input item will be permanently removed.',
+    );
+    if (!confirmed) return;
     this.contractFormService
-      .removeMaterialItemApi(materialRowId)
+      .removeMaterialItemApi(materialRowId, 'I')
       .then(() => {
         if (arr.length > 1) arr.removeAt(iii);
+        this.notification.success('Removed', 'Input item has been removed.');
       })
-      .catch(() => console.error('Failed to remove knitting input item'));
+      .catch(() =>
+        this.notification.error('Error', 'Could not remove the item. Please try again.'),
+      );
   }
 
-  removeDyeingColorGroupWithDb(ri: number, ci: number): void {
-    const materialIds = this.getDyeingInputItems(ri, ci)
-      .controls.map((c: any) => c.value.material_RowId)
-      .filter((id: any) => id && id !== 0);
+  async removeDyeingColorGroupWithDb(ri: number, ci: number): Promise<void> {
+    const colorRowId = this.getDyeingRequired(ri).at(ci).value.material_RowId;
+    const materialIds = [
+      ...(colorRowId && colorRowId !== 0 ? [colorRowId] : []),
+      ...this.getDyeingInputItems(ri, ci)
+        .controls.map((c: any) => c.value.material_RowId)
+        .filter((id: any) => id && id !== 0),
+    ];
     if (materialIds.length === 0) {
       if (this.getDyeingRequired(ri).length > 1) this.getDyeingRequired(ri).removeAt(ci);
       return;
     }
+    const confirmed = await this.notification.confirm(
+      'Remove Color Group?',
+      'All input materials under this color will be deleted.',
+    );
+    if (!confirmed) return;
     materialIds
       .reduce(
-        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id)),
+        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id, 'R')),
         Promise.resolve(),
       )
       .then(() => {
         if (this.getDyeingRequired(ri).length > 1) this.getDyeingRequired(ri).removeAt(ci);
+        this.notification.success('Removed', 'Color group and its materials have been removed.');
       })
-      .catch(() => console.error('Failed to remove dyeing color group items'));
+      .catch(() =>
+        this.notification.error('Error', 'Could not remove the color group. Please try again.'),
+      );
   }
 
-  removeCuttingColorGroupWithDb(ri: number, ci: number): void {
+  async removeCuttingColorGroupWithDb(ri: number, ci: number): Promise<void> {
     const materialIds: number[] = [];
     this.getCuttingRequiredSizes(ri, ci).controls.forEach((sg) => {
       (sg.get('items') as FormArray).controls.forEach((item) => {
@@ -1151,16 +1292,29 @@ export class IkgsContractForm implements OnInit {
       removeFromForm();
       return;
     }
+    const confirmed = await this.notification.confirm(
+      'Remove Color Group?',
+      'All sizes, required items and input materials under this color will be deleted.',
+    );
+    if (!confirmed) return;
     materialIds
       .reduce(
-        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id)),
+        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id, 'C')),
         Promise.resolve(),
       )
-      .then(removeFromForm)
-      .catch(() => console.error('Failed to remove cutting color group items'));
+      .then(() => {
+        removeFromForm();
+        this.notification.success(
+          'Removed',
+          'Color group and all its materials have been removed.',
+        );
+      })
+      .catch(() =>
+        this.notification.error('Error', 'Could not remove the color group. Please try again.'),
+      );
   }
 
-  removeCuttingSizeWithDb(ri: number, ci: number, si: number): void {
+  async removeCuttingSizeWithDb(ri: number, ci: number, si: number): Promise<void> {
     const materialIds = this.getCuttingRequiredSizeItems(ri, ci, si)
       .controls.map((c) => c.value.material_RowId)
       .filter((id) => id && id !== 0);
@@ -1169,16 +1323,24 @@ export class IkgsContractForm implements OnInit {
         this.getCuttingRequiredSizes(ri, ci).removeAt(si);
       return;
     }
+    const confirmed = await this.notification.confirm(
+      'Remove Size?',
+      'All required items under this size will be deleted.',
+    );
+    if (!confirmed) return;
     materialIds
       .reduce(
-        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id)),
+        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id, 'S')),
         Promise.resolve(),
       )
       .then(() => {
         if (this.getCuttingRequiredSizes(ri, ci).length > 1)
           this.getCuttingRequiredSizes(ri, ci).removeAt(si);
+        this.notification.success('Removed', 'Size and its items have been removed.');
       })
-      .catch(() => console.error('Failed to remove cutting size items'));
+      .catch(() =>
+        this.notification.error('Error', 'Could not remove the size. Please try again.'),
+      );
   }
 
   removeCuttingInputColorWithDb(ri: number, ci: number): void {
@@ -1200,36 +1362,52 @@ export class IkgsContractForm implements OnInit {
       .catch(() => console.error('Failed to remove cutting input color items'));
   }
 
-  removeCuttingSizeItemWithDb(ri: number, ci: number, si: number, ii: number): void {
+  async removeCuttingSizeItemWithDb(ri: number, ci: number, si: number, ii: number): Promise<void> {
     const materialRowId = this.getCuttingRequiredSizeItems(ri, ci, si).at(ii).value.material_RowId;
     if (!materialRowId || materialRowId === 0) {
       if (this.getCuttingRequiredSizeItems(ri, ci, si).length > 1)
         this.getCuttingRequiredSizeItems(ri, ci, si).removeAt(ii);
       return;
     }
+    const confirmed = await this.notification.confirm(
+      'Remove Item?',
+      'This required item will be permanently removed.',
+    );
+    if (!confirmed) return;
     this.contractFormService
-      .removeMaterialItemApi(materialRowId)
+      .removeMaterialItemApi(materialRowId, 'R')
       .then(() => {
         if (this.getCuttingRequiredSizeItems(ri, ci, si).length > 1)
           this.getCuttingRequiredSizeItems(ri, ci, si).removeAt(ii);
+        this.notification.success('Removed', 'Required item has been removed.');
       })
-      .catch(() => console.error('Failed to remove cutting size item'));
+      .catch(() =>
+        this.notification.error('Error', 'Could not remove the item. Please try again.'),
+      );
   }
 
-  removeCuttingInputItemWithDb(ri: number, ci: number, ii: number): void {
+  async removeCuttingInputItemWithDb(ri: number, ci: number, ii: number): Promise<void> {
     const materialRowId = this.getCuttingInputItems(ri, ci).at(ii).value.material_RowId;
     if (!materialRowId || materialRowId === 0) {
       if (this.getCuttingInputItems(ri, ci).length > 1)
         this.getCuttingInputItems(ri, ci).removeAt(ii);
       return;
     }
+    const confirmed = await this.notification.confirm(
+      'Remove Item?',
+      'This input item will be permanently removed.',
+    );
+    if (!confirmed) return;
     this.contractFormService
-      .removeMaterialItemApi(materialRowId)
+      .removeMaterialItemApi(materialRowId, 'I')
       .then(() => {
         if (this.getCuttingInputItems(ri, ci).length > 1)
           this.getCuttingInputItems(ri, ci).removeAt(ii);
+        this.notification.success('Removed', 'Input item has been removed.');
       })
-      .catch(() => console.error('Failed to remove cutting input item'));
+      .catch(() =>
+        this.notification.error('Error', 'Could not remove the item. Please try again.'),
+      );
   }
 
   //#endregion
@@ -1550,22 +1728,40 @@ export class IkgsContractForm implements OnInit {
       }, Promise.resolve());
     };
 
-    const afterSave = () => {
+    const afterSave = (isEdit: boolean) => {
       this.isEditMode = !!this.contractId;
       if (this.isEditMode) this.isEdit();
+      if (isEdit) {
+        this.notification.success('Updated', 'Contract has been updated successfully.');
+      } else {
+        this.notification.success(
+          'Contract Saved',
+          'All stage entries have been saved successfully.',
+        );
+      }
     };
 
     if (!this.contractId) {
       this.saveMaster((contractId: number) => {
         this.contractId = contractId;
         saveAll()
-          .then(afterSave)
-          .catch((err) => console.error('Save failed:', err));
+          .then(() => afterSave(false))
+          .catch(() =>
+            this.notification.error(
+              'Save Failed',
+              'Something went wrong while saving. Please try again.',
+            ),
+          );
       });
     } else {
       saveAll()
-        .then(afterSave)
-        .catch((err) => console.error('Save failed:', err));
+        .then(() => afterSave(true))
+        .catch(() =>
+          this.notification.error(
+            'Save Failed',
+            'Something went wrong while saving. Please try again.',
+          ),
+        );
     }
   }
 

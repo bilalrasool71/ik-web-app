@@ -1,3 +1,5 @@
+<p-confirmDialog styleClass="w-full max-w-md mx-auto"></p-confirmDialog>
+
 <div class="space-y-6 animate-fade-in pb-10">
   <!-- Page Header -->
   <div class="flex items-center gap-3">
@@ -226,7 +228,7 @@
                             (onChange)="onMaterialChange($event.value, 0, ii)"
                           />
                         </td>
-                        <td class="px-5 py-2.5">
+                        <td class="px-5 py-2.5 w-40">
                           <input
                             pInputText
                             type="number"
@@ -238,7 +240,7 @@
                         <td class="px-3 py-2.5 text-center">
                           <button
                             type="button"
-                            (click)="removeMaterialItem(item.value.material_RowId, 0, 0, ii)"
+                            (click)="removeYarnItemMaterialWithDb(item.value.material_RowId, 0, 0, ii)"
                             [disabled]="yarnItems.length <= 1"
                             class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed mx-auto"
                           >
@@ -408,7 +410,7 @@
                                       (onChange)="onMaterialChange($event.value, ri, ii)"
                                     />
                                   </td>
-                                  <td class="px-4 py-2">
+                                  <td class="px-4 py-2 w-40">
                                     <input
                                       pInputText
                                       type="number"
@@ -508,7 +510,7 @@
                                       "
                                     />
                                   </td>
-                                  <td class="px-4 py-2">
+                                  <td class="px-4 py-2 w-40">
                                     <input
                                       pInputText
                                       type="number"
@@ -713,7 +715,7 @@
                                   <th
                                     class="px-4 py-2 text-left text-[10px] font-bold text-slate-400 uppercase w-24"
                                   >
-                                    Qty
+                                   
                                   </th>
                                   <th class="w-10"></th>
                                 </tr>
@@ -993,7 +995,7 @@
                                                   (onChange)="onCuttingRequiredItemChange(ri, ci, si, ii, $event.value)"
                                                 />
                                               </td>
-                                              <td class="px-4 py-2 w-28">
+                                              <td class="px-4 py-2  w-40">
                                                 <input
                                                   pInputText
                                                   type="number"
@@ -1069,7 +1071,7 @@
 
                                     />
                                   </td>
-                                  <td class="px-4 py-2">
+                                  <td class="px-4 py-2 w-40">
                                     <input
                                       pInputText
                                       type="number"
