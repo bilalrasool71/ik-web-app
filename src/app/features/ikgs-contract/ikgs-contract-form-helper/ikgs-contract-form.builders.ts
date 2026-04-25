@@ -87,6 +87,7 @@ export function createDyeingRequiredItem(fb: FormBuilder): FormGroup {
     inputItems: fb.array([createDyeingInputItem(fb)]),
   });
 }
+
 export function createDyeingEntry(fb: FormBuilder): FormGroup {
   return fb.group({
     ...createStageHeader(),
@@ -95,7 +96,6 @@ export function createDyeingEntry(fb: FormBuilder): FormGroup {
 }
 
 // ── Stage 3+: Cutting ─────────────────────────────────────────
-
 export function createCuttingRequiredItem(fb: FormBuilder): FormGroup {
   return fb.group({
     material_Id: [0],
@@ -141,5 +141,77 @@ export function createCuttingEntry(fb: FormBuilder): FormGroup {
     ...createStageHeader(),
     required: fb.array([createCuttingColorGroup(fb)]),
     input: fb.array([createCuttingInputColorGroup(fb)]),
+  });
+}
+
+// ── Sewing Entry (one DTL row) ────────────────────────────────────────────
+export function createSewingEntry(fb: FormBuilder): FormGroup {
+  return fb.group({
+    stage_RowId: [0],
+    party_Id:    [null],
+    qty:         [0],
+    uom_Id:      [null],
+    fromDate:    [null],
+    toDate:      [null],
+    required:    fb.array([createSewingColorGroup(fb)]),
+    input:       fb.array([createSewingInputColorGroup(fb)]),
+  });
+}
+
+// ── Left Side ─────────────────────────────────────────────────────────────
+
+// C — color group
+export function createSewingColorGroup(fb: FormBuilder): FormGroup {
+  return fb.group({
+    color_Id:       [0],
+    material_RowId: [0],
+    sizes:          fb.array([createSewingSizeGroup(fb)]),
+  });
+}
+
+// S — size group under color
+export function createSewingSizeGroup(fb: FormBuilder): FormGroup {
+  return fb.group({
+    size_Id:        [0],
+    material_RowId: [0],
+    items:          fb.array([createSewingRequiredItem(fb)]),
+  });
+}
+
+// R — required item under size
+export function createSewingRequiredItem(fb: FormBuilder): FormGroup {
+  return fb.group({
+    material_Id:    [0],
+    qty:            [0],
+    material_RowId: [0],
+  });
+}
+
+// ── Right Side ────────────────────────────────────────────────────────────
+
+// IC — input color group (1 per C, same color value)
+export function createSewingInputColorGroup(fb: FormBuilder): FormGroup {
+  return fb.group({
+    color_Id:       [0],
+    material_RowId: [0],
+    sizes:          fb.array([createSewingInputSizeGroup(fb)]),
+  });
+}
+
+// IS — input size group (user selects from left sizes, max = left S count)
+export function createSewingInputSizeGroup(fb: FormBuilder): FormGroup {
+  return fb.group({
+    size_Id:        [0],
+    material_RowId: [0],
+    items:          fb.array([createSewingInputItem(fb)]),
+  });
+}
+
+// I — input item under IS (1 or more, has qty)
+export function createSewingInputItem(fb: FormBuilder): FormGroup {
+  return fb.group({
+    material_Id:    [0],
+    qty:            [0],
+    material_RowId: [0],
   });
 }

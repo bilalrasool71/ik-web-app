@@ -128,7 +128,7 @@ export class IkgsContractFormService {
     });
   }
 
-  removeMaterialItemApi(materialRowId: number, matType: string = ''): Promise<void> {
+  removeMaterialItemApi(materialRowId: number, matType: string = '', stageId: number): Promise<void> {
     return new Promise((resolve, reject) => {
       const opts = new ApiOptionsModel<object>();
       opts.RequestType = RequestType.GET;
@@ -137,6 +137,7 @@ export class IkgsContractFormService {
       opts.ReqQueryParams = [
         { Key: 'material_RowId', Value: materialRowId, IsDate: false },
         { Key: 'mat_Type', Value: matType, IsDate: false },
+        { Key: 'stageId', Value: stageId, IsDate: false },
       ];
       this.restService.CallApi<object, object>(opts).subscribe({
         next: (res: any) => {

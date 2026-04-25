@@ -34,6 +34,13 @@ import {
   createCuttingInputColorGroup,
   createCuttingInputItem,
   createMaterialItem,
+  createSewingEntry,
+  createSewingColorGroup,
+  createSewingInputColorGroup,
+  createSewingSizeGroup,
+  createSewingRequiredItem,
+  createSewingInputSizeGroup,
+  createSewingInputItem,
 } from './ikgs-contract-form-helper/ikgs-contract-form.builders';
 
 @Component({
@@ -90,6 +97,13 @@ export class IkgsContractForm implements OnInit {
   allCuttingInputItemsByColor = signal<Record<number, GetWoItemsDto[]>>({});
   hoveredCuttingColorIndex = signal<Record<number, number>>({});
 
+  // ── Sewing Stage Signals ──────────────────────────────────────────────────
+  allSewingColors = signal<GetWoItemsDto[]>([]);
+  allSewingSizesByColor = signal<Record<string, GetWoItemsDto[]>>({});
+  allSewingItemsByColorSize = signal<Record<string, GetWoItemsDto[]>>({});
+  allSewingInputItemsByColorSize = signal<Record<string, GetWoItemsDto[]>>({});
+  hoveredSewingColorIndex = signal<Record<number, number>>({});
+
   // ── Lifecycle ─────────────────────────────────────────────
   ngOnInit(): void {
     this.route.queryParams.subscribe((params) => {
@@ -104,6 +118,7 @@ export class IkgsContractForm implements OnInit {
       knittingStage: this.fb.array([createKnittingEntry(this.fb)]),
       dyeingStage: this.fb.array([createDyeingEntry(this.fb)]),
       cuttingStage: this.fb.array([createCuttingEntry(this.fb)]),
+      sewingStage: this.fb.array([createSewingEntry(this.fb)]),
     });
 
     this.contractForm.get('WorkOrder')?.valueChanges.subscribe((wo) => {
@@ -144,6 +159,7 @@ export class IkgsContractForm implements OnInit {
     this.contractForm.setControl('knittingStage', this.fb.array([createKnittingEntry(this.fb)]));
     this.contractForm.setControl('dyeingStage', this.fb.array([createDyeingEntry(this.fb)]));
     this.contractForm.setControl('cuttingStage', this.fb.array([createCuttingEntry(this.fb)]));
+    this.contractForm.setControl('sewingStage', this.fb.array([createSewingEntry(this.fb)]));
   }
 
   populateFormFromApi(data: ContractsMasterDto): void {
@@ -155,178 +171,225 @@ export class IkgsContractForm implements OnInit {
 
     stage_Ids?.forEach((id) => this.loadStageData(+id, data.wo ?? null, true, 0));
 
-    const nonCuttingStages = data.stagesList?.filter((s) => s.stage_Id < 3) ?? [];
-    const cuttingStages = data.stagesList?.filter((s) => s.stage_Id >= 3) ?? [];
+    const nonSpecialStages = data.stagesList?.filter((s) => s.stage_Id < 3) ?? [];
+    const cuttingStages = data.stagesList?.filter((s) => s.stage_Id === 3) ?? [];
+    const sewingStages = data.stagesList?.filter((s) => s.stage_Id === 4) ?? [];
 
-    nonCuttingStages.forEach((stage) => this.populateStageForm(stage, data.wo ?? null));
+    nonSpecialStages.forEach((stage) => this.populateStageForm(stage, data.wo ?? null));
 
     if (cuttingStages.length && data.wo) {
       this.loadCuttingColorsAsync(data.wo).subscribe(() => {
         cuttingStages.forEach((stage) => this.populateStageForm(stage, data.wo ?? null));
       });
     }
+
+    if (sewingStages.length && data.wo) {
+      this.loadSewingColorsAsync(data.wo).subscribe(() => {
+        sewingStages.forEach((stage) => this.populateStageForm(stage, data.wo ?? null));
+      });
+    }
   }
 
   populateStageForm(stage: ContractsStagesDto, wo: number | null | undefined): void {
-    const stage_Id = stage.stage_Id;
-
-    if (stage_Id === 0) {
-      const row = stage.stageDtlList[0];
-      if (!row) return;
-      this.contractForm.patchValue({
-        yarnStage: {
-          party_Id: row.party_Id != null ? row.party_Id.toString() : null,
-          qty: row.req_Qty ?? null,
-          uom_Id: row.uom != null ? row.uom.toString() : null,
-          fromDate: row.plan_SDat ? row.plan_SDat.split('T')[0] : null,
-          toDate: row.plan_EDat ? row.plan_EDat.split('T')[0] : null,
-        },
-      });
-      const yarnArray = this.yarnItems;
-      yarnArray.clear();
-      const mats = row.materialsList?.length ? row.materialsList : [{ item_Id: null, qty: null }];
-      mats.forEach((m) => {
-        yarnArray.push(
-          this.fb.group({
-            material_Id: [m.item_Id ?? 0],
-            fiber_Qty: [(m as ContractsMaterialsDto).qty ?? 0],
-            material_RowId: [(m as ContractsMaterialsDto).material_RowId ?? 0],
-          }),
-        );
-      });
-      (this.yarnStage as any)['_stage_RowId'] = row.stage_RowId;
-    } else if (stage_Id === 1) {
-      const arr = this.knittingStage;
-      arr.clear();
-      if (!stage.stageDtlList.length) {
-        arr.push(createKnittingEntry(this.fb));
-        return;
-      }
-      stage.stageDtlList.forEach((row) => {
-        const entry = createKnittingEntry(this.fb);
-        entry.patchValue({
-          party_Id: row.party_Id != null ? row.party_Id.toString() : null,
-          qty: row.req_Qty ?? 0,
-          uom_Id: row.uom != null ? row.uom.toString() : null,
-          fromDate: row.plan_SDat ? row.plan_SDat.split('T')[0] : null,
-          toDate: row.plan_EDat ? row.plan_EDat.split('T')[0] : null,
-          stage_RowId: row.stage_RowId ?? 0,
-        });
-
-        const requiredMats = row.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
-        const inputMats = row.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
-        const reqArr = entry.get('required') as FormArray;
-        reqArr.clear();
-
-        if (requiredMats.length) {
-          requiredMats.forEach((reqMat) => {
-            const reqItem = createKnittingRequiredItem(this.fb);
-            reqItem.patchValue({
-              material_Id: reqMat.item_Id ?? 0,
-              item1_Qty: reqMat.qty ?? 0,
-              material_RowId: reqMat.material_RowId ?? 0,
-            });
-
-            if (wo && reqMat.item_Id)
-              this.GetAllItemsByStageIdAsync(wo, 1, false, [reqMat.item_Id.toString()]).subscribe();
-            const childInputs = inputMats.filter(
-              (m) => m.parent_Mat_RowId === reqMat.material_RowId,
-            );
-            const inputArr = reqItem.get('inputItems') as FormArray;
-            inputArr.clear();
-
-            if (childInputs.length) {
-              childInputs.forEach((inp) => {
-                const inpItem = createMaterialItem(this.fb, 'item2_Qty');
-                inpItem.patchValue({
-                  material_Id: inp.item_Id ?? 0,
-                  item2_Qty: inp.qty ?? 0,
-                  material_RowId: inp.material_RowId ?? 0,
-                });
-                inputArr.push(inpItem);
-              });
-            }
-            reqArr.push(reqItem);
-          });
-        } else {
-          reqArr.push(createKnittingRequiredItem(this.fb));
-        }
-        arr.push(entry);
-      });
-    } else if (stage_Id === 2) {
-      const arr = this.dyeingStage;
-      arr.clear();
-      if (!stage.stageDtlList.length) {
-        arr.push(createDyeingEntry(this.fb));
-        return;
-      }
-      stage.stageDtlList.forEach((row) => {
-        const entry = createDyeingEntry(this.fb);
-        entry.patchValue({
-          party_Id: row.party_Id != null ? row.party_Id.toString() : null,
-          qty: row.req_Qty ?? 0,
-          uom_Id: row.uom != null ? row.uom.toString() : null,
-          fromDate: row.plan_SDat ? row.plan_SDat.split('T')[0] : null,
-          toDate: row.plan_EDat ? row.plan_EDat.split('T')[0] : null,
-          stage_RowId: row.stage_RowId ?? 0,
-        });
-
-        const colorMats = row.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
-        const allInputMats = row.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
-        const colorRowIds = new Set(colorMats.map((c) => c.material_RowId));
-        const item1Mats = allInputMats.filter((m) => colorRowIds.has(m.parent_Mat_RowId ?? 0));
-        const item1RowIds = new Set(item1Mats.map((m) => m.material_RowId));
-        const item2Mats = allInputMats.filter((m) => item1RowIds.has(m.parent_Mat_RowId ?? 0));
-        const reqArr = entry.get('required') as FormArray;
-        reqArr.clear();
-
-        if (colorMats.length) {
-          colorMats.forEach((colorMat) => {
-            const colorGroup = createDyeingRequiredItem(this.fb);
-            colorGroup.patchValue({
-              color_Id: colorMat.item_Id ?? 0,
-              material_RowId: colorMat.material_RowId ?? 0,
-            });
-
-            if (wo && colorMat.item_Id)
-              this.GetAllItemsByStageIdAsync(wo, 2, false, [
-                colorMat.item_Id.toString(),
-              ]).subscribe();
-
-            const childItem1s = item1Mats.filter(
-              (m) => m.parent_Mat_RowId === colorMat.material_RowId,
-            );
-            const inputArr = colorGroup.get('inputItems') as FormArray;
-            inputArr.clear();
-
-            if (childItem1s.length) {
-              for (let index = 0; index < childItem1s.length; index++) {
-                let inp1 = childItem1s[index++];
-                let inp2 = childItem1s[index];
-                const inpItem = createDyeingInputItem(this.fb);
-                const item2 = item2Mats.find((m) => m.parent_Mat_RowId === inp1.material_RowId);
-                inpItem.patchValue({
-                  item1_Id: inp1.item_Id ?? 0,
-                  item1_Qty: inp1.qty ?? 0,
-                  material_RowId: inp1.material_RowId ?? 0,
-                  item2_Id: inp2?.item_Id ?? 0,
-                  item2_Qty: inp2?.qty ?? 0,
-                  item2_material_RowId: item2?.material_RowId ?? 0,
-                });
-                inputArr.push(inpItem);
-              }
-            }
-
-            reqArr.push(colorGroup);
-          });
-        } else {
-          reqArr.push(createDyeingRequiredItem(this.fb));
-        }
-        arr.push(entry);
-      });
-    } else {
-      this.populateCuttingStageForm(stage, wo);
+    switch (stage.stage_Id) {
+      case 0:
+        this.populateYarnStage(stage, wo);
+        break;
+      case 1:
+        this.populateKnittingStage(stage, wo);
+        break;
+      case 2:
+        this.populateDyeingStage(stage, wo);
+        break;
+      case 3:
+        this.populateCuttingStageForm(stage, wo);
+        break;
+      default:
+        this.populateSewingStage(stage, wo);
+        break;
     }
+  }
+
+  private populateYarnStage(stage: ContractsStagesDto, wo: number | null | undefined): void {
+    const row = stage.stageDtlList[0];
+    if (!row) return;
+
+    this.contractForm.patchValue({
+      yarnStage: {
+        party_Id: row.party_Id != null ? row.party_Id.toString() : null,
+        qty: row.req_Qty ?? null,
+        uom_Id: row.uom != null ? row.uom.toString() : null,
+        fromDate: row.plan_SDat ? row.plan_SDat.split('T')[0] : null,
+        toDate: row.plan_EDat ? row.plan_EDat.split('T')[0] : null,
+      },
+    });
+
+    const yarnArray = this.yarnItems;
+    yarnArray.clear();
+
+    const mats = row.materialsList?.length ? row.materialsList : [{ item_Id: null, qty: null }];
+    mats.forEach((m) => {
+      yarnArray.push(
+        this.fb.group({
+          material_Id: [m.item_Id ?? 0],
+          fiber_Qty: [(m as ContractsMaterialsDto).qty ?? 0],
+          material_RowId: [(m as ContractsMaterialsDto).material_RowId ?? 0],
+        }),
+      );
+    });
+
+    (this.yarnStage as any)['_stage_RowId'] = row.stage_RowId;
+  }
+
+  private populateKnittingStage(stage: ContractsStagesDto, wo: number | null | undefined): void {
+    const arr = this.knittingStage;
+    arr.clear();
+
+    if (!stage.stageDtlList.length) {
+      arr.push(createKnittingEntry(this.fb));
+      return;
+    }
+
+    stage.stageDtlList.forEach((row) => {
+      const entry = createKnittingEntry(this.fb);
+      entry.patchValue({
+        party_Id: row.party_Id != null ? row.party_Id.toString() : null,
+        qty: row.req_Qty ?? 0,
+        uom_Id: row.uom != null ? row.uom.toString() : null,
+        fromDate: row.plan_SDat ? row.plan_SDat.split('T')[0] : null,
+        toDate: row.plan_EDat ? row.plan_EDat.split('T')[0] : null,
+        stage_RowId: row.stage_RowId ?? 0,
+      });
+
+      const requiredMats = row.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
+      const inputMats = row.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
+      const reqArr = entry.get('required') as FormArray;
+      reqArr.clear();
+
+      if (requiredMats.length) {
+        requiredMats.forEach((reqMat) => {
+          const reqItem = createKnittingRequiredItem(this.fb);
+          reqItem.patchValue({
+            material_Id: reqMat.item_Id ?? 0,
+            item1_Qty: reqMat.qty ?? 0,
+            material_RowId: reqMat.material_RowId ?? 0,
+          });
+
+          if (wo && reqMat.item_Id)
+            this.GetAllItemsByStageIdAsync(wo, 1, false, [reqMat.item_Id.toString()]).subscribe();
+
+          const inputArr = reqItem.get('inputItems') as FormArray;
+          inputArr.clear();
+
+          const childInputs = inputMats.filter((m) => m.parent_Mat_RowId === reqMat.material_RowId);
+          if (childInputs.length) {
+            childInputs.forEach((inp) => {
+              const inpItem = createMaterialItem(this.fb, 'item2_Qty');
+              inpItem.patchValue({
+                material_Id: inp.item_Id ?? 0,
+                item2_Qty: inp.qty ?? 0,
+                material_RowId: inp.material_RowId ?? 0,
+              });
+              inputArr.push(inpItem);
+            });
+          }
+
+          reqArr.push(reqItem);
+        });
+      } else {
+        reqArr.push(createKnittingRequiredItem(this.fb));
+      }
+
+      arr.push(entry);
+    });
+  }
+
+  private populateDyeingStage(stage: ContractsStagesDto, wo: number | null | undefined): void {
+    const arr = this.dyeingStage;
+    arr.clear();
+
+    if (!stage.stageDtlList.length) {
+      arr.push(createDyeingEntry(this.fb));
+      return;
+    }
+
+    stage.stageDtlList.forEach((row) => {
+      const entry = createDyeingEntry(this.fb);
+      entry.patchValue({
+        party_Id: row.party_Id != null ? row.party_Id.toString() : null,
+        qty: row.req_Qty ?? 0,
+        uom_Id: row.uom != null ? row.uom.toString() : null,
+        fromDate: row.plan_SDat ? row.plan_SDat.split('T')[0] : null,
+        toDate: row.plan_EDat ? row.plan_EDat.split('T')[0] : null,
+        stage_RowId: row.stage_RowId ?? 0,
+      });
+
+      // ── Split materials by hierarchy ──────────────────────────────────────
+      // materialsList comes from server already in correct order:
+      // R (color) → I (item1, parent=color) → I (item2, parent=item1)
+      const colorMats = row.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
+      const allInputMats = row.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
+
+      // item1 — direct children of color records
+      const colorRowIds = new Set(colorMats.map((c) => c.material_RowId));
+      const item1Mats = allInputMats.filter((m) => colorRowIds.has(m.parent_Mat_RowId ?? 0));
+
+      // item2 — direct children of item1 records
+      const item1RowIds = new Set(item1Mats.map((i) => i.material_RowId));
+      const item2Mats = allInputMats.filter((m) => item1RowIds.has(m.parent_Mat_RowId ?? 0));
+
+      const reqArr = entry.get('required') as FormArray;
+      reqArr.clear();
+
+      if (colorMats.length) {
+        colorMats.forEach((colorMat) => {
+          const colorGroup = createDyeingRequiredItem(this.fb);
+          colorGroup.patchValue({
+            color_Id: colorMat.item_Id ?? 0,
+            material_RowId: colorMat.material_RowId ?? 0,
+          });
+
+          if (wo && colorMat.item_Id)
+            this.GetAllItemsByStageIdAsync(wo, 2, false, [colorMat.item_Id.toString()]).subscribe();
+
+          // item1 records whose parent is this color
+          const childItem1s = item1Mats.filter(
+            (m) => m.parent_Mat_RowId === colorMat.material_RowId,
+          );
+          const inputArr = colorGroup.get('inputItems') as FormArray;
+          inputArr.clear();
+
+          if (childItem1s.length) {
+            // ── Fixed loop — forEach on item1s, find matching item2 by parent ──
+            childItem1s.forEach((inp1) => {
+              const inpItem = createDyeingInputItem(this.fb);
+
+              // Find item2 whose parent points to this item1
+              const item2 = item2Mats.find((m) => m.parent_Mat_RowId === inp1.material_RowId);
+
+              inpItem.patchValue({
+                item1_Id: inp1.item_Id ?? 0,
+                item1_Qty: inp1.qty ?? 0,
+                material_RowId: inp1.material_RowId ?? 0,
+                item2_Id: item2?.item_Id ?? 0,
+                item2_Qty: item2?.qty ?? 0,
+                item2_material_RowId: item2?.material_RowId ?? 0,
+              });
+
+              inputArr.push(inpItem);
+            });
+          } else {
+            inputArr.push(createDyeingInputItem(this.fb));
+          }
+
+          reqArr.push(colorGroup);
+        });
+      } else {
+        reqArr.push(createDyeingRequiredItem(this.fb));
+      }
+
+      arr.push(entry);
+    });
   }
 
   private populateCuttingStageForm(stage: ContractsStagesDto, wo: number | null | undefined): void {
@@ -470,14 +533,205 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
+  private populateSewingStage(stage: ContractsStagesDto, wo: number | null | undefined): void {
+    const arr = this.sewingStage;
+    arr.clear();
+    if (!stage.stageDtlList.length) {
+      arr.push(createSewingEntry(this.fb));
+      return;
+    }
+
+    stage.stageDtlList.forEach((row) => {
+      const entry = createSewingEntry(this.fb);
+      entry.patchValue({
+        party_Id: row.party_Id != null ? row.party_Id.toString() : null,
+        qty: row.req_Qty ?? 0,
+        uom_Id: row.uom != null ? row.uom.toString() : null,
+        fromDate: row.plan_SDat ? row.plan_SDat.split('T')[0] : null,
+        toDate: row.plan_EDat ? row.plan_EDat.split('T')[0] : null,
+        stage_RowId: row.stage_RowId ?? 0,
+      });
+
+      const mats = row.materialsList || [];
+      const colorMats = mats.filter((m) => m.mat_Type === 'C');
+      const sizeMats = mats.filter((m) => m.mat_Type === 'S');
+      const reqMats = mats.filter((m) => m.mat_Type === 'R');
+      const inputColors = mats.filter((m) => m.mat_Type === 'IC');
+      const inputSizes = mats.filter((m) => m.mat_Type === 'IS');
+      const inputItems = mats.filter((m) => m.mat_Type === 'I');
+
+      const reqArr = entry.get('required') as FormArray;
+      const inputArr = entry.get('input') as FormArray;
+      reqArr.clear();
+      inputArr.clear();
+
+      if (colorMats.length && wo) {
+        forkJoin(
+          colorMats.map((c) =>
+            c.item_Id ? this.loadSewingSizesByColorAsync(wo, c.item_Id) : of(void 0),
+          ),
+        ).subscribe(() => {
+          colorMats.forEach((colorMat, ci) => {
+            const colorGroup = createSewingColorGroup(this.fb);
+            colorGroup.patchValue({
+              color_Id: colorMat.item_Id ?? 0,
+              material_RowId: colorMat.material_RowId ?? 0,
+            });
+
+            const sizesArr = colorGroup.get('sizes') as FormArray;
+            sizesArr.clear();
+            const childSizes = sizeMats.filter(
+              (s) => s.parent_Mat_RowId === colorMat.material_RowId,
+            );
+
+            if (childSizes.length) {
+              forkJoin(
+                childSizes.map((s) =>
+                  colorMat.item_Id && s.item_Id
+                    ? this.loadSewingItemsByColorSizeAsync(wo, colorMat.item_Id, s.item_Id)
+                    : of(void 0),
+                ),
+              ).subscribe(() => {
+                childSizes.forEach((sizeMat) => {
+                  const sizeGroup = createSewingSizeGroup(this.fb);
+                  sizeGroup.patchValue({
+                    size_Id: sizeMat.item_Id ?? 0,
+                    material_RowId: sizeMat.material_RowId ?? 0,
+                  });
+
+                  const itemsArr = sizeGroup.get('items') as FormArray;
+                  itemsArr.clear();
+                  const childItems = reqMats.filter(
+                    (r) => r.parent_Mat_RowId === sizeMat.material_RowId,
+                  );
+
+                  if (childItems.length) {
+                    childItems.forEach((reqMat) => {
+                      const itemGroup = createSewingRequiredItem(this.fb);
+                      itemGroup.patchValue({
+                        material_Id: reqMat.item_Id ?? 0,
+                        qty: reqMat.qty ?? 0,
+                        material_RowId: reqMat.material_RowId ?? 0,
+                      });
+                      if (colorMat.item_Id && sizeMat.item_Id && reqMat.item_Id)
+                        this.loadSewingInputItemsByParamsAsync(
+                          wo,
+                          colorMat.item_Id,
+                          sizeMat.item_Id,
+                          reqMat.item_Id,
+                        );
+                      itemsArr.push(itemGroup);
+                    });
+                  } else {
+                    itemsArr.push(createSewingRequiredItem(this.fb));
+                  }
+
+                  sizesArr.push(sizeGroup);
+                });
+              });
+            } else {
+              sizesArr.push(createSewingSizeGroup(this.fb));
+            }
+
+            reqArr.push(colorGroup);
+
+            // IC → IS → I for this color
+            const ic = inputColors.find((ic) => ic.parent_Mat_RowId === colorMat.material_RowId);
+            const inputColorGroup = createSewingInputColorGroup(this.fb);
+            inputColorGroup.patchValue({
+              color_Id: colorMat.item_Id ?? 0,
+              material_RowId: ic?.material_RowId ?? 0,
+            });
+
+            const inputSizesArr = inputColorGroup.get('sizes') as FormArray;
+            inputSizesArr.clear();
+            const childInputSizes = ic
+              ? inputSizes.filter((is) => is.parent_Mat_RowId === ic.material_RowId)
+              : [];
+
+            if (childInputSizes.length) {
+              childInputSizes.forEach((inputSizeMat) => {
+                const inputSizeGroup = createSewingInputSizeGroup(this.fb);
+                inputSizeGroup.patchValue({
+                  size_Id: inputSizeMat.item_Id ?? 0,
+                  material_RowId: inputSizeMat.material_RowId ?? 0,
+                });
+
+                const inputItemsArr = inputSizeGroup.get('items') as FormArray;
+                inputItemsArr.clear();
+                const childInputItems = inputItems.filter(
+                  (i) => i.parent_Mat_RowId === inputSizeMat.material_RowId,
+                );
+
+                if (childInputItems.length) {
+                  childInputItems.forEach((inputItemMat) => {
+                    const inputItemGroup = createSewingInputItem(this.fb);
+                    inputItemGroup.patchValue({
+                      material_Id: inputItemMat.item_Id ?? 0,
+                      qty: inputItemMat.qty ?? 0,
+                      material_RowId: inputItemMat.material_RowId ?? 0,
+                    });
+                    inputItemsArr.push(inputItemGroup);
+                  });
+                } else {
+                  inputItemsArr.push(createSewingInputItem(this.fb));
+                }
+
+                inputSizesArr.push(inputSizeGroup);
+              });
+            } else {
+              inputSizesArr.push(createSewingInputSizeGroup(this.fb));
+            }
+
+            inputArr.push(inputColorGroup);
+          });
+        });
+      } else {
+        reqArr.push(createSewingColorGroup(this.fb));
+        inputArr.push(createSewingInputColorGroup(this.fb));
+      }
+
+      arr.push(entry);
+    });
+  }
+
+  // ── Main router — clean and complete ─────────────────────────────────────
   private updateFormAfterSave(saved: ContractsStagesDtlDto): void {
     const stageId = saved.stage_Id ?? 0;
-    if (stageId >= 3) {
+    if (stageId === 0) {
+      this.updateYarnFormAfterSave(saved);
+      return;
+    }
+    if (stageId === 1) {
+      this.updateKnittingFormAfterSave(saved);
+      return;
+    }
+    if (stageId === 2) {
+      this.updateDyeingFormAfterSave(saved);
+      return;
+    }
+    if (stageId === 3) {
       this.updateCuttingFormAfterSave(saved);
       return;
     }
-    if (stageId !== 1) return;
+    if (stageId === 4) {
+      this.updateSewingFormAfterSave(saved);
+      return;
+    }
+  }
 
+  private updateYarnFormAfterSave(saved: ContractsStagesDtlDto): void {
+    // Patch stage_RowId back onto yarnStage
+    (this.yarnStage as any)['_stage_RowId'] = saved.stage_RowId;
+
+    // Patch material_RowIds back onto each yarn item
+    const mats = saved.materialsList ?? [];
+    this.yarnItems.controls.forEach((ctrl, ii) => {
+      if (mats[ii]) ctrl.patchValue({ material_RowId: mats[ii].material_RowId ?? 0 });
+    });
+  }
+
+  private updateKnittingFormAfterSave(saved: ContractsStagesDtlDto): void {
     const rowIndex = this.knittingStage.controls.findIndex(
       (c) => c.value.stage_RowId === saved.stage_RowId || c.value.stage_RowId === 0,
     );
@@ -492,12 +746,41 @@ export class IkgsContractForm implements OnInit {
     reqArr.controls.forEach((reqCtrl, ii) => {
       const reqMat = requiredMats[ii];
       if (reqMat) reqCtrl.patchValue({ material_RowId: reqMat.material_RowId ?? 0 });
-
       const inputArr = this.getKnittingInputItems(rowIndex, ii);
       const childInputs = inputMats.filter((m) => m.parent_Mat_RowId === reqMat?.material_RowId);
       childInputs.forEach((inp, iii) => {
         if (inputArr.at(iii))
           inputArr.at(iii).patchValue({ material_RowId: inp.material_RowId ?? 0 });
+      });
+    });
+  }
+
+  private updateDyeingFormAfterSave(saved: ContractsStagesDtlDto): void {
+    const rowIndex = this.dyeingStage.controls.findIndex(
+      (c) => c.value.stage_RowId === saved.stage_RowId || c.value.stage_RowId === 0,
+    );
+    if (rowIndex === -1) return;
+
+    this.dyeingStage.at(rowIndex).patchValue({ stage_RowId: saved.stage_RowId });
+
+    const colorMats = saved.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
+    const allInputMats = saved.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
+    const colorRowIds = new Set(colorMats.map((c) => c.material_RowId));
+    const item1Mats = allInputMats.filter((m) => colorRowIds.has(m.parent_Mat_RowId ?? 0));
+    const item1RowIds = new Set(item1Mats.map((i) => i.material_RowId));
+    const item2Mats = allInputMats.filter((m) => item1RowIds.has(m.parent_Mat_RowId ?? 0));
+
+    this.getDyeingRequired(rowIndex).controls.forEach((colorCtrl, ci) => {
+      const colorMat = colorMats[ci];
+      if (colorMat) colorCtrl.patchValue({ material_RowId: colorMat.material_RowId ?? 0 });
+      const childItem1s = item1Mats.filter((m) => m.parent_Mat_RowId === colorMat?.material_RowId);
+      this.getDyeingInputItems(rowIndex, ci).controls.forEach((inputCtrl, ii) => {
+        const item1 = childItem1s[ii];
+        if (item1) {
+          inputCtrl.patchValue({ material_RowId: item1.material_RowId ?? 0 });
+          const item2 = item2Mats.find((m) => m.parent_Mat_RowId === item1.material_RowId);
+          if (item2) inputCtrl.patchValue({ item2_material_RowId: item2.material_RowId ?? 0 });
+        }
       });
     });
   }
@@ -544,14 +827,69 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
+  private updateSewingFormAfterSave(saved: ContractsStagesDtlDto): void {
+    const rowIndex = this.sewingStage.controls.findIndex(
+      (c) => c.value.stage_RowId === saved.stage_RowId || c.value.stage_RowId === 0,
+    );
+    if (rowIndex === -1) return;
+    this.sewingStage.at(rowIndex).patchValue({ stage_RowId: saved.stage_RowId });
+
+    const colorMats = saved.materialsList?.filter((m) => m.mat_Type === 'C') ?? [];
+    const sizeMats = saved.materialsList?.filter((m) => m.mat_Type === 'S') ?? [];
+    const reqMats = saved.materialsList?.filter((m) => m.mat_Type === 'R') ?? [];
+    const inputColors = saved.materialsList?.filter((m) => m.mat_Type === 'IC') ?? [];
+    const inputSizes = saved.materialsList?.filter((m) => m.mat_Type === 'IS') ?? [];
+    const inputItems = saved.materialsList?.filter((m) => m.mat_Type === 'I') ?? [];
+
+    this.getSewingRequired(rowIndex).controls.forEach((colorCtrl, ci) => {
+      const colorMat = colorMats[ci];
+      if (colorMat) colorCtrl.patchValue({ material_RowId: colorMat.material_RowId ?? 0 });
+
+      const childSizes = sizeMats.filter((s) => s.parent_Mat_RowId === colorMat?.material_RowId);
+      this.getSewingRequiredSizes(rowIndex, ci).controls.forEach((sizeCtrl, si) => {
+        const sizeMat = childSizes[si];
+        if (sizeMat) sizeCtrl.patchValue({ material_RowId: sizeMat.material_RowId ?? 0 });
+        const childItems = reqMats.filter((r) => r.parent_Mat_RowId === sizeMat?.material_RowId);
+        this.getSewingRequiredSizeItems(rowIndex, ci, si).controls.forEach((itemCtrl, ii) => {
+          if (childItems[ii])
+            itemCtrl.patchValue({ material_RowId: childItems[ii].material_RowId ?? 0 });
+        });
+      });
+
+      const ic = inputColors.find((ic) => ic.parent_Mat_RowId === colorMat?.material_RowId);
+      const inputColorCtrl = this.getSewingInput(rowIndex).at(ci);
+      if (ic) inputColorCtrl.patchValue({ material_RowId: ic.material_RowId ?? 0 });
+
+      const childInputSizes = ic
+        ? inputSizes.filter((is) => is.parent_Mat_RowId === ic.material_RowId)
+        : [];
+      this.getSewingInputSizes(rowIndex, ci).controls.forEach((inputSizeCtrl, si) => {
+        const inputSizeMat = childInputSizes[si];
+        if (inputSizeMat)
+          inputSizeCtrl.patchValue({ material_RowId: inputSizeMat.material_RowId ?? 0 });
+        const childInputItems = inputItems.filter(
+          (i) => i.parent_Mat_RowId === inputSizeMat?.material_RowId,
+        );
+        this.getSewingInputSizeItems(rowIndex, ci, si).controls.forEach((itemCtrl, ii) => {
+          if (childInputItems[ii])
+            itemCtrl.patchValue({ material_RowId: childInputItems[ii].material_RowId ?? 0 });
+        });
+      });
+    });
+  }
+
   loadStageData(
     stage_Id: number,
     wo: number | null | undefined,
     isParent: boolean,
     parentId: number,
   ) {
-    if (wo && !this.allMaterialsByStage()[stage_Id])
-      this.GetAllItemsByStageIdAsync(wo, stage_Id, isParent, [parentId.toString()]).subscribe();
+    // Stages 3 and 4 use dedicated LOV loaders (loadCuttingColorsAsync, loadSewingColorsAsync)
+    // so skip the generic materials loader for them
+    if (stage_Id < 3) {
+      if (wo && !this.allMaterialsByStage()[stage_Id])
+        this.GetAllItemsByStageIdAsync(wo, stage_Id, isParent, [parentId.toString()]).subscribe();
+    }
     if (!this.allPartiesByStage()[stage_Id]) this.getAllPartiesBystage_IdAsync(stage_Id);
   }
 
@@ -567,11 +905,16 @@ export class IkgsContractForm implements OnInit {
       this.allCuttingSizesByColor.set({});
       this.allCuttingItemsByColorSize.set({});
       this.allCuttingInputItemsByColor.set({});
+      this.allSewingColors.set([]);
+      this.allSewingSizesByColor.set({});
+      this.allSewingItemsByColorSize.set({});
+      this.allSewingInputItemsByColorSize.set({});
       this.resetStageForms();
     }
     const stages = this.contractForm.get('Stages')?.value || [];
     stages.forEach((stage_Id: number) => this.loadStageData(+stage_Id, wo, true, 0));
     if (stages.includes('3') || stages.includes(3)) this.loadCuttingColorsAsync(wo).subscribe();
+    if (stages.includes('4') || stages.includes(4)) this.loadSewingColorsAsync(wo).subscribe();
   }
 
   onStageChange(selectedStages: string[]) {
@@ -580,6 +923,7 @@ export class IkgsContractForm implements OnInit {
     newStages.forEach((stage_Id) => {
       if (wo) this.loadStageData(+stage_Id, wo, true, 0);
       if (+stage_Id === 3 && wo) this.loadCuttingColorsAsync(wo).subscribe();
+      if (+stage_Id === 4 && wo) this.loadSewingColorsAsync(wo).subscribe();
     });
     const removedStages = this.previousSelectedStages.filter((s) => !selectedStages.includes(s));
     if (removedStages.length > 0) this.removeStageData(removedStages.map((s) => +s));
@@ -767,6 +1111,56 @@ export class IkgsContractForm implements OnInit {
     return allItems.filter((m) => !selected.includes(m.item1));
   }
 
+  getSewingColors(): GetWoItemsDto[] {
+    return this.allSewingColors();
+  }
+
+  getSewingSizesByColor(colorId: number): GetWoItemsDto[] {
+    return this.allSewingSizesByColor()[colorId?.toString()] || [];
+  }
+
+  getSewingItemsByColorSize(colorId: number, sizeId: number): GetWoItemsDto[] {
+    return this.allSewingItemsByColorSize()[`${colorId}_${sizeId}`] || [];
+  }
+
+  getSewingInputItemsByColorSize(colorId: number, sizeId: number): GetWoItemsDto[] {
+    // Input items (item2) depend on item1 selected — key includes item1
+    // We merge all item2s loaded for this colorId+sizeId regardless of item1
+    const allKeys = Object.keys(this.allSewingInputItemsByColorSize());
+    const prefix = `${colorId}_${sizeId}_`;
+    return allKeys
+      .filter((k) => k.startsWith(prefix))
+      .flatMap((k) => this.allSewingInputItemsByColorSize()[k]);
+  }
+
+  // IS size dropdown — available = left side sizes minus already selected in same IC group
+  getAvailableSewingInputSizes(ri: number, ci: number, si: number): GetWoItemsDto[] {
+    // Get only sizes actually selected on left side for this color
+    const selectedLeftSizeIds = this.getSewingRequiredSizes(ri, ci)
+      .controls.map((c) => c.value.size_Id)
+      .filter((id) => id && id !== 0);
+
+    const allSizes = this.getSewingSizesByColor(this.getSewingRequired(ri).at(ci).value.color_Id);
+
+    // Filter to only left-selected sizes, exclude already picked on right side
+    const alreadySelectedOnRight = this.getSewingInputSizes(ri, ci)
+      .controls.filter((_, idx) => idx !== si)
+      .map((c) => c.value.size_Id)
+      .filter((id) => id && id !== 0);
+
+    return allSizes.filter(
+      (s) => selectedLeftSizeIds.includes(s.sizeId1) && !alreadySelectedOnRight.includes(s.sizeId1),
+    );
+  }
+
+  // IS add button disabled when selected sizes = left side sizes count
+  isSewingInputSizeLimitReached(ri: number, ci: number): boolean {
+    const leftCount = this.getSewingRequiredSizes(ri, ci).controls.filter(
+      (c) => c.value.size_Id && c.value.size_Id !== 0,
+    ).length;
+    const rightCount = this.getSewingInputSizes(ri, ci).length;
+    return rightCount >= leftCount || leftCount === 0;
+  }
   //#endregion
 
   //#region Form Accessors
@@ -827,6 +1221,34 @@ export class IkgsContractForm implements OnInit {
     return this.getCuttingInput(ri).at(ci).get('items') as FormArray;
   }
 
+  get sewingStage(): FormArray {
+    return this.contractForm.get('sewingStage') as FormArray;
+  }
+
+  getSewingRequired(ri: number): FormArray {
+    return this.sewingStage.at(ri).get('required') as FormArray;
+  }
+
+  getSewingRequiredSizes(ri: number, ci: number): FormArray {
+    return this.getSewingRequired(ri).at(ci).get('sizes') as FormArray;
+  }
+
+  getSewingRequiredSizeItems(ri: number, ci: number, si: number): FormArray {
+    return this.getSewingRequiredSizes(ri, ci).at(si).get('items') as FormArray;
+  }
+
+  getSewingInput(ri: number): FormArray {
+    return this.sewingStage.at(ri).get('input') as FormArray;
+  }
+
+  getSewingInputSizes(ri: number, ci: number): FormArray {
+    return this.getSewingInput(ri).at(ci).get('sizes') as FormArray;
+  }
+
+  getSewingInputSizeItems(ri: number, ci: number, si: number): FormArray {
+    return this.getSewingInputSizes(ri, ci).at(si).get('items') as FormArray;
+  }
+
   //#endregion
 
   //#region Add Rows / Items
@@ -880,6 +1302,31 @@ export class IkgsContractForm implements OnInit {
     this.getCuttingInputItems(ri, ci).push(createCuttingInputItem(this.fb));
   }
 
+  addSewingRow(): void {
+    this.sewingStage.push(createSewingEntry(this.fb));
+  }
+
+  addSewingColorGroup(ri: number): void {
+    this.getSewingRequired(ri).push(createSewingColorGroup(this.fb));
+    this.getSewingInput(ri).push(createSewingInputColorGroup(this.fb));
+  }
+
+  addSewingSize(ri: number, ci: number): void {
+    this.getSewingRequiredSizes(ri, ci).push(createSewingSizeGroup(this.fb));
+  }
+
+  addSewingSizeItem(ri: number, ci: number, si: number): void {
+    this.getSewingRequiredSizeItems(ri, ci, si).push(createSewingRequiredItem(this.fb));
+  }
+
+  addSewingInputSizeGroup(ri: number, ci: number): void {
+    this.getSewingInputSizes(ri, ci).push(createSewingInputSizeGroup(this.fb));
+  }
+
+  addSewingInputItem(ri: number, ci: number, si: number): void {
+    this.getSewingInputSizeItems(ri, ci, si).push(createSewingInputItem(this.fb));
+  }
+
   //#endregion
 
   //#region Delete
@@ -895,11 +1342,19 @@ export class IkgsContractForm implements OnInit {
       stage_Ids.forEach((id) => delete updated[id]);
       return updated;
     });
+
     if (stage_Ids.includes(3)) {
       this.allCuttingColors.set([]);
       this.allCuttingSizesByColor.set({});
       this.allCuttingItemsByColorSize.set({});
       this.allCuttingInputItemsByColor.set({});
+    }
+
+    if (stage_Ids.includes(4)) {
+      this.allSewingColors.set([]);
+      this.allSewingSizesByColor.set({});
+      this.allSewingItemsByColorSize.set({});
+      this.allSewingInputItemsByColorSize.set({});
     }
   }
 
@@ -1045,6 +1500,7 @@ export class IkgsContractForm implements OnInit {
 
     this.loadCuttingInputItemsByParamsAsync(wo, colorId, sizeId, item1Id);
   }
+
   onCuttingInputItemChange(ri: number, ci: number, ii: number, value: number): void {
     const colorId = this.getCuttingRequired(ri).at(ci).value.color_Id;
     if (!colorId) return;
@@ -1061,6 +1517,74 @@ export class IkgsContractForm implements OnInit {
       });
   }
 
+  onSewingColorChange(ri: number, ci: number, colorId: number): void {
+    const wo = this.contractForm.get('WorkOrder')?.value;
+    if (!colorId) return;
+    this.getSewingRequired(ri).at(ci).patchValue({ material_RowId: 0 });
+    const sizesArr = this.getSewingRequiredSizes(ri, ci);
+    sizesArr.clear();
+    sizesArr.push(createSewingSizeGroup(this.fb));
+    const inputGroup = this.getSewingInput(ri).at(ci);
+    if (inputGroup) {
+      inputGroup.patchValue({ color_Id: colorId, material_RowId: 0 });
+      const inputSizesArr = this.getSewingInputSizes(ri, ci);
+      inputSizesArr.clear();
+      inputSizesArr.push(createSewingInputSizeGroup(this.fb));
+    }
+    if (wo) this.loadSewingSizesByColorAsync(wo, colorId).subscribe();
+    this.setHoveredSewingColor(ri, ci);
+  }
+
+  onSewingSizeChange(ri: number, ci: number, si: number, sizeId: number): void {
+    const wo = this.contractForm.get('WorkOrder')?.value;
+    const colorId = this.getSewingRequired(ri).at(ci).value.color_Id;
+    if (!colorId || !sizeId) return;
+    this.getSewingRequiredSizes(ri, ci).at(si).patchValue({ material_RowId: 0 });
+    const itemsArr = this.getSewingRequiredSizeItems(ri, ci, si);
+    itemsArr.clear();
+    itemsArr.push(createSewingRequiredItem(this.fb));
+    if (wo) this.loadSewingItemsByColorSizeAsync(wo, colorId, sizeId).subscribe();
+  }
+
+  onSewingRequiredItemChange(
+    ri: number,
+    ci: number,
+    si: number,
+    ii: number,
+    item1Id: number,
+  ): void {
+    const wo = this.contractForm.get('WorkOrder')?.value;
+    const colorId = this.getSewingRequired(ri).at(ci).value.color_Id;
+    const sizeId = this.getSewingRequiredSizes(ri, ci).at(si).value.size_Id;
+    if (!wo || !colorId || !sizeId || !item1Id) return;
+    const items = this.getSewingItemsByColorSize(colorId, sizeId);
+    const found = items.find((m) => m.item1 === item1Id);
+    if (found)
+      this.getSewingRequiredSizeItems(ri, ci, si)
+        .at(ii)
+        .patchValue({ qty: found.item1_Qty ?? 0 });
+    this.loadSewingInputItemsByParamsAsync(wo, colorId, sizeId, item1Id);
+  }
+
+  onSewingInputSizeChange(ri: number, ci: number, si: number, sizeId: number): void {
+    if (!sizeId) return;
+    this.getSewingInputSizes(ri, ci).at(si).patchValue({ material_RowId: 0 });
+    const itemsArr = this.getSewingInputSizeItems(ri, ci, si);
+    itemsArr.clear();
+    itemsArr.push(createSewingInputItem(this.fb));
+  }
+
+  onSewingInputItemChange(ri: number, ci: number, si: number, ii: number, item2Id: number): void {
+    const colorId = this.getSewingRequired(ri).at(ci).value.color_Id;
+    const sizeId = this.getSewingInputSizes(ri, ci).at(si).value.size_Id;
+    if (!colorId || !sizeId) return;
+    const items = this.getSewingInputItemsByColorSize(colorId, sizeId);
+    const selected = items.find((m) => m.item2 === item2Id);
+    if (selected)
+      this.getSewingInputSizeItems(ri, ci, si)
+        .at(ii)
+        .patchValue({ qty: selected.item2_Qty ?? 0 });
+  }
   //#endregion
 
   //#region Cutting Hover Helpers
@@ -1084,6 +1608,25 @@ export class IkgsContractForm implements OnInit {
     return this.allCuttingColors().find((c) => c.color1 === colorId)?.colorDs1 ?? 'Input Items';
   }
 
+  setHoveredSewingColor(ri: number, ci: number): void {
+    this.hoveredSewingColorIndex.update((prev) => ({ ...prev, [ri]: ci }));
+  }
+
+  getHoveredSewingColor(ri: number): number {
+    return this.hoveredSewingColorIndex()[ri] ?? 0;
+  }
+
+  getHoveredSewingColorId(ri: number): number {
+    const ci = this.getHoveredSewingColor(ri);
+    return this.getSewingRequired(ri).at(ci)?.value?.color_Id ?? 0;
+  }
+
+  getHoveredSewingColorLabel(ri: number): string {
+    const colorId = this.getHoveredSewingColorId(ri);
+    if (!colorId) return 'Input';
+    return this.allSewingColors().find((c) => c.color1 === colorId)?.colorDs1 ?? 'Input';
+  }
+
   //#endregion
 
   async removeStageRow(stageRowId: number, stageId: number, rowIndex: number): Promise<void> {
@@ -1091,9 +1634,9 @@ export class IkgsContractForm implements OnInit {
       1: 'Knitting',
       2: 'Dyeing',
       3: 'Cutting',
+      4: 'Sewing',
     };
-    const stageName = stageNames[stageId] ?? 'Cutting';
-
+    const stageName = stageNames[stageId] ?? 'Stage';
     if (!stageRowId || stageRowId === 0) {
       this.removeStageRowFromForm(stageId, rowIndex);
       return;
@@ -1121,7 +1664,8 @@ export class IkgsContractForm implements OnInit {
   private removeStageRowFromForm(stageId: number, rowIndex: number): void {
     if (stageId === 1 && this.knittingStage.length > 1) this.knittingStage.removeAt(rowIndex);
     else if (stageId === 2 && this.dyeingStage.length > 1) this.dyeingStage.removeAt(rowIndex);
-    else if (stageId >= 3 && this.cuttingStage.length > 1) this.cuttingStage.removeAt(rowIndex);
+    else if (stageId === 3 && this.cuttingStage.length > 1) this.cuttingStage.removeAt(rowIndex);
+    else if (stageId === 4 && this.sewingStage.length > 1) this.sewingStage.removeAt(rowIndex);
   }
 
   async removeMaterialItem(
@@ -1142,7 +1686,7 @@ export class IkgsContractForm implements OnInit {
     if (!confirmed) return;
 
     try {
-      await this.contractFormService.removeMaterialItemApi(materialRowId);
+      await this.contractFormService.removeMaterialItemApi(materialRowId, '', this.step());
 
       this.removeMaterialFromForm(stageId, rowIndex, itemIndex);
       this.notification.success('Removed', 'Item has been removed.');
@@ -1155,6 +1699,8 @@ export class IkgsContractForm implements OnInit {
   }
 
   private removeMaterialFromForm(stageId: number, rowIndex: number, itemIndex: number): void {
+    // Handles Yarn (0), Knitting required (1), Dyeing color (2) only
+    // Cutting and Sewing have dedicated delete methods
     if (stageId === 0 && this.yarnItems.length > 1) this.yarnItems.removeAt(itemIndex);
     else if (stageId === 1) {
       const arr = this.getKnittingRequired(rowIndex);
@@ -1183,7 +1729,7 @@ export class IkgsContractForm implements OnInit {
     if (!confirmed) return;
 
     try {
-      await this.contractFormService.removeMaterialItemApi(materialRowId);
+      await this.contractFormService.removeMaterialItemApi(materialRowId, '', this.step());
 
       this.removeMaterialFromForm(stageId, rowIndex, itemIndex);
       this.notification.success('Removed', 'Input item has been removed.');
@@ -1212,7 +1758,7 @@ export class IkgsContractForm implements OnInit {
     if (!confirmed) return;
 
     try {
-      await this.contractFormService.removeMaterialItemApi(materialRowId, 'I');
+      await this.contractFormService.removeMaterialItemApi(materialRowId, 'I', this.step());
       if (arr.length > 1) arr.removeAt(ii);
       this.notification.success('Removed', 'Input item has been removed.');
     } catch {
@@ -1233,7 +1779,7 @@ export class IkgsContractForm implements OnInit {
     );
     if (!confirmed) return;
     this.contractFormService
-      .removeMaterialItemApi(materialRowId, 'I')
+      .removeMaterialItemApi(materialRowId, 'I', this.step())
       .then(() => {
         if (arr.length > 1) arr.removeAt(iii);
         this.notification.success('Removed', 'Input item has been removed.');
@@ -1244,51 +1790,37 @@ export class IkgsContractForm implements OnInit {
   }
 
   async removeDyeingColorGroupWithDb(ri: number, ci: number): Promise<void> {
-    const colorRowId = this.getDyeingRequired(ri).at(ci).value.material_RowId;
-    const materialIds = [
-      ...(colorRowId && colorRowId !== 0 ? [colorRowId] : []),
-      ...this.getDyeingInputItems(ri, ci)
-        .controls.map((c: any) => c.value.material_RowId)
-        .filter((id: any) => id && id !== 0),
-    ];
-    if (materialIds.length === 0) {
+    const colorRowId = this.getDyeingRequired(ri).at(ci).value.material_RowId ?? 0;
+
+    if (!colorRowId || colorRowId === 0) {
       if (this.getDyeingRequired(ri).length > 1) this.getDyeingRequired(ri).removeAt(ci);
       return;
     }
+
     const confirmed = await this.notification.confirm(
       'Remove Color Group?',
       'All input materials under this color will be deleted.',
     );
     if (!confirmed) return;
-    materialIds
-      .reduce(
-        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id, 'R')),
-        Promise.resolve(),
-      )
-      .then(() => {
-        if (this.getDyeingRequired(ri).length > 1) this.getDyeingRequired(ri).removeAt(ci);
-        this.notification.success('Removed', 'Color group and its materials have been removed.');
-      })
-      .catch(() =>
-        this.notification.error('Error', 'Could not remove the color group. Please try again.'),
-      );
+
+    try {
+      await this.contractFormService.removeMaterialItemApi(colorRowId, 'DR', this.step());
+      if (this.getDyeingRequired(ri).length > 1) this.getDyeingRequired(ri).removeAt(ci);
+      this.notification.success('Removed', 'Color group and its materials have been removed.');
+    } catch {
+      this.notification.error('Error', 'Could not remove the color group. Please try again.');
+    }
   }
 
   async removeCuttingColorGroupWithDb(ri: number, ci: number): Promise<void> {
-    const materialIds: number[] = [];
-    this.getCuttingRequiredSizes(ri, ci).controls.forEach((sg) => {
-      (sg.get('items') as FormArray).controls.forEach((item) => {
-        const id = item.value.material_RowId;
-        if (id && id !== 0) materialIds.push(id);
-      });
-    });
+    const colorRowId = this.getCuttingRequired(ri).at(ci).value.material_RowId ?? 0;
     const removeFromForm = () => {
       if (this.getCuttingRequired(ri).length > 1) {
         this.getCuttingRequired(ri).removeAt(ci);
         this.getCuttingInput(ri).removeAt(ci);
       }
     };
-    if (materialIds.length === 0) {
+    if (!colorRowId || colorRowId === 0) {
       removeFromForm();
       return;
     }
@@ -1297,28 +1829,21 @@ export class IkgsContractForm implements OnInit {
       'All sizes, required items and input materials under this color will be deleted.',
     );
     if (!confirmed) return;
-    materialIds
-      .reduce(
-        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id, 'C')),
-        Promise.resolve(),
-      )
-      .then(() => {
-        removeFromForm();
-        this.notification.success(
-          'Removed',
-          'Color group and all its materials have been removed.',
-        );
-      })
-      .catch(() =>
-        this.notification.error('Error', 'Could not remove the color group. Please try again.'),
+    try {
+      await this.contractFormService.removeMaterialItemApi(colorRowId, 'C', this.step());
+      removeFromForm();
+      this.notification.success('Removed', 'Color group and all its materials have been removed.');
+    } catch {
+      this.notification.error(
+        'Delete Failed',
+        'Could not remove the color group. Please try again.',
       );
+    }
   }
 
   async removeCuttingSizeWithDb(ri: number, ci: number, si: number): Promise<void> {
-    const materialIds = this.getCuttingRequiredSizeItems(ri, ci, si)
-      .controls.map((c) => c.value.material_RowId)
-      .filter((id) => id && id !== 0);
-    if (materialIds.length === 0) {
+    const sizeRowId = this.getCuttingRequiredSizes(ri, ci).at(si).value.material_RowId ?? 0;
+    if (!sizeRowId || sizeRowId === 0) {
       if (this.getCuttingRequiredSizes(ri, ci).length > 1)
         this.getCuttingRequiredSizes(ri, ci).removeAt(si);
       return;
@@ -1328,19 +1853,14 @@ export class IkgsContractForm implements OnInit {
       'All required items under this size will be deleted.',
     );
     if (!confirmed) return;
-    materialIds
-      .reduce(
-        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id, 'S')),
-        Promise.resolve(),
-      )
-      .then(() => {
-        if (this.getCuttingRequiredSizes(ri, ci).length > 1)
-          this.getCuttingRequiredSizes(ri, ci).removeAt(si);
-        this.notification.success('Removed', 'Size and its items have been removed.');
-      })
-      .catch(() =>
-        this.notification.error('Error', 'Could not remove the size. Please try again.'),
-      );
+    try {
+      await this.contractFormService.removeMaterialItemApi(sizeRowId, 'S', this.step());
+      if (this.getCuttingRequiredSizes(ri, ci).length > 1)
+        this.getCuttingRequiredSizes(ri, ci).removeAt(si);
+      this.notification.success('Removed', 'Size and its items have been removed.');
+    } catch {
+      this.notification.error('Delete Failed', 'Could not remove the size. Please try again.');
+    }
   }
 
   removeCuttingInputColorWithDb(ri: number, ci: number): void {
@@ -1353,7 +1873,8 @@ export class IkgsContractForm implements OnInit {
     }
     materialIds
       .reduce(
-        (chain, id) => chain.then(() => this.contractFormService.removeMaterialItemApi(id)),
+        (chain, id) =>
+          chain.then(() => this.contractFormService.removeMaterialItemApi(id, '', this.step())),
         Promise.resolve(),
       )
       .then(() => {
@@ -1375,7 +1896,7 @@ export class IkgsContractForm implements OnInit {
     );
     if (!confirmed) return;
     this.contractFormService
-      .removeMaterialItemApi(materialRowId, 'R')
+      .removeMaterialItemApi(materialRowId, 'R', this.step())
       .then(() => {
         if (this.getCuttingRequiredSizeItems(ri, ci, si).length > 1)
           this.getCuttingRequiredSizeItems(ri, ci, si).removeAt(ii);
@@ -1399,7 +1920,7 @@ export class IkgsContractForm implements OnInit {
     );
     if (!confirmed) return;
     this.contractFormService
-      .removeMaterialItemApi(materialRowId, 'I')
+      .removeMaterialItemApi(materialRowId, 'I', this.step())
       .then(() => {
         if (this.getCuttingInputItems(ri, ci).length > 1)
           this.getCuttingInputItems(ri, ci).removeAt(ii);
@@ -1410,6 +1931,147 @@ export class IkgsContractForm implements OnInit {
       );
   }
 
+  async removeSewingColorGroupWithDb(ri: number, ci: number): Promise<void> {
+    const colorRowId = this.getSewingRequired(ri).at(ci).value.material_RowId ?? 0;
+    const removeFromForm = () => {
+      if (this.getSewingRequired(ri).length > 1) {
+        this.getSewingRequired(ri).removeAt(ci);
+        this.getSewingInput(ri).removeAt(ci);
+      }
+    };
+    if (!colorRowId || colorRowId === 0) {
+      removeFromForm();
+      return;
+    }
+    const confirmed = await this.notification.confirm(
+      'Remove Color Group?',
+      'All sizes, required items and input materials under this color will be deleted.',
+    );
+    if (!confirmed) return;
+    try {
+      await this.contractFormService.removeMaterialItemApi(colorRowId, 'C', this.step());
+      removeFromForm();
+      this.notification.success('Removed', 'Color group and all its materials have been removed.');
+    } catch {
+      this.notification.error(
+        'Delete Failed',
+        'Could not remove the color group. Please try again.',
+      );
+    }
+  }
+
+  async removeSewingSizeWithDb(ri: number, ci: number, si: number): Promise<void> {
+  const sizeRowId = this.getSewingRequiredSizes(ri, ci).at(si).value.material_RowId ?? 0;
+  const sizeId    = this.getSewingRequiredSizes(ri, ci).at(si).value.size_Id ?? 0;
+
+  if (!sizeRowId || sizeRowId === 0) {
+    if (this.getSewingRequiredSizes(ri, ci).length > 1)
+      this.getSewingRequiredSizes(ri, ci).removeAt(si);
+    // Also remove matching IS from right side form if size_Id matches
+    if (sizeId) this.removeSewingMatchingInputSize(ri, ci, sizeId);
+    return;
+  }
+
+  const confirmed = await this.notification.confirm(
+    'Remove Size?',
+    'All required items under this size and matching input size will be deleted.',
+  );
+  if (!confirmed) return;
+
+  try {
+    await this.contractFormService.removeMaterialItemApi(sizeRowId, 'S', this.step());
+
+    // Remove left side S from form
+    if (this.getSewingRequiredSizes(ri, ci).length > 1)
+      this.getSewingRequiredSizes(ri, ci).removeAt(si);
+
+    // Remove matching IS from right side form (same color group, same size_Id)
+    if (sizeId) this.removeSewingMatchingInputSize(ri, ci, sizeId);
+
+    this.notification.success('Removed', 'Size and its matching input size have been removed.');
+  } catch {
+    this.notification.error('Delete Failed', 'Could not remove the size. Please try again.');
+  }
+}
+
+// Helper — finds and removes IS from right side that matches the deleted left side size
+private removeSewingMatchingInputSize(ri: number, ci: number, sizeId: number): void {
+  const inputSizes = this.getSewingInputSizes(ri, ci);
+  const matchingIndex = inputSizes.controls.findIndex(
+    (c) => c.value.size_Id === sizeId
+  );
+  if (matchingIndex !== -1) inputSizes.removeAt(matchingIndex);
+}
+
+  async removeSewingSizeItemWithDb(ri: number, ci: number, si: number, ii: number): Promise<void> {
+    const materialRowId =
+      this.getSewingRequiredSizeItems(ri, ci, si).at(ii).value.material_RowId ?? 0;
+    if (!materialRowId || materialRowId === 0) {
+      if (this.getSewingRequiredSizeItems(ri, ci, si).length > 1)
+        this.getSewingRequiredSizeItems(ri, ci, si).removeAt(ii);
+      return;
+    }
+    const confirmed = await this.notification.confirm(
+      'Remove Item?',
+      'This required item will be permanently removed.',
+    );
+    if (!confirmed) return;
+    try {
+      await this.contractFormService.removeMaterialItemApi(materialRowId, 'R', this.step());
+      if (this.getSewingRequiredSizeItems(ri, ci, si).length > 1)
+        this.getSewingRequiredSizeItems(ri, ci, si).removeAt(ii);
+      this.notification.success('Removed', 'Required item has been removed.');
+    } catch {
+      this.notification.error('Delete Failed', 'Could not remove the item. Please try again.');
+    }
+  }
+
+  async removeSewingInputSizeWithDb(ri: number, ci: number, si: number): Promise<void> {
+    const sizeRowId = this.getSewingInputSizes(ri, ci).at(si).value.material_RowId ?? 0;
+    if (!sizeRowId || sizeRowId === 0) {
+      if (this.getSewingInputSizes(ri, ci).length > 1)
+        this.getSewingInputSizes(ri, ci).removeAt(si);
+      return;
+    }
+    const confirmed = await this.notification.confirm(
+      'Remove Input Size?',
+      'All input items under this size will be deleted.',
+    );
+    if (!confirmed) return;
+    try {
+      await this.contractFormService.removeMaterialItemApi(sizeRowId, 'IS', this.step());
+      if (this.getSewingInputSizes(ri, ci).length > 1)
+        this.getSewingInputSizes(ri, ci).removeAt(si);
+      this.notification.success('Removed', 'Input size and its items have been removed.');
+    } catch {
+      this.notification.error(
+        'Delete Failed',
+        'Could not remove the input size. Please try again.',
+      );
+    }
+  }
+
+  async removeSewingInputItemWithDb(ri: number, ci: number, si: number, ii: number): Promise<void> {
+    const materialRowId = this.getSewingInputSizeItems(ri, ci, si).at(ii).value.material_RowId ?? 0;
+    if (!materialRowId || materialRowId === 0) {
+      if (this.getSewingInputSizeItems(ri, ci, si).length > 1)
+        this.getSewingInputSizeItems(ri, ci, si).removeAt(ii);
+      return;
+    }
+    const confirmed = await this.notification.confirm(
+      'Remove Item?',
+      'This input item will be permanently removed.',
+    );
+    if (!confirmed) return;
+    try {
+      await this.contractFormService.removeMaterialItemApi(materialRowId, 'I', this.step());
+      if (this.getSewingInputSizeItems(ri, ci, si).length > 1)
+        this.getSewingInputSizeItems(ri, ci, si).removeAt(ii);
+      this.notification.success('Removed', 'Input item has been removed.');
+    } catch {
+      this.notification.error('Delete Failed', 'Could not remove the item. Please try again.');
+    }
+  }
   //#endregion
 
   //#region Stage Save Status
@@ -1451,6 +2113,60 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
+  loadSewingColorsAsync(wo: number): Observable<void> {
+    if (this.allSewingColors().length) return of(void 0);
+    return this.contractFormService.GetAllItemsByStageIdAsync(wo, 4, true, []).pipe(
+      tap((res: any) => {
+        if (res?.Code === 200 && res.Data) this.allSewingColors.set(res.Data);
+      }),
+      map(() => void 0),
+    );
+  }
+
+  loadSewingSizesByColorAsync(wo: number, colorId: number): Observable<void> {
+    const key = colorId.toString();
+    if (this.allSewingSizesByColor()[key]) return of(void 0);
+    return this.contractFormService.GetAllItemsByStageIdAsync(wo, 4, false, [key]).pipe(
+      tap((res: any) => {
+        if (res?.Code === 200 && res.Data)
+          this.allSewingSizesByColor.update((prev) => ({ ...prev, [key]: res.Data }));
+      }),
+      map(() => void 0),
+    );
+  }
+
+  loadSewingItemsByColorSizeAsync(wo: number, colorId: number, sizeId: number): Observable<void> {
+    const key = `${colorId}_${sizeId}`;
+    if (this.allSewingItemsByColorSize()[key]) return of(void 0);
+    return this.contractFormService
+      .GetAllItemsByStageIdAsync(wo, 4, false, [colorId.toString(), sizeId.toString()])
+      .pipe(
+        tap((res: any) => {
+          if (res?.Code === 200 && res.Data)
+            this.allSewingItemsByColorSize.update((prev) => ({ ...prev, [key]: res.Data }));
+        }),
+        map(() => void 0),
+      );
+  }
+
+  loadSewingInputItemsByParamsAsync(
+    wo: number,
+    colorId: number,
+    sizeId: number,
+    item1Id: number,
+  ): void {
+    const key = `${colorId}_${sizeId}_${item1Id}`;
+    this.contractFormService
+      .GetAllItemsByStageIdAsync(wo, 4, false, [
+        colorId.toString(),
+        sizeId.toString(),
+        item1Id.toString(),
+      ])
+      .subscribe((res: any) => {
+        if (res?.Code === 200 && res.Data)
+          this.allSewingInputItemsByColorSize.update((prev) => ({ ...prev, [key]: res.Data }));
+      });
+  }
   //#endregion
 
   //#region API Calls
@@ -1494,7 +2210,8 @@ export class IkgsContractForm implements OnInit {
     if (stage_Id === 0) return this.buildYarnDtos(stage_Id, contractId);
     if (stage_Id === 1) return this.buildKnittingDtos(stage_Id, contractId);
     if (stage_Id === 2) return this.buildDyeingDtos(stage_Id, contractId);
-    return this.buildCuttingDtos(stage_Id, contractId);
+    if (stage_Id === 3) return this.buildCuttingDtos(stage_Id, contractId);
+    return this.buildSewingDtos(stage_Id, contractId);
   }
 
   private buildYarnDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
@@ -1565,8 +2282,13 @@ export class IkgsContractForm implements OnInit {
     return this.dyeingStage.controls.map((ctrl) => {
       const v = ctrl.value;
       const materials: ContractsMaterialsDto[] = [];
+      let tempIdCounter = -1;
+
       (v.required || []).forEach((req: any) => {
         const colorMatRowId = req.material_RowId ?? 0;
+        const colorTempId = colorMatRowId > 0 ? colorMatRowId : tempIdCounter--;
+
+        // Color record
         materials.push({
           material_RowId: colorMatRowId,
           item_Id: req.color_Id ?? 0,
@@ -1574,27 +2296,37 @@ export class IkgsContractForm implements OnInit {
           is_Active: 'Y',
           mat_Type: 'R',
           parent_Mat_RowId: 0,
+          temp_Id: colorTempId, // ← identify this color
         });
+
         (req.inputItems || []).forEach((inp: any) => {
           const item1RowId = inp.material_RowId ?? 0;
+          const item1TempId = item1RowId > 0 ? item1RowId : tempIdCounter--;
+
+          // item1 — parent is color
           materials.push({
             material_RowId: item1RowId,
             item_Id: inp.item1_Id ?? 0,
             qty: inp.item1_Qty ?? 0,
             is_Active: 'Y',
             mat_Type: 'I',
-            parent_Mat_RowId: colorMatRowId,
+            parent_Mat_RowId: colorMatRowId > 0 ? colorMatRowId : colorTempId, // ← color temp id
+            temp_Id: item1TempId, // ← identify this item1
           });
+
+          // item2 — parent is item1
           materials.push({
             material_RowId: inp.item2_material_RowId ?? 0,
             item_Id: inp.item2_Id ?? 0,
             qty: inp.item2_Qty ?? 0,
             is_Active: 'Y',
             mat_Type: 'I',
-            parent_Mat_RowId: item1RowId,
+            parent_Mat_RowId: item1RowId > 0 ? item1RowId : item1TempId, // ← item1 temp id
+            temp_Id: 0, // item2 has no children, no temp needed
           });
         });
       });
+
       return {
         contract_Id: contractId,
         stage_Id,
@@ -1614,36 +2346,35 @@ export class IkgsContractForm implements OnInit {
     return this.cuttingStage.controls.map((ctrl) => {
       const v = ctrl.value;
       const materials: ContractsMaterialsDto[] = [];
+      let tempIdCounter = -1;
 
-      let tempIdCounter = -1; // negative temp IDs for new records
+      (v.required || []).forEach((colorGroup: any, ci: number) => {
+        const colorRowId = colorGroup.material_RowId ?? 0;
+        const colorTempId = colorRowId > 0 ? colorRowId : tempIdCounter--;
 
-      (v.required || []).forEach((colorGroup: any) => {
-        // Use real DB id if exists, otherwise assign a unique temp negative id
-        const colorTempId =
-          colorGroup.material_RowId > 0 ? colorGroup.material_RowId : tempIdCounter--;
-
+        // C — color, parent = 0
         materials.push({
-          material_RowId: colorGroup.material_RowId ?? 0,
+          material_RowId: colorRowId,
           item_Id: colorGroup.color_Id ?? 0,
           qty: 0,
           is_Active: 'Y',
           mat_Type: 'C',
           parent_Mat_RowId: 0,
-          temp_Id: colorTempId, // ← new field
+          temp_Id: colorTempId,
         });
 
+        // S → R under each size
         (colorGroup.sizes || []).forEach((sizeGroup: any) => {
-          const sizeTempId =
-            sizeGroup.material_RowId > 0 ? sizeGroup.material_RowId : tempIdCounter--;
+          const sizeRowId = sizeGroup.material_RowId ?? 0;
+          const sizeTempId = sizeRowId > 0 ? sizeRowId : tempIdCounter--;
 
           materials.push({
-            material_RowId: sizeGroup.material_RowId ?? 0,
+            material_RowId: sizeRowId,
             item_Id: sizeGroup.size_Id ?? 0,
             qty: 0,
             is_Active: 'Y',
             mat_Type: 'S',
-            parent_Mat_RowId:
-              colorGroup.material_RowId > 0 ? colorGroup.material_RowId : colorTempId, // ← link to parent temp id
+            parent_Mat_RowId: colorRowId > 0 ? colorRowId : colorTempId,
             temp_Id: sizeTempId,
           });
 
@@ -1654,38 +2385,40 @@ export class IkgsContractForm implements OnInit {
               qty: item.qty ?? 0,
               is_Active: 'Y',
               mat_Type: 'R',
-              parent_Mat_RowId:
-                sizeGroup.material_RowId > 0 ? sizeGroup.material_RowId : sizeTempId, // ← link to parent temp id
+              parent_Mat_RowId: sizeRowId > 0 ? sizeRowId : sizeTempId,
             });
           });
         });
-      });
 
-      (v.input || []).forEach((colorGroup: any) => {
-        const inputColorTempId =
-          colorGroup.material_RowId > 0 ? colorGroup.material_RowId : tempIdCounter--;
+        // IC — child of C (same color, exactly 1 per C)
+        const inputGroup = (v.input || [])[ci]; // matched by position to color group
+        if (inputGroup) {
+          const inputColorRowId = inputGroup.material_RowId ?? 0;
+          const inputColorTempId = inputColorRowId > 0 ? inputColorRowId : tempIdCounter--;
 
-        materials.push({
-          material_RowId: colorGroup.material_RowId ?? 0,
-          item_Id: colorGroup.color_Id ?? 0,
-          qty: 0,
-          is_Active: 'Y',
-          mat_Type: 'IC',
-          parent_Mat_RowId: 0,
-          temp_Id: inputColorTempId,
-        });
-
-        (colorGroup.items || []).forEach((item: any) => {
           materials.push({
-            material_RowId: item.material_RowId ?? 0,
-            item_Id: item.material_Id ?? 0,
-            qty: item.qty ?? 0,
+            material_RowId: inputColorRowId,
+            item_Id: colorGroup.color_Id ?? 0, // same color value as C
+            qty: 0,
             is_Active: 'Y',
-            mat_Type: 'I',
-            parent_Mat_RowId:
-              colorGroup.material_RowId > 0 ? colorGroup.material_RowId : inputColorTempId, // ← link to parent temp id
+            mat_Type: 'IC',
+            parent_Mat_RowId: colorRowId > 0 ? colorRowId : colorTempId, // ← parent is C
+            temp_Id: inputColorTempId,
           });
-        });
+
+          // I — exactly 1 per IC, child of IC
+          const inputItem = (inputGroup.items || [])[0]; // only 1 item per IC
+          if (inputItem) {
+            materials.push({
+              material_RowId: inputItem.material_RowId ?? 0,
+              item_Id: inputItem.material_Id ?? 0,
+              qty: inputItem.qty ?? 0,
+              is_Active: 'Y',
+              mat_Type: 'I',
+              parent_Mat_RowId: inputColorRowId > 0 ? inputColorRowId : inputColorTempId, // ← parent is IC
+            });
+          }
+        }
       });
 
       return {
@@ -1703,6 +2436,115 @@ export class IkgsContractForm implements OnInit {
     });
   }
 
+  private buildSewingDtos(stage_Id: number, contractId: number): ContractsStagesDtlDto[] {
+    return this.sewingStage.controls.map((ctrl) => {
+      const v = ctrl.value;
+      const materials: ContractsMaterialsDto[] = [];
+      let tempIdCounter = -1;
+
+      (v.required || []).forEach((colorGroup: any, ci: number) => {
+        const colorRowId = colorGroup.material_RowId ?? 0;
+        const colorTempId = colorRowId > 0 ? colorRowId : tempIdCounter--;
+
+        // C
+        materials.push({
+          material_RowId: colorRowId,
+          item_Id: colorGroup.color_Id ?? 0,
+          qty: 0,
+          is_Active: 'Y',
+          mat_Type: 'C',
+          parent_Mat_RowId: 0,
+          temp_Id: colorTempId,
+        });
+
+        // S → R
+        (colorGroup.sizes || []).forEach((sizeGroup: any) => {
+          const sizeRowId = sizeGroup.material_RowId ?? 0;
+          const sizeTempId = sizeRowId > 0 ? sizeRowId : tempIdCounter--;
+
+          materials.push({
+            material_RowId: sizeRowId,
+            item_Id: sizeGroup.size_Id ?? 0,
+            qty: 0,
+            is_Active: 'Y',
+            mat_Type: 'S',
+            parent_Mat_RowId: colorRowId > 0 ? colorRowId : colorTempId,
+            temp_Id: sizeTempId,
+          });
+
+          (sizeGroup.items || []).forEach((item: any) => {
+            materials.push({
+              material_RowId: item.material_RowId ?? 0,
+              item_Id: item.material_Id ?? 0,
+              qty: item.qty ?? 0,
+              is_Active: 'Y',
+              mat_Type: 'R',
+              parent_Mat_RowId: sizeRowId > 0 ? sizeRowId : sizeTempId,
+            });
+          });
+        });
+
+        // IC → IS → I
+        const inputGroup = (v.input || [])[ci];
+        if (inputGroup) {
+          const inputColorRowId = inputGroup.material_RowId ?? 0;
+          const inputColorTempId = inputColorRowId > 0 ? inputColorRowId : tempIdCounter--;
+
+          // IC — child of C, same color value
+          materials.push({
+            material_RowId: inputColorRowId,
+            item_Id: colorGroup.color_Id ?? 0,
+            qty: 0,
+            is_Active: 'Y',
+            mat_Type: 'IC',
+            parent_Mat_RowId: colorRowId > 0 ? colorRowId : colorTempId,
+            temp_Id: inputColorTempId,
+          });
+
+          (inputGroup.sizes || []).forEach((inputSizeGroup: any) => {
+            const inputSizeRowId = inputSizeGroup.material_RowId ?? 0;
+            const inputSizeTempId = inputSizeRowId > 0 ? inputSizeRowId : tempIdCounter--;
+
+            // IS — child of IC
+            materials.push({
+              material_RowId: inputSizeRowId,
+              item_Id: inputSizeGroup.size_Id ?? 0,
+              qty: 0,
+              is_Active: 'Y',
+              mat_Type: 'IS',
+              parent_Mat_RowId: inputColorRowId > 0 ? inputColorRowId : inputColorTempId,
+              temp_Id: inputSizeTempId,
+            });
+
+            // I — child of IS
+            (inputSizeGroup.items || []).forEach((item: any) => {
+              materials.push({
+                material_RowId: item.material_RowId ?? 0,
+                item_Id: item.material_Id ?? 0,
+                qty: item.qty ?? 0,
+                is_Active: 'Y',
+                mat_Type: 'I',
+                parent_Mat_RowId: inputSizeRowId > 0 ? inputSizeRowId : inputSizeTempId,
+              });
+            });
+          });
+        }
+      });
+
+      return {
+        contract_Id: contractId,
+        stage_Id,
+        stage_RowId: v.stage_RowId ?? 0,
+        party_Id: v.party_Id ?? 0,
+        req_Qty: v.qty ?? 0,
+        uom: v.uom_Id ?? 0,
+        plan_SDat: v.fromDate ?? null,
+        plan_EDat: v.toDate ?? null,
+        is_Active: 'Y',
+        materialsList: materials,
+      } as ContractsStagesDtlDto;
+    });
+  }
   //#endregion
 
   //#region Save
